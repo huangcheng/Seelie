@@ -17,6 +17,10 @@ the Seelie desktop app and as a Codex CLI pet:
 
 - **`seelie/`** — Seelie, the project mascot. A small fae-spirit virtual idol girl.
 - **`qobster/`** — Qobster, QQ Penguin in a Lobster Costume. A quirky crossover mascot.
+- **`lite-bot/`** — LiteBot, a built-in mascot imported from an external hatch-pet run.
+- **`sweetheart-meow/`** — Sweetheart Meow (甜心喵), the cat mascot from Tencent's WorkBuddy.
+- **`workbuddy/`** — WorkBuddy, Tencent's AI agent office mascot.
+- **`puppy-meow/`** — Puppy Meow, the pup mascot from Tencent's WorkBuddy.
 
 ## Per-pet files
 

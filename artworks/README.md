@@ -68,6 +68,56 @@ into both distribution channels:
 - **Internal pack**: `assets/packs/qobster/` (manifest.json + animations.json + spritesheet.webp + preview.png)
 - **Codex pet**: `codex-pet/qobster/` (pet.json + spritesheet.webp — byte-identical atlas)
 
+## LiteBot (`codex-pet/lite-bot/` → `assets/packs/lite-bot/`)
+
+LiteBot — a third built-in sprite-sheet pack, generated as an 8×9 atlas via
+OpenAI's `hatch-pet` skill. The atlas geometry is identical to Seelie and
+Qobster (1536×1872, 192×208 cells, 9 animation rows). The source `codex-pet/`
+bundle was created outside this repo (at `F:\pets\lite-bot\`) and imported
+into both distribution channels using the same workflow as Qobster:
+
+- **Internal pack**: `assets/packs/lite-bot/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/lite-bot/` (pet.json + spritesheet.webp — byte-identical atlas)
+
+## Puppy Meow (`codex-pet/puppy-meow/` → `assets/packs/puppy-meow/`)
+
+Puppy Meow — the pup mascot from Tencent's WorkBuddy — imported as a sixth
+built-in sprite-sheet pack. Generated as an 8×9 atlas via OpenAI's
+`hatch-pet` skill, identical geometry to the other built-ins (1536×1872,
+192×208 cells, 9 animation rows). Source bundle at `F:\pets\puppy-meow\`.
+Tencent attribution ("© Tencent — WorkBuddy / codebuddy.cn/work, for
+personal/non-commercial use") is preserved in the Seelie pack's
+`manifest.json` description; the Codex `pet.json` stays on the canonical
+4-field schema.
+
+- **Internal pack**: `assets/packs/puppy-meow/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/puppy-meow/` (pet.json + spritesheet.webp — byte-identical atlas)
+
+## WorkBuddy (`codex-pet/workbuddy/` → `assets/packs/workbuddy/`)
+
+WorkBuddy — Tencent's AI agent office mascot — imported as a fifth built-in
+sprite-sheet pack. Generated as an 8×9 atlas via OpenAI's `hatch-pet` skill,
+identical geometry to the other built-ins (1536×1872, 192×208 cells, 9
+animation rows). The source `codex-pet/` bundle was created outside this repo
+(at `F:\pets\buddy\`) and imported into both distribution channels using the
+same workflow as Qobster, LiteBot, and Sweetheart Meow:
+
+- **Internal pack**: `assets/packs/workbuddy/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/workbuddy/` (pet.json + spritesheet.webp — byte-identical atlas)
+
+## Sweetheart Meow (`codex-pet/sweetheart-meow/` → `assets/packs/sweetheart-meow/`)
+
+Sweetheart Meow (甜心喵) — the cat mascot from Tencent's WorkBuddy, imported
+as a fourth built-in sprite-sheet pack. Generated as an 8×9 atlas via
+OpenAI's `hatch-pet` skill, identical geometry to the other built-ins
+(1536×1872, 192×208 cells, 9 animation rows). The source `codex-pet/` bundle
+was created outside this repo (at `F:\pets\le-chat-isserie\`, themed as a
+French pâtissier "Le Chat-isserie" variant) and imported into both
+distribution channels using the same workflow as Qobster and LiteBot:
+
+- **Internal pack**: `assets/packs/sweetheart-meow/` (manifest.json + animations.json + spritesheet.webp + preview.jpg)
+- **Codex pet**: `codex-pet/sweetheart-meow/` (pet.json + spritesheet.webp — byte-identical atlas)
+
 ## What does NOT belong here
 
 - The built sprite atlas (`assets/packs/seelie/spritesheet.webp`) — that
