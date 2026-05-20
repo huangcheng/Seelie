@@ -57,6 +57,17 @@ iconset:
 iconutil -c icns assets/seelie.iconset -o assets/seelie.icns
 ```
 
+## Qobster (`codex-pet/qobster/` → `assets/packs/qobster/`)
+
+Qobster — QQ Penguin in a Lobster Costume — is a second built-in sprite-sheet
+pack, generated as an 8×9 atlas via OpenAI's `hatch-pet` skill on 2026-05-20.
+The atlas geometry is identical to Seelie (1536×1872, 192×208 cells, 9 animation
+rows). The source `codex-pet/` bundle was created outside this repo and imported
+into both distribution channels:
+
+- **Internal pack**: `assets/packs/qobster/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/qobster/` (pet.json + spritesheet.webp — byte-identical atlas)
+
 ## What does NOT belong here
 
 - The built sprite atlas (`assets/packs/seelie/spritesheet.webp`) — that

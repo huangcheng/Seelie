@@ -1,0 +1,54 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "im.cheng.seelie.qobster",
+  "name": "Qobster",
+  "nameLocalized": {
+    "zh_CN": "龙虾企鹅"
+  },
+  "author": "HUANG Cheng",
+  "version": "1.0.0",
+  "description": "Qobster — QQ Penguin in a Lobster Costume. A quirky crossover mascot generated as an 8×9 atlas via the OpenAI hatch-pet skill.",
+  "preview": "preview.png",
+  "tags": [
+    "qobster",
+    "original",
+    "penguin",
+    "lobster",
+    "costume"
+  ],
+  "license": "MIT",
+  "category": "originals",
+  "minAppVersion": "1.0.0",
+  "character": {
+    "type": "spriteSheet",
+    "spriteSheet": "spritesheet.webp",
+    "frameWidth": 192,
+    "frameHeight": 208,
+    "definitions": "animations.json",
+    "displayScale": 1.0
+  },
+  "idlePool": [
+    { "name": "idle",    "weight": 7 },
+    { "name": "waiting", "weight": 2 },
+    { "name": "review",  "weight": 1 }
+  ],
+  "eventMap": {
+    "session.start":        "waving",
+    "session.end":          "idle",
+    "session.idle":         "idle",
+    "session.error":        "failed",
+    "prompt.submitted":     "running",
+    "tool.before":          "running",
+    "tool.after":           "idle",
+    "tool.failed":          "failed",
+    "permission.requested": "waiting",
+    "permission.denied":    "failed",
+    "permission.response":  "idle",
+    "subagent.started":     "running",
+    "subagent.stopped":     "review",
+    "notification.sent":    "waving",
+    "file.edited":          "review",
+    "file.watched":         "idle",
+    "todo.updated":         "review"
+  }
+}
