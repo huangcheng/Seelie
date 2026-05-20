@@ -21,6 +21,8 @@ the Seelie desktop app and as a Codex CLI pet:
 - **`sweetheart-meow/`** — Sweetheart Meow (甜心喵), the cat mascot from Tencent's WorkBuddy.
 - **`workbuddy/`** — WorkBuddy, Tencent's AI agent office mascot.
 - **`puppy-meow/`** — Puppy Meow, the pup mascot from Tencent's WorkBuddy.
+- **`worker-meow/`** — Worker Meow, the coder mascot from Tencent CodeBuddy.
+- **`artist-meow/`** — Artist Meow, the artist mascot from Tencent WorkBuddy.
 
 ## Per-pet files
 

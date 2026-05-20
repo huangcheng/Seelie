@@ -1,0 +1,104 @@
+[
+  {
+    "Name": "idle",
+    "Frames": [
+      { "Duration": 280, "ImagesOffsets": { "Column": 0, "Row": 0 } },
+      { "Duration": 110, "ImagesOffsets": { "Column": 1, "Row": 0 } },
+      { "Duration": 110, "ImagesOffsets": { "Column": 2, "Row": 0 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 0 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 4, "Row": 0 } },
+      { "Duration": 320, "ImagesOffsets": { "Column": 5, "Row": 0 } }
+    ]
+  },
+  {
+    "Name": "running-right",
+    "Frames": [
+      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 5, "Row": 1 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 6, "Row": 1 } },
+      { "Duration": 220, "ImagesOffsets": { "Column": 7, "Row": 1 } }
+    ]
+  },
+  {
+    "Name": "running-left",
+    "Frames": [
+      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 5, "Row": 2 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 6, "Row": 2 } },
+      { "Duration": 220, "ImagesOffsets": { "Column": 7, "Row": 2 } }
+    ]
+  },
+  {
+    "Name": "waving",
+    "Frames": [
+      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 3 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 3 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 3 } },
+      { "Duration": 280, "ImagesOffsets": { "Column": 3, "Row": 3 } }
+    ]
+  },
+  {
+    "Name": "jumping",
+    "Frames": [
+      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 4 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 4 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 4 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 4 } },
+      { "Duration": 280, "ImagesOffsets": { "Column": 4, "Row": 4 } }
+    ]
+  },
+  {
+    "Name": "failed",
+    "Frames": [
+      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 4, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 5, "Row": 5 } },
+      { "Duration": 140, "ImagesOffsets": { "Column": 6, "Row": 5 } },
+      { "Duration": 240, "ImagesOffsets": { "Column": 7, "Row": 5 } }
+    ]
+  },
+  {
+    "Name": "waiting",
+    "Frames": [
+      { "Duration": 150, "ImagesOffsets": { "Column": 0, "Row": 6 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 1, "Row": 6 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 2, "Row": 6 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 3, "Row": 6 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 4, "Row": 6 } },
+      { "Duration": 260, "ImagesOffsets": { "Column": 5, "Row": 6 } }
+    ]
+  },
+  {
+    "Name": "running",
+    "Frames": [
+      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 7 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 7 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 7 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 7 } },
+      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 7 } },
+      { "Duration": 220, "ImagesOffsets": { "Column": 5, "Row": 7 } }
+    ]
+  },
+  {
+    "Name": "review",
+    "Frames": [
+      { "Duration": 150, "ImagesOffsets": { "Column": 0, "Row": 8 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 1, "Row": 8 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 2, "Row": 8 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 3, "Row": 8 } },
+      { "Duration": 150, "ImagesOffsets": { "Column": 4, "Row": 8 } },
+      { "Duration": 280, "ImagesOffsets": { "Column": 5, "Row": 8 } }
+    ]
+  }
+]

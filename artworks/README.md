@@ -79,6 +79,26 @@ into both distribution channels using the same workflow as Qobster:
 - **Internal pack**: `assets/packs/lite-bot/` (manifest.json + animations.json + spritesheet.webp + preview.png)
 - **Codex pet**: `codex-pet/lite-bot/` (pet.json + spritesheet.webp — byte-identical atlas)
 
+## Artist Meow (`codex-pet/artist-meow/` → `assets/packs/artist-meow/`)
+
+Artist Meow — the artist mascot from Tencent WorkBuddy — imported as an
+eighth built-in sprite-sheet pack. Generated as an 8×9 atlas via OpenAI's
+`hatch-pet` skill, identical geometry to the other built-ins (1536×1872,
+192×208 cells, 9 animation rows). Source bundle at `F:\pets\artist-meow\`.
+
+- **Internal pack**: `assets/packs/artist-meow/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/artist-meow/` (pet.json + spritesheet.webp — byte-identical atlas)
+
+## Worker Meow (`codex-pet/worker-meow/` → `assets/packs/worker-meow/`)
+
+Worker Meow — the coder mascot from Tencent CodeBuddy — imported as a
+seventh built-in sprite-sheet pack. Generated as an 8×9 atlas via OpenAI's
+`hatch-pet` skill, identical geometry to the other built-ins (1536×1872,
+192×208 cells, 9 animation rows). Source bundle at `F:\pets\worker-meow\`.
+
+- **Internal pack**: `assets/packs/worker-meow/` (manifest.json + animations.json + spritesheet.webp + preview.png)
+- **Codex pet**: `codex-pet/worker-meow/` (pet.json + spritesheet.webp — byte-identical atlas)
+
 ## Puppy Meow (`codex-pet/puppy-meow/` → `assets/packs/puppy-meow/`)
 
 Puppy Meow — the pup mascot from Tencent's WorkBuddy — imported as a sixth

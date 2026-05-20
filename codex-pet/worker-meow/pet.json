@@ -1,0 +1,6 @@
+{
+  "id": "worker-meow",
+  "displayName": "Worker Meow",
+  "description": "Worker Meow from Tencent CodeBuddy",
+  "spritesheetPath": "spritesheet.webp"
+}
