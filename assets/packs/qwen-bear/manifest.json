@@ -1,0 +1,50 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "im.cheng.seelie.qwen-bear",
+  "name": "Qwen Bear",
+  "author": "HUANG Cheng",
+  "version": "1.0.0",
+  "description": "Qwen Bear — the bear mascot from Alibaba's Qwen, imported as an 8×9 atlas via OpenAI's hatch-pet skill.",
+  "preview": "preview.png",
+  "tags": [
+    "qwen",
+    "qwen-bear",
+    "bear",
+    "alibaba"
+  ],
+  "license": "MIT",
+  "category": "originals",
+  "minAppVersion": "1.0.0",
+  "character": {
+    "type": "spriteSheet",
+    "spriteSheet": "spritesheet.webp",
+    "frameWidth": 192,
+    "frameHeight": 208,
+    "definitions": "animations.json",
+    "displayScale": 1.0
+  },
+  "idlePool": [
+    { "name": "idle",    "weight": 7 },
+    { "name": "waiting", "weight": 2 },
+    { "name": "review",  "weight": 1 }
+  ],
+  "eventMap": {
+    "session.start":        "waving",
+    "session.end":          "idle",
+    "session.idle":         "idle",
+    "session.error":        "failed",
+    "prompt.submitted":     "running",
+    "tool.before":          "running",
+    "tool.after":           "idle",
+    "tool.failed":          "failed",
+    "permission.requested": "waiting",
+    "permission.denied":    "failed",
+    "permission.response":  "idle",
+    "subagent.started":     "running",
+    "subagent.stopped":     "review",
+    "notification.sent":    "waving",
+    "file.edited":          "review",
+    "file.watched":         "idle",
+    "todo.updated":         "review"
+  }
+}

@@ -25,6 +25,7 @@ the Seelie desktop app and as a Codex CLI pet:
 - **`artist-meow/`** — Artist Meow, the artist mascot from Tencent WorkBuddy.
 - **`warrior-meow/`** — Warrior Meow, the warrior mascot from Tencent WorkBuddy.
 - **`marvis/`** — Marvis, the QQ dragon mascot.
+- **`qwen-bear/`** — Qwen Bear, the bear mascot from Alibaba's Qwen.
 
 ## Per-pet files
 
