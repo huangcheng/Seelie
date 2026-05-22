@@ -59,6 +59,8 @@ UninstallDisplayIcon={app}\{#AppExeName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
+WizardSizePercent=120
+WizardResizable=yes
 
 ; Branding — wizard images shown on Welcome/Finish + every other page
 WizardImageFile=branding\wizard-image.bmp,branding\wizard-image@2x.bmp
@@ -76,6 +78,90 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 ChangesAssociations=no
 
+[Code]
+{ Persona-5 inspired installer theming — orange accent on white,
+  sharp corners, bold typography. Applied after the wizard form is created. }
+
+const
+  PERSONA_ORANGE = $001A6FF3;  { #F36F1A in BGR }
+  NEAR_BLACK     = $001A1A1A;
+  GRAY_SECONDARY = $00888888;
+
+procedure InitializeWizard();
+var
+  WelcomeLabel2: TNewStaticText;
+begin
+  { Increase wizard size for a more spacious, modern feel }
+  WizardForm.ClientWidth := ScaleX(600);
+  WizardForm.ClientHeight := ScaleY(420);
+
+  { White background, clean typography }
+  WizardForm.Color := clWhite;
+  WizardForm.Font.Name := 'Segoe UI';
+  WizardForm.Font.Size := 9;
+  WizardForm.Font.Color := NEAR_BLACK;
+
+  { --- Welcome Page styling --- }
+  if WizardForm.WelcomeLabel1 <> nil then
+  begin
+    WizardForm.WelcomeLabel1.Font.Name := 'Segoe UI';
+    WizardForm.WelcomeLabel1.Font.Size := 16;
+    WizardForm.WelcomeLabel1.Font.Style := [fsBold];
+    WizardForm.WelcomeLabel1.Font.Color := NEAR_BLACK;
+  end;
+
+  { Replace the default WelcomeLabel2 with our own for full control }
+  if WizardForm.WelcomeLabel2 <> nil then
+  begin
+    WizardForm.WelcomeLabel2.Caption :=
+      'Welcome to Seelie — your new desktop companion.' + #13#10#13#10 +
+      'Seelie is a lightweight, frameless desktop pet that reacts to your ' +
+      'AI coding tools in real time. Watch her wave when you start a session, ' +
+      'cheer when you complete a task, and celebrate your wins with sparkle effects.' + #13#10#13#10 +
+      'Features included:' + #13#10 +
+      '  • Real-time reactions to Claude Code, Codex, OpenCode & more' + #13#10 +
+      '  • 10+ built-in character packs (pets, mascots, anime characters)' + #13#10 +
+      '  • Gaming Mode — auto-hides when fullscreen apps are detected' + #13#10 +
+      '  • Tip bubbles with contextual coding advice' + #13#10 +
+      '  • TTS voice feedback (optional)' + #13#10 +
+      '  • Under 10 MB RAM footprint' + #13#10#13#10 +
+      'Click Next to begin the installation.';
+    WizardForm.WelcomeLabel2.Font.Name := 'Segoe UI';
+    WizardForm.WelcomeLabel2.Font.Size := 9;
+    WizardForm.WelcomeLabel2.Font.Color := GRAY_SECONDARY;
+  end;
+
+  { --- Finish page styling --- }
+  if WizardForm.FinishedLabel <> nil then
+  begin
+    WizardForm.FinishedLabel.Font.Name := 'Segoe UI';
+    WizardForm.FinishedLabel.Font.Size := 16;
+    WizardForm.FinishedLabel.Font.Style := [fsBold];
+    WizardForm.FinishedLabel.Font.Color := NEAR_BLACK;
+  end;
+
+  if WizardForm.FinishedHeadingLabel <> nil then
+  begin
+    WizardForm.FinishedHeadingLabel.Font.Name := 'Segoe UI';
+    WizardForm.FinishedHeadingLabel.Font.Size := 9;
+    WizardForm.FinishedHeadingLabel.Font.Color := GRAY_SECONDARY;
+  end;
+end;
+
+{ Keep the Next button looking like a primary action across all pages }
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  WizardForm.NextButton.Font.Style := [fsBold];
+  WizardForm.NextButton.Font.Color := clWhite;
+  WizardForm.NextButton.Color := PERSONA_ORANGE;
+
+  WizardForm.BackButton.Color := clWhite;
+  WizardForm.BackButton.Font.Color := NEAR_BLACK;
+
+  WizardForm.CancelButton.Color := clWhite;
+  WizardForm.CancelButton.Font.Color := NEAR_BLACK;
+end;
+
 [Languages]
 ; First-listed is the default. Inno auto-shows a language picker dialog at
 ; startup whenever 2+ languages are listed, before any wizard page. Users
@@ -90,8 +176,10 @@ Name: "schinese"; MessagesFile: "ChineseSimplified.isl"
 
 [Messages]
 ; Override a few wizard chrome strings with product-specific phrasing.
-english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nA tiny desktop pet that reacts to your AI coding tool events. Lightweight, frameless, always-on-top.%n%nIt is recommended that you close all other applications before continuing.
-schinese.WelcomeLabel2=即将在您的电脑上安装 [name/ver]。%n%nSeelie 是一个轻量级桌面宠物，会响应您的 AI 编程工具事件。无边框、置顶显示，约 10MB 内存占用。%n%n建议您在继续之前关闭其他正在运行的程序。
+; Note: The detailed welcome text is set programmatically in [Code] above.
+; These overrides serve as fallbacks and for the language-picker chrome.
+english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nA tiny desktop pet that reacts to your AI coding tool events. Lightweight, frameless, always-on-top.%n%nClick Next to see features and begin installation.
+schinese.WelcomeLabel2=即将在您的电脑上安装 [name/ver]。%n%nSeelie 是一个轻量级桌面宠物，会响应您的 AI 编程工具事件。无边框、置顶显示，约 10MB 内存占用。%n%n点击「下一步」查看功能介绍并开始安装。
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
