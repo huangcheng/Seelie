@@ -79,17 +79,14 @@ MinVersion=10.0.17763
 ChangesAssociations=no
 
 [Code]
-{ Persona-5 inspired installer theming — orange accent on white,
-  sharp corners, bold typography. Applied after the wizard form is created. }
+{ Persona-5 inspired installer theming — bold typography, clean layout.
+  Applied after the wizard form is created. }
 
 const
-  PERSONA_ORANGE = $001A6FF3;  { #F36F1A in BGR }
   NEAR_BLACK     = $001A1A1A;
   GRAY_SECONDARY = $00888888;
 
 procedure InitializeWizard();
-var
-  WelcomeLabel2: TNewStaticText;
 begin
   { Increase wizard size for a more spacious, modern feel }
   WizardForm.ClientWidth := ScaleX(600);
@@ -110,7 +107,7 @@ begin
     WizardForm.WelcomeLabel1.Font.Color := NEAR_BLACK;
   end;
 
-  { Replace the default WelcomeLabel2 with our own for full control }
+  { Rich feature list on welcome page }
   if WizardForm.WelcomeLabel2 <> nil then
   begin
     WizardForm.WelcomeLabel2.Caption :=
@@ -148,18 +145,10 @@ begin
   end;
 end;
 
-{ Keep the Next button looking like a primary action across all pages }
+{ Bold Next button across all pages }
 procedure CurPageChanged(CurPageID: Integer);
 begin
   WizardForm.NextButton.Font.Style := [fsBold];
-  WizardForm.NextButton.Font.Color := clWhite;
-  WizardForm.NextButton.Color := PERSONA_ORANGE;
-
-  WizardForm.BackButton.Color := clWhite;
-  WizardForm.BackButton.Font.Color := NEAR_BLACK;
-
-  WizardForm.CancelButton.Color := clWhite;
-  WizardForm.CancelButton.Font.Color := NEAR_BLACK;
 end;
 
 [Languages]
