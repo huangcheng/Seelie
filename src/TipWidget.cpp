@@ -43,16 +43,27 @@ TipWidget::TipWidget(QWidget *parent)
 
 TipWidget::~TipWidget()
 {
-    delete m_opacityAnim;
-    delete m_slideAnim;
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
+    if (m_slideAnim) {
+        m_slideAnim->stop();
+        delete m_slideAnim;
+        m_slideAnim = nullptr;
+    }
 }
 
 void TipWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-    // Promote the underlying NSWindow to a non-activating panel so showing
-    // the bubble never steals keyboard focus from the user's foreground app.
-    MacFocusFix::makeNonActivating(this);
+    if (!m_nativeHandleFixed) {
+        // Promote the underlying NSWindow to a non-activating panel so showing
+        // the bubble never steals keyboard focus from the user's foreground app.
+        MacFocusFix::makeNonActivating(this);
+        m_nativeHandleFixed = true;
+    }
     refreshDwmAttributes();
 }
 
@@ -350,8 +361,16 @@ void TipWidget::positionRelativeTo(const QWidget *pet)
 
 void TipWidget::startEnterAnimation()
 {
-    delete m_opacityAnim;
-    delete m_slideAnim;
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
+    if (m_slideAnim) {
+        m_slideAnim->stop();
+        delete m_slideAnim;
+        m_slideAnim = nullptr;
+    }
 
     // Slide direction: bubble above pet slides up from below, below pet slides down from above
     int slideDistance = m_tailDown ? 20 : -20;
@@ -375,8 +394,16 @@ void TipWidget::startEnterAnimation()
 
 void TipWidget::startExitAnimation()
 {
-    delete m_opacityAnim;
-    delete m_slideAnim;
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
+    if (m_slideAnim) {
+        m_slideAnim->stop();
+        delete m_slideAnim;
+        m_slideAnim = nullptr;
+    }
 
     int slideDistance = m_tailDown ? 12 : -12;
 

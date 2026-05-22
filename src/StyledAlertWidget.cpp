@@ -142,6 +142,8 @@ void StyledAlertWidget::showAlert(const QString &title, const QString &body,
 
 bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
 {
+    if (m_inConfirmMode) return false;
+
     m_titleLabel->setText(title);
     m_bodyLabel->setText(body);
     m_okButton->setText(tr("Yes"));
@@ -155,6 +157,7 @@ bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
 
     QEventLoop loop;
     connect(this, &StyledAlertWidget::dismissed, &loop, &QEventLoop::quit);
+    connect(this, &StyledAlertWidget::destroyed, &loop, &QEventLoop::quit);
     loop.exec();
 
     m_cancelButton->hide();
@@ -202,8 +205,16 @@ void StyledAlertWidget::showAnimated()
     raise();
     activateWindow();
 
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
     m_scaleAnim->setDuration(300);
@@ -222,8 +233,16 @@ void StyledAlertWidget::showAnimated()
 
 void StyledAlertWidget::hideAnimated()
 {
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
     m_scaleAnim->setDuration(200);

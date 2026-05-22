@@ -47,7 +47,9 @@ void TipsEngine::processEvent(const QString &eventName, const QJsonObject &event
         }
 
         if (matcher.matcher(events)) {
-            m_lastTriggered[matcher.name] = QDateTime::currentDateTime();
+            // M4: Use qint64 msecs since epoch (less sensitive to wall-clock
+            // jumps than QDateTime::currentDateTime()).
+            m_lastTriggered[matcher.name] = QDateTime::currentMSecsSinceEpoch();
 
             if (m_tipWidget) {
                 m_tipWidget->showBubble(matcher.tipTitle, matcher.tipBody,
@@ -215,6 +217,9 @@ bool TipsEngine::isInCooldown(const QString &patternName) const
         return false;
     }
 
-    const QDateTime lastTime = m_lastTriggered.value(patternName);
-    return lastTime.msecsTo(QDateTime::currentDateTime()) < m_cooldownMinMs;
+    // M4: Use monotonic msecs since epoch instead of QDateTime wall-clock
+    // comparison. currentMSecsSinceEpoch() is less affected by NTP jumps
+    // and DST changes than QDateTime::currentDateTime().
+    const qint64 lastTimeMs = m_lastTriggered.value(patternName);
+    return (QDateTime::currentMSecsSinceEpoch() - lastTimeMs) < m_cooldownMinMs;
 }

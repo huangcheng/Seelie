@@ -6,6 +6,7 @@
 #include <QVector>
 #include <QRect>
 #include <QJsonObject>
+#include <QPointer>
 
 class QSoundEffect;
 class QTemporaryFile;
@@ -114,8 +115,9 @@ private:
     QSoundEffect *m_flatlineBeep = nullptr;
     QTemporaryFile *m_flatlineBeepFile = nullptr;
 
-    const QWidget *m_anchoredPet = nullptr;
+    QPointer<const QWidget> m_anchoredPet = nullptr;
     QRect m_anchorRect;
+    bool m_nativeHandleFixed = false;  // M21: one-shot guard for MacFocusFix
 
     // Control rects in widget-local coordinates (include SHADOW_BLUR offset).
     QRect m_pwrRect;

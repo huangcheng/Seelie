@@ -74,7 +74,9 @@ private:
     qreal m_panelOpacity = 1.0;
     QPropertyAnimation *m_scaleAnim = nullptr;
     QPropertyAnimation *m_opacityAnim = nullptr;
-    QWidget *m_petWindow = nullptr;
+    QPointer<QWidget> m_petWindow;  // H4: QPointer guards against the pet
+                                     // window being destroyed while the
+                                     // dialog is open.
 
     static constexpr int PADDING = 14;
     static constexpr int VERTICAL_SPACING = 12;

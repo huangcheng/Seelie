@@ -147,8 +147,16 @@ void TtsVoiceCache::evictIfNeeded()
     if (!dir.exists()) return;
 
     QFileInfoList entries = dir.entryInfoList(QDir::Files, QDir::NoSort);
+
+    // Only count .bin and .mime files toward the size limit. Other files
+    // (e.g. stray thumbs.db, .DS_Store) should not inflate the total and
+    // trigger premature eviction (audit M15).
     qint64 total = 0;
-    for (const QFileInfo &fi : entries) total += fi.size();
+    for (const QFileInfo &fi : entries) {
+        const QString suffix = fi.suffix();
+        if (suffix == QStringLiteral("bin") || suffix == QStringLiteral("mime"))
+            total += fi.size();
+    }
     if (total <= m_maxBytes) return;
 
     // Group .bin and its .mime sidecar so eviction takes both atomically and
@@ -166,7 +174,11 @@ void TtsVoiceCache::evictIfNeeded()
         const QString base = fi.completeBaseName();
         const QString sidecar = mimePath(base);
 
-        const qint64 sz = fi.size();
+        // Count the .bin size and the .mime sidecar size (if any) toward
+        // the freed total so the accounting is accurate.
+        const qint64 sidecarSize = QFileInfo::exists(sidecar)
+            ? QFileInfo(sidecar).size() : 0;
+        const qint64 sz = fi.size() + sidecarSize;
         if (QFile::remove(fi.absoluteFilePath())) {
             removed += sz;
             ++removedCount;

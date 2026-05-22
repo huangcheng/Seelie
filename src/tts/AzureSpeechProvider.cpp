@@ -48,9 +48,11 @@ QString xmlEscape(const QString& s)
 }
 
 QString buildSsml(const QString& text, const QString& voice,
-                  const QString& langHint, std::optional<Emotion> emotion)
+                   const QString& langHint, std::optional<Emotion> emotion)
 {
-    const QString lang = langHint.isEmpty() ? QStringLiteral("en-US") : langHint;
+    const QString lang = xmlEscape(langHint.isEmpty()
+        ? QStringLiteral("en-US") : langHint);
+    const QString voiceName = xmlEscape(voice);
     QString inner = xmlEscape(text);
     if (emotion.has_value()) {
         if (const char* style = emotionToStyle(*emotion)) {
@@ -65,7 +67,7 @@ QString buildSsml(const QString& text, const QString& voice,
         " xml:lang=\"%1\">"
         "<voice name=\"%2\">%3</voice>"
         "</speak>"
-    ).arg(lang, voice, inner);
+    ).arg(lang, voiceName, inner);
 }
 
 TtsErrorKind classifyHttp(int status)
@@ -139,7 +141,10 @@ void AzureSpeechProvider::cancel(RequestHandle handle)
     QNetworkReply *reply = it.value().reply;
     // Erase before abort: see StepFunHttpProvider::cancel for rationale (H8).
     m_inFlight.erase(it);
-    if (reply) reply->abort();
+    if (reply) {
+        reply->abort();
+        reply->deleteLater();
+    }
 }
 
 } // namespace seelie::tts

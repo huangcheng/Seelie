@@ -64,7 +64,7 @@ private:
     int m_windowSize = 20;
     int m_windowDurationSec = 30;
 
-    QMap<QString, QDateTime> m_lastTriggered;
+    QMap<QString, qint64> m_lastTriggered;  // M4: monotonic msecs (QDateTime::currentMSecsSinceEpoch)
     int m_cooldownMinMs = 5 * 60 * 1000; // 5 minutes
 
     QVector<PatternMatcher> m_matchers;

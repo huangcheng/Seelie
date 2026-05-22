@@ -212,10 +212,12 @@ MainWindow::~MainWindow()
         m_settingsPanel = nullptr;
     }
 #ifdef SEELIE_TTS_ENABLED
+    // m_ttsEngine is parented to `this` (constructed with `this` as parent
+    // at line 86). Qt's parent-child mechanism deletes it automatically when
+    // ~MainWindow() runs — an explicit `delete` here would double-free.
+    // Call stop() to halt audio output; the actual destruction is left to Qt.
     if (m_ttsEngine) {
         m_ttsEngine->stop();
-        delete m_ttsEngine;
-        m_ttsEngine = nullptr;
     }
 #endif
     if (m_tipWidget) {
@@ -486,10 +488,10 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
         // with rich-text + setOpenExternalLinks(true), so https:// and
         // mailto: hand off to the OS.
         StyledAlertWidget *dialog = new StyledAlertWidget(nullptr);
-        // Belt-and-suspenders cleanup. dismissed → deleteLater handles
-        // the click-to-close path; WA_DeleteOnClose handles every other
-        // way the widget can disappear (close event, parent quit). L11.
-        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        // dismissed → deleteLater handles cleanup. Do NOT also set
+        // WA_DeleteOnClose — that creates two independent deletion paths
+        // (dismissed→deleteLater AND Qt's close-event→delete) which can
+        // double-free. M25 fix.
         dialog->setPetWindow(this);
         connect(dialog, &StyledAlertWidget::dismissed, dialog, &QObject::deleteLater);
         dialog->showAlert(t.title, t.body);
@@ -625,6 +627,11 @@ void MainWindow::setGlobalShortcutManager(GlobalShortcutManager *manager)
 
 void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
 {
+    // H8: Disconnect previous manager's signals before wiring the new one.
+    if (m_packManager) {
+        disconnect(m_packManager, nullptr, this, nullptr);
+    }
+
     m_packManager = manager;
     if (m_packManager) {
         m_packManager->setActiveLocale(m_config ? m_config->language() : QString());

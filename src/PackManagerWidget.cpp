@@ -19,6 +19,8 @@
 #include <QStandardPaths>
 #include <QWindow>
 
+#include <QPointer>
+
 #include "PlatformWindow.h"
 
 static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
@@ -249,8 +251,16 @@ void PackManagerWidget::showAnimated()
     QWidget::show();
     raise();
 
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
     m_scaleAnim->setDuration(300);
@@ -269,8 +279,16 @@ void PackManagerWidget::showAnimated()
 
 void PackManagerWidget::hideAnimated()
 {
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
     m_scaleAnim->setDuration(200);
@@ -411,6 +429,7 @@ void PackManagerWidget::onDeleteClicked()
     }
 
     StyledAlertWidget confirmDialog(nullptr);
+    QPointer<PackManagerWidget> guard(this);
     bool confirmed = confirmDialog.execConfirm(
         tr("Delete Packs"),
         tr("Are you sure you want to delete the following %1 pack(s)?\n\n%2\n\nThis action cannot be undone.")
@@ -418,6 +437,7 @@ void PackManagerWidget::onDeleteClicked()
             .arg(packNames.join("\n"))
     );
 
+    if (!guard) return;
     if (!confirmed) return;
 
     int successCount = 0;

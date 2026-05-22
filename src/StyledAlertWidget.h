@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QString>
 #include <QPropertyAnimation>
+#include <QPointer>
 
 class QLabel;
 class QPushButton;
@@ -89,7 +90,7 @@ private:
 
     bool m_confirmResult = false;
     bool m_inConfirmMode = false;
-    QWidget *m_petWindow = nullptr;
+    QPointer<QWidget> m_petWindow = nullptr;
 
     static constexpr int PADDING = 14;
     static constexpr int VERTICAL_SPACING = 12;

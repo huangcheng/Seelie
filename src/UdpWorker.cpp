@@ -11,6 +11,7 @@ UdpWorker::UdpWorker(QObject *parent)
 
 UdpWorker::~UdpWorker()
 {
+    m_shuttingDown = true; // L1: prevent stop() from emitting stopped() during destruction
     stop();
 }
 
@@ -44,7 +45,9 @@ void UdpWorker::start(const QString &endpoint)
     m_socket = new QUdpSocket(this);
     connect(m_socket, &QUdpSocket::readyRead, this, &UdpWorker::onReadyRead);
 
-    if (!m_socket->bind(address, port)) {
+    // H1: pass ReuseAddressHint so a restarted process can rebind even if
+    // a previous wedged thread hasn't fully released the port yet.
+    if (!m_socket->bind(address, port, QAbstractSocket::ReuseAddressHint | QAbstractSocket::DefaultForPlatform)) {
         emit errorOccurred("Failed to bind UDP on " + endpoint + ": " + m_socket->errorString());
         delete m_socket;
         m_socket = nullptr;
@@ -61,14 +64,22 @@ void UdpWorker::stop()
         m_socket->close();
         delete m_socket;
         m_socket = nullptr;
-        emit stopped();
+        // L1: suppress signal emission during destructor — receivers may be
+        // destroyed already and Qt considers signals from destructors unsafe.
+        if (!m_shuttingDown) {
+            emit stopped();
+        }
     }
 }
 
 void UdpWorker::sendDatagram(const QByteArray &data, const QHostAddress &host, quint16 port)
 {
     if (m_socket) {
-        m_socket->writeDatagram(data, host, port);
+        // M1: check writeDatagram return value and emit error on failure
+        qint64 written = m_socket->writeDatagram(data, host, port);
+        if (written < 0) {
+            emit errorOccurred("sendDatagram failed: " + m_socket->errorString());
+        }
     }
 }
 
@@ -81,14 +92,19 @@ void UdpWorker::onReadyRead()
     // before resizing and discard anything pathological.
     constexpr qint64 kMaxDatagramBytes = 65535;
 
-    while (m_socket->hasPendingDatagrams()) {
+    // C2: cap datagrams per readyRead to bound main-thread event queue growth
+    constexpr int kMaxDatagramsPerRead = 100;
+    int processed = 0;
+
+    while (m_socket->hasPendingDatagrams() && ++processed <= kMaxDatagramsPerRead) {
         const qint64 pending = m_socket->pendingDatagramSize();
         if (pending < 0 || pending > kMaxDatagramBytes) {
             qWarning() << "UdpWorker: dropping oversized/invalid datagram, size ="
                        << pending;
-            // Drain the bad packet so the socket loop makes progress.
-            char sink[1];
-            m_socket->readDatagram(sink, 0);
+            // C1: drain with a real-sized buffer — readDatagram(sink, 0) is
+            // undefined and may not advance the read pointer, causing infinite loop.
+            QByteArray sink(qMin(pending > 0 ? pending : qint64(1), kMaxDatagramBytes), 0);
+            m_socket->readDatagram(sink.data(), sink.size());
             continue;
         }
         QByteArray datagram;

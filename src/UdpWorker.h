@@ -30,6 +30,7 @@ private slots:
 
 private:
     QUdpSocket *m_socket = nullptr;
+    bool m_shuttingDown = false; // L1: guard signal emission during destructor
 };
 
 #endif // UDPWORKER_H

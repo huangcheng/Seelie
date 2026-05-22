@@ -91,7 +91,10 @@ void OpenAiTtsProvider::cancel(RequestHandle handle)
     QNetworkReply *reply = it.value().reply;
     // Erase before abort: see StepFunHttpProvider::cancel for rationale (H8).
     m_inFlight.erase(it);
-    if (reply) reply->abort();
+    if (reply) {
+        reply->abort();
+        reply->deleteLater();
+    }
 }
 
 } // namespace seelie::tts

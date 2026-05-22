@@ -110,7 +110,9 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
 {
     setWindowFlags(
         Qt::FramelessWindowHint |
-        Qt::WindowStaysOnTopHint
+        Qt::WindowStaysOnTopHint |
+        Qt::Tool |
+        Qt::WindowDoesNotAcceptFocus
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
@@ -774,8 +776,16 @@ void SettingsPanelWidget::showAnimated()
     QWidget::show();
     raise();
 
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     // Scale: 0.9 → 1.0 with overshoot
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
@@ -796,8 +806,16 @@ void SettingsPanelWidget::showAnimated()
 
 void SettingsPanelWidget::hideAnimated()
 {
-    delete m_scaleAnim;
-    delete m_opacityAnim;
+    if (m_scaleAnim) {
+        m_scaleAnim->stop();
+        delete m_scaleAnim;
+        m_scaleAnim = nullptr;
+    }
+    if (m_opacityAnim) {
+        m_opacityAnim->stop();
+        delete m_opacityAnim;
+        m_opacityAnim = nullptr;
+    }
 
     // Scale: 1.0 → 0.9
     m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
@@ -948,6 +966,11 @@ void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
+    // H8: Disconnect previous manager's signals before wiring the new one.
+    if (m_packManager) {
+        disconnect(m_packManager, nullptr, this, nullptr);
+    }
+
     m_packManager = manager;
     if (m_packManager) {
         // Keep the button label in sync when the active pack changes via any

@@ -209,6 +209,11 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         return false;
     }
 
+    // C8/H10: Stop old playback before clearing animations and replacing the
+    // sprite sheet. Without this, m_timer still fires and paint() accesses
+    // stale FrameDef rectangles against the new (different) sprite sheet.
+    stop();
+
     m_animations.clear();
     m_idleAnims.clear();
     m_idleWeights.clear();
@@ -226,6 +231,10 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
 
     if (pack->characterConfig().colorKey.isValid()) {
         QImage image = m_spriteSheet.toImage().convertToFormat(QImage::Format_ARGB32);
+        if (image.isNull()) {
+            qWarning() << "SpriteAnimationEngine: color-key conversion produced null image";
+            return false;
+        }
         QColor keyColor = pack->characterConfig().colorKey;
         int keyR = keyColor.red();
         int keyG = keyColor.green();

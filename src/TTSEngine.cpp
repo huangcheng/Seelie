@@ -7,10 +7,28 @@
 #include <QLoggingCategory>
 #include <QMediaDevices>
 #include <QNetworkAccessManager>
+#include <QRegularExpression>
 
 Q_LOGGING_CATEGORY(lcTts, "seelie.tts")
 
 using namespace seelie::tts;
+
+namespace {
+
+// Redact known sensitive patterns from error messages before logging.
+// Prevents accidental leakage of API tokens / subscription keys into logs.
+QString redactSensitiveInfo(const QString &msg)
+{
+    QString result = msg;
+    result.replace(QRegularExpression(
+        QStringLiteral(R"(Bearer\s+\S+)")), QStringLiteral("Bearer [REDACTED]"));
+    result.replace(QRegularExpression(
+        QStringLiteral(R"(Ocp-Apim-Subscription-Key:\s*\S+)")),
+        QStringLiteral("Ocp-Apim-Subscription-Key: [REDACTED]"));
+    return result;
+}
+
+} // namespace
 
 TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     : QObject(parent), m_config(config)
@@ -64,7 +82,17 @@ void TTSEngine::stop()
     // on app exit).
     QMetaObject::invokeMethod(this, [this]() {
         resetAudio();
+        if (m_inFlight && m_provider) {
+            m_provider->cancel(m_inFlight);
+            m_inFlight = 0;
+        }
         m_provider.reset();
+        // Destroy m_nam on the worker thread where it was created (audit M18).
+        // If we let it survive until after moveToThread back to the main thread,
+        // its internal QThread affinity would be violated and its event processing
+        // could produce use-after-free on the worker's event dispatcher.
+        delete m_nam;
+        m_nam = nullptr;
     }, Qt::QueuedConnection);
 
     m_thread->quit();
@@ -329,7 +357,7 @@ void TTSEngine::onSynthesisError(TtsError err)
     }
     qCWarning(lcTts) << "synthesis error kind=" << int(err.kind)
                      << "http=" << err.httpStatus
-                     << "msg=" << err.message;
+                     << "msg=" << redactSensitiveInfo(err.message);
     if (err.kind == TtsErrorKind::AuthFailed) {
         m_speaking = false;
         emit authFailed(m_currentProviderStableId);
@@ -413,6 +441,16 @@ void TTSEngine::onDecoderFinished()
     qCInfo(lcTts) << "sink start (pull mode), device="
                   << QMediaDevices::defaultAudioOutput().description();
     m_audioSink->start(m_pcmBuffer);
+    // QAudioSink::start() in pull mode returns void. A failed start
+    // transitions immediately to StoppedState — the existing stateChanged
+    // handler covers that path. As a safety net, poll the state after
+    // starting: if it's already stopped, the sink never began playback.
+    if (m_audioSink->state() == QAudio::StoppedState) {
+        qCWarning(lcTts) << "QAudioSink::start() immediately entered StoppedState";
+        m_speaking = false;
+        emit error(tr("Failed to start audio playback"));
+        emit speakingFinished();
+    }
 }
 
 void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
@@ -445,6 +483,8 @@ void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
     qCDebug(lcTts) << "decoder start, audio bytes=" << audio.size()
                    << "mime hint=" << mimeType;
     m_decoder->start();
+    // QAudioDecoder::start() is asynchronous; errors surface via the
+    // error signal connected above. No synchronous return value to check.
 }
 
 void TTSEngine::resetAudio()

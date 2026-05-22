@@ -8,6 +8,10 @@ GlobalShortcutManager::GlobalShortcutManager(QObject *parent)
 {
     m_hotkey = new QHotkey(QKeySequence(m_shortcut), true, this);
     connect(m_hotkey, &QHotkey::activated, this, &GlobalShortcutManager::activated);
+    if (!m_hotkey->isRegistered()) {
+        qWarning() << "GlobalShortcutManager: default shortcut" << m_shortcut
+                   << "failed to register — another application may hold it";
+    }
 }
 
 GlobalShortcutManager::~GlobalShortcutManager() = default;
@@ -15,14 +19,17 @@ GlobalShortcutManager::~GlobalShortcutManager() = default;
 void GlobalShortcutManager::setShortcut(const QString &shortcut)
 {
     if (m_shortcut == shortcut) return;
-    m_shortcut = shortcut;
     if (m_hotkey) {
-        m_hotkey->setShortcut(QKeySequence(shortcut), false);
-        if (m_enabled) {
-            m_hotkey->setRegistered(true);
+        if (m_hotkey->setShortcut(QKeySequence(shortcut), false)) {
+            m_shortcut = shortcut;
+            if (m_enabled) {
+                m_hotkey->setRegistered(true);
+            }
+            emit shortcutChanged(shortcut);
+        } else {
+            qWarning() << "GlobalShortcutManager: failed to register shortcut" << shortcut;
         }
     }
-    emit shortcutChanged(shortcut);
 }
 
 QString GlobalShortcutManager::shortcut() const { return m_shortcut; }

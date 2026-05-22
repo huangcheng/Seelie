@@ -13,6 +13,7 @@ static bool platformCheckFullscreen()
 {
     HWND hwnd = GetForegroundWindow();
     if (!hwnd) return false;
+    if (!IsWindow(hwnd)) return false;
 
     // The shell (desktop) is never a game
     if (hwnd == GetShellWindow()) return false;

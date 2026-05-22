@@ -124,7 +124,10 @@ void StepFunHttpProvider::cancel(RequestHandle handle)
     // post-abort erase below triggers a use-after-free on the iterator.
     // After erase, the lambda's m_inFlight.find() misses and bails. H8.
     m_inFlight.erase(it);
-    if (reply) reply->abort();
+    if (reply) {
+        reply->abort();
+        reply->deleteLater();
+    }
 }
 
 } // namespace seelie::tts

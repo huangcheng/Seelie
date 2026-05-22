@@ -80,6 +80,10 @@ bool LottieAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         return false;
     }
 
+    // H9: Stop old playback before clearing animations. Without this, m_timer
+    // still fires and m_current references a destroyed animation.
+    stop();
+
     // Clear existing animations
     m_animations.clear();
     m_idleAnims.clear();

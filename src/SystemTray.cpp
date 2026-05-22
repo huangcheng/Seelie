@@ -54,7 +54,13 @@ SystemTray::SystemTray(QWidget *mainWindow, ConfigManager *config, QObject *pare
             this, &SystemTray::onActivated);
 }
 
-SystemTray::~SystemTray() = default;
+SystemTray::~SystemTray()
+{
+    // m_trayMenu was allocated with no parent (QMenu requires a QWidget parent,
+    // but SystemTray is a QObject). setContextMenu() does not take ownership.
+    // Delete explicitly to avoid the leak (H3).
+    delete m_trayMenu;
+}
 
 void SystemTray::show()
 {
@@ -154,6 +160,11 @@ void SystemTray::setupMenu()
 
 void SystemTray::setCharacterPackManager(CharacterPackManager *manager)
 {
+    // H8: Disconnect previous manager's signals before wiring the new one.
+    if (m_packManager) {
+        disconnect(m_packManager, nullptr, this, nullptr);
+    }
+
     m_packManager = manager;
     if (m_packManager) {
         connect(m_packManager, &CharacterPackManager::packListChanged,
@@ -173,6 +184,11 @@ void SystemTray::setCharacterPackManager(CharacterPackManager *manager)
 
 void SystemTray::setUpdateChecker(UpdateChecker *checker)
 {
+    // H8: Disconnect previous checker's signals before wiring the new one.
+    if (m_updateChecker) {
+        disconnect(m_updateChecker, nullptr, this, nullptr);
+    }
+
     m_updateChecker = checker;
     if (m_updateChecker) {
         connect(m_updateChecker, &UpdateChecker::updateAvailable,

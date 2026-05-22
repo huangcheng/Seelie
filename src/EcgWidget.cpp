@@ -128,7 +128,10 @@ void EcgWidget::recomputeLayout()
 void EcgWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-    MacFocusFix::makeNonActivating(this);
+    if (!m_nativeHandleFixed) {
+        MacFocusFix::makeNonActivating(this);
+        m_nativeHandleFixed = true;
+    }
     PlatformWindow::applyDwmFramelessAttributes(this);
 }
 
@@ -700,8 +703,11 @@ void EcgWidget::initAudio()
     }
     m_beepFile->write(synthesizeBeepWav());
     if (!m_beepFile->flush()) {
-        qWarning() << "EcgWidget: failed to flush beep WAV — audio may be silent:"
-                   << m_beepFile->errorString();
+        qWarning() << "EcgWidget: failed to flush beep WAV — discarding incomplete audio";
+        m_beepFile->close();
+        m_beepFile->deleteLater();
+        m_beepFile = nullptr;
+        return;
     }
     const QString path = m_beepFile->fileName();
     m_beepFile->close();
@@ -717,15 +723,18 @@ void EcgWidget::initAudio()
     if (m_flatlineBeepFile->open()) {
         m_flatlineBeepFile->write(synthesizeFlatlineWav());
         if (!m_flatlineBeepFile->flush()) {
-            qWarning() << "EcgWidget: failed to flush flatline WAV — audio may be silent:"
-                       << m_flatlineBeepFile->errorString();
-        }
-        const QString flatPath = m_flatlineBeepFile->fileName();
-        m_flatlineBeepFile->close();
+            qWarning() << "EcgWidget: failed to flush flatline WAV — discarding incomplete audio";
+            m_flatlineBeepFile->close();
+            m_flatlineBeepFile->deleteLater();
+            m_flatlineBeepFile = nullptr;
+        } else {
+            const QString flatPath = m_flatlineBeepFile->fileName();
+            m_flatlineBeepFile->close();
 
-        m_flatlineBeep = new QSoundEffect(this);
-        m_flatlineBeep->setSource(QUrl::fromLocalFile(flatPath));
-        m_flatlineBeep->setVolume(static_cast<float>(m_volume));
+            m_flatlineBeep = new QSoundEffect(this);
+            m_flatlineBeep->setSource(QUrl::fromLocalFile(flatPath));
+            m_flatlineBeep->setVolume(static_cast<float>(m_volume));
+        }
     }
 }
 

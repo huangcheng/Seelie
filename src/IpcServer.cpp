@@ -27,8 +27,11 @@ bool IpcServer::start(const QString &endpoint)
     m_worker = new UdpWorker();
     m_worker->moveToThread(m_thread);
 
-    connect(m_thread, &QThread::started, m_worker, [this, endpoint]() {
-        m_worker->start(endpoint);
+    // M2: capture m_worker by value (copy of pointer) instead of [this]
+    // to avoid cross-thread read of a member that the main thread may mutate.
+    UdpWorker *worker = m_worker;
+    connect(m_thread, &QThread::started, m_worker, [worker, endpoint]() {
+        worker->start(endpoint);
     });
 
     connect(m_worker, &UdpWorker::started, this, [endpoint]() {
@@ -43,7 +46,10 @@ bool IpcServer::start(const QString &endpoint)
 
     connect(m_worker, &UdpWorker::datagramReceived, this, &IpcServer::onDatagramReceived);
 
-    connect(m_thread, &QThread::finished, m_worker, &QObject::deleteLater);
+    // H2: avoid deleteLater on finished thread — the worker thread's event
+    // loop has already stopped, so deleteLater can never be dispatched and
+    // the worker leaks. Instead we delete explicitly after wait() succeeds.
+    // Do NOT connect QThread::finished → deleteLater here.
 
     m_thread->start();
     return true;
@@ -65,11 +71,12 @@ void IpcServer::stop()
         // shutdown. 5s is generous — UDP socket close is normally instant.
         bool finishedCleanly = m_thread->wait(5000);
         if (finishedCleanly) {
-            // Worker stopped via deleteLater on QThread::finished. The
-            // thread itself is now safe to delete from the main thread.
+            // H2: explicitly delete the worker from the main thread now that
+            // the worker thread has exited. The thread itself is safe to delete.
+            delete m_worker;
+            m_worker = nullptr;
             delete m_thread;
             m_thread = nullptr;
-            m_worker = nullptr;
         } else {
             // Do NOT terminate(). UdpWorker has worker-thread affinity and
             // owns a QUdpSocket / QSocketNotifier; killing the thread mid-
@@ -143,11 +150,17 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
         pong["type"] = "pong";
         QJsonDocument pongDoc(pong);
         QByteArray response = pongDoc.toJson(QJsonDocument::Compact) + "\n";
-        QMetaObject::invokeMethod(m_worker, "sendDatagram",
+        // M3: check invokeMethod return value — if the worker thread's event
+        // loop has already quit, the call is silently dropped and the caller
+        // never gets a pong.
+        bool invoked = QMetaObject::invokeMethod(m_worker, "sendDatagram",
                                   Qt::QueuedConnection,
                                   Q_ARG(QByteArray, response),
                                   Q_ARG(QHostAddress, sender),
                                   Q_ARG(quint16, port));
+        if (!invoked) {
+            qWarning() << "IPC: failed to queue pong sendDatagram — worker thread may have exited";
+        }
         emit pingReceived(sender, port);
     } else {
         qWarning() << "IPC: Unknown message type:" << type;

@@ -249,6 +249,13 @@ public:
             qDebug() << "Live2D: Texture" << t << ":" << texPath.c_str();
             GLuint texId = loadTexture(QString::fromStdString(texPath));
             qDebug() << "Live2D: Texture" << t << "loaded, GL ID:" << texId;
+            // M10: Reject texture 0 (loadTexture returns 0 on failure).
+            // Without this check, BindTexture(0) makes the renderer draw
+            // with an uninitialised texture slot, producing garbage.
+            if (texId == 0) {
+                qWarning() << "Live2D: Texture load failed for index" << t << ", aborting renderer setup";
+                return;
+            }
             GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->BindTexture(t, texId);
             m_textures.append(texId);
         }
@@ -526,6 +533,9 @@ bool Live2DAnimationEngine::initOpenGL()
 
 void Live2DAnimationEngine::releaseOpenGL()
 {
+    // H11: Unbind the FBO before deleting so the GL driver doesn't try to
+    // reference a deleted buffer object if the context is still current.
+    if (m_fbo) m_fbo->release();
     delete m_fbo;
     m_fbo = nullptr;
     delete m_glContext;
@@ -563,9 +573,18 @@ bool Live2DAnimationEngine::recoverOpenGL()
     m_cubismModel->setupRenderer(m_renderWidth, m_renderHeight);
     m_glContext->doneCurrent();
 
+    // M11: Restart the saved motion so playback resumes after GL context
+    // rebuild. Without this, recoverOpenGL() saves the current motion but
+    // never restarts it, so the pet freezes after a GPU power-state change.
     m_currentMotion = savedMotion;
     m_playing = wasPlaying;
     m_lastPaintSuccessful = true;
+    if (wasPlaying && !savedMotion.isEmpty() && m_cubismModel) {
+        int count = m_cubismModel->motionCount(savedMotion);
+        if (count > 0) {
+            m_cubismModel->startMotion(savedMotion, 0, 3);
+        }
+    }
 
     qDebug() << "Live2D: OpenGL recovery complete";
     return true;
@@ -828,7 +847,6 @@ void Live2DAnimationEngine::tick()
         deltaSeconds = (now - m_lastTickMs) / 1000.0f;
         if (deltaSeconds > 0.1f) deltaSeconds = 0.1f;  // clamp to 100ms max
     }
-    m_lastTickMs = now;
 
     // Make GL context current
     if (!m_glContext->makeCurrent(m_surface)) {
@@ -836,6 +854,12 @@ void Live2DAnimationEngine::tick()
         m_lastPaintSuccessful = false;
         return;
     }
+
+    // M9: Only update m_lastTickMs after makeCurrent succeeds. Previously
+    // it was set before the makeCurrent check, so a failed makeCurrent
+    // caused the next successful tick to skip the delta-time accumulation
+    // (the gap was "swallowed").
+    m_lastTickMs = now;
 
     // Update model
     m_cubismModel->update(deltaSeconds);

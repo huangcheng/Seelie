@@ -34,6 +34,11 @@ PetStateMachine::PetStateMachine(QObject *parent)
     m_chains[State::Reviewing]   = {"review", "attention", "GetAttention", "TouchHead", "Tap"};
     m_chains[State::Failed]      = {"failed", "alert", "Alert", "TouchHead", "Tap"};
     m_chains[State::Celebrating] = {"jumping", "celebrate", "Congratulate", "TouchBody", "Tap"};
+
+    // M6: Store the immutable engine defaults so rebuildChainsFromMaps() can
+    // always re-derive chains from the true originals rather than from the
+    // current (potentially already-overridden) m_chains.
+    m_engineDefaultChains = m_chains;
 }
 
 PetStateMachine::State PetStateMachine::activeState() const
@@ -146,6 +151,10 @@ void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newP
 
     WalkDir dir = (dx >= 0) ? WalkDir::Right : WalkDir::Left;
     if (m_walking && dir == m_walkDir) {
+        // M5: Always restart the idle timer so motion-stop detection stays
+        // current. Without this, a same-direction drift never pokes the timer
+        // forward and the walking overlay gets stuck after WALK_IDLE_MS.
+        m_walkIdleTimer.start();
         return;  // already walking that direction
     }
     m_walking = true;
@@ -216,11 +225,14 @@ void PetStateMachine::enterBase(State s, Priority priority)
         // For now, no-op to avoid spam.
         return;
     }
-    m_baseState = s;
+    // C7: If an overlay is active, update m_savedSustained so it tracks the
+    // real base state. Without this, onOneShotFinished() restores a stale
+    // state (e.g. Idle overwriting a legitimate Working transition that
+    // happened while the overlay was showing).
     if (m_overlayState != State::Idle) {
-        // Save it; will restore when overlay finishes.
-        // (Overlay is not active in this code path, but kept for clarity.)
+        m_savedSustained = s;
     }
+    m_baseState = s;
     emit stateChanged(activeState());
     emitChainFor(s, priority);
 }
@@ -264,10 +276,12 @@ void PetStateMachine::rebuildChainsFromMaps(const QMap<QString, QStringList> &st
         {State::Celebrating, "Celebrating", {"celebrate", "congratulate"}},
     };
 
-    // Stash engine defaults before we overwrite, so we can re-append.
+    // M6: Use the immutable engine defaults, not the current m_chains (which
+    // may already contain pack overrides from a previous rebuild, causing
+    // entries to accumulate on repeated calls).
     QMap<State, QStringList> engineDefaults;
     for (const auto &m : mappings) {
-        engineDefaults[m.state] = m_chains.value(m.state);
+        engineDefaults[m.state] = m_engineDefaultChains.value(m.state);
     }
 
     for (const auto &m : mappings) {

@@ -122,22 +122,26 @@ void handleDrop(QDropEvent *event,
     const QList<QUrl> urls = event->mimeData()->urls();
     qDebug() << "PackDropHandler: dropEvent with" << urls.size() << "URLs";
 
+    bool handled = false;
     for (const QUrl &url : urls) {
         const QString filePath = url.toLocalFile();
         qDebug() << "PackDropHandler: dropped file:" << filePath;
 
         if (filePath.endsWith(".spk", Qt::CaseInsensitive)) {
             handleSpkDrop(filePath, packManager, tipWidget);
+            handled = true;
         } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
                     filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
                    isValidCodexPet(filePath)) {
             handleCodexPetDrop(filePath, packManager, tipWidget);
+            handled = true;
         } else {
             qDebug() << "PackDropHandler: dropped file ignored:" << filePath;
         }
     }
 
-    event->acceptProposedAction();
+    if (handled) event->acceptProposedAction();
+    else event->ignore();
 }
 
 } // namespace PackDropHandler

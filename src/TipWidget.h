@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QPropertyAnimation>
 #include <QRect>
+#include <QPointer>
 
 class TipWidget : public QWidget
 {
@@ -130,8 +131,9 @@ private:
     static constexpr int BORDER_WIDTH = 3;      // bold border
     static constexpr int SKEW_PX = 4;           // parallelogram skew offset
 
-    const QWidget *m_anchoredPet = nullptr;
+    QPointer<const QWidget> m_anchoredPet = nullptr;
     QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
+    bool m_nativeHandleFixed = false;  // M21: one-shot guard for MacFocusFix
 };
 
 #endif // TIPWIDGET_H

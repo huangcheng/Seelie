@@ -7,7 +7,6 @@
 #ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
-#include "LottieEffectOverlay.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "TipWidget.h"
@@ -194,7 +193,7 @@ int main(int argc, char *argv[])
     const QString lockDir = configDir();
     QDir().mkpath(lockDir);
     QLockFile lockFile(lockDir + "/Seelie.lock");
-    lockFile.setStaleLockTime(30000); // 30s stale timeout
+    lockFile.setStaleLockTime(300000); // L2: 5 minutes — 30s was too short for debug sessions
     if (!lockFile.tryLock(100)) {
         qInfo() << "Seelie is already running. Bringing existing instance to front.";
         return 0;

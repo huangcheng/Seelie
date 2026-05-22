@@ -103,6 +103,7 @@ private:
     QTimer m_walkIdleTimer;     // resets m_walking when motion stops
 
     QMap<State, QStringList> m_chains;
+    QMap<State, QStringList> m_engineDefaultChains;  // M6: immutable defaults
     QString m_idleFallback = QStringLiteral("idle");
 
     static constexpr int WORKING_GRACE_MS = 1500;
