@@ -59,8 +59,16 @@ PackManagerWidget::PackManagerWidget(CharacterPackManager *manager, QWidget *par
 void PackManagerWidget::setupUi()
 {
     m_contentWidget = new QWidget(this);
+    m_contentWidget->setObjectName(QStringLiteral("packManagerContent"));
     m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
-    m_contentWidget->setStyleSheet("background: transparent;");
+    // Scope this rule to the content widget only. An unscoped "background:
+    // transparent" cascades to every child via Qt's widget-stylesheet
+    // inheritance and silently defeats the global QPushButton:hover
+    // background swap — buttons would change text color on hover but stay
+    // white. The #packManagerContent selector pins the rule to this one
+    // widget so children keep their app-level styling.
+    m_contentWidget->setStyleSheet(QStringLiteral(
+        "QWidget#packManagerContent { background: transparent; }"));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(m_contentWidget);
     mainLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);

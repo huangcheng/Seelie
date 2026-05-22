@@ -136,6 +136,7 @@ void StyledAlertWidget::showAlert(const QString &title, const QString &body,
     m_cancelButton->hide();
     m_inConfirmMode = false;
 
+    fitToContent();
     showAnimated();
 }
 
@@ -149,6 +150,7 @@ bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
     m_inConfirmMode = true;
     m_confirmResult = false;
 
+    fitToContent();
     showAnimated();
 
     QEventLoop loop;
@@ -160,6 +162,35 @@ bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
     m_inConfirmMode = false;
 
     return m_confirmResult;
+}
+
+void StyledAlertWidget::fitToContent()
+{
+    // 计算内容所需的最小高度
+    QFontMetrics titleFm(m_titleLabel->font());
+    int titleHeight = titleFm.boundingRect(
+        QRect(0, 0, PANEL_WIDTH - PADDING * 2, INT_MAX),
+        Qt::TextWordWrap, m_titleLabel->text()).height();
+
+    QFontMetrics bodyFm(m_bodyLabel->font());
+    int bodyHeight = bodyFm.boundingRect(
+        QRect(0, 0, PANEL_WIDTH - PADDING * 2, INT_MAX),
+        Qt::TextWordWrap, m_bodyLabel->text()).height();
+
+    int buttonHeight = m_okButton->sizeHint().height();
+
+    int contentHeight = PADDING * 2
+                      + titleHeight
+                      + VERTICAL_SPACING
+                      + bodyHeight
+                      + VERTICAL_SPACING
+                      + buttonHeight;
+
+    int newPanelHeight = qMax(PANEL_HEIGHT, contentHeight);
+    int newWindowHeight = newPanelHeight + SHADOW_BLUR * 2;
+
+    setFixedSize(PANEL_WIDTH + SHADOW_BLUR * 2, newWindowHeight);
+    m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, newPanelHeight);
 }
 
 void StyledAlertWidget::showAnimated()
@@ -217,12 +248,12 @@ void StyledAlertWidget::setPanelScale(qreal s)
 {
     m_scale = s;
     qreal cx = SHADOW_BLUR + PANEL_WIDTH / 2.0;
-    qreal cy = SHADOW_BLUR + PANEL_HEIGHT / 2.0;
+    qreal cy = SHADOW_BLUR + m_contentWidget->height() / 2.0;
     m_contentWidget->setGeometry(
         SHADOW_BLUR + static_cast<int>(cx * (1.0 - s)),
         SHADOW_BLUR + static_cast<int>(cy * (1.0 - s)),
         static_cast<int>(PANEL_WIDTH * s),
-        static_cast<int>(PANEL_HEIGHT * s));
+        static_cast<int>(m_contentWidget->height() * s));
     update();
 }
 
@@ -239,7 +270,8 @@ void StyledAlertWidget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    const QRectF body(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
+    const int panelH = m_contentWidget->height();
+    const QRectF body(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, panelH);
     const qreal r = CORNER_RADIUS;
     const qreal sk = SKEW_PX;
 
@@ -293,8 +325,8 @@ void StyledAlertWidget::positionCentered()
     if (!screen) return;
 
     QRect screenRect = screen->availableGeometry();
-    int x = screenRect.center().x() - (PANEL_WIDTH + SHADOW_BLUR * 2) / 2;
-    int y = screenRect.center().y() - (PANEL_HEIGHT + SHADOW_BLUR * 2) / 2;
+    int x = screenRect.center().x() - width() / 2;
+    int y = screenRect.center().y() - height() / 2;
 
     move(x, y);
 }
@@ -312,8 +344,10 @@ void StyledAlertWidget::positionRelativeTo(const QWidget *pet)
     int petCenterX = petGlobalPos.x() + pet->width() / 2;
     int petTop = petGlobalPos.y();
 
-    int panelX = petCenterX - PANEL_WIDTH / 2;
-    int panelY = petTop - PANEL_HEIGHT - 5;
+    int panelW = PANEL_WIDTH;
+    int panelH = m_contentWidget->height();
+    int panelX = petCenterX - panelW / 2;
+    int panelY = petTop - panelH - 5;
 
     QScreen *screen = QGuiApplication::screenAt(QPoint(petCenterX, petTop));
     if (screen) {
@@ -323,8 +357,8 @@ void StyledAlertWidget::positionRelativeTo(const QWidget *pet)
             panelY = petTop + pet->height() + 5;
         }
 
-        panelX = qBound(screenRect.left(), panelX, screenRect.right() - PANEL_WIDTH);
-        panelY = qBound(screenRect.top(), panelY, screenRect.bottom() - PANEL_HEIGHT);
+        panelX = qBound(screenRect.left(), panelX, screenRect.right() - panelW);
+        panelY = qBound(screenRect.top(), panelY, screenRect.bottom() - panelH);
     }
 
     move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);

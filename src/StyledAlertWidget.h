@@ -73,6 +73,7 @@ private slots:
 private:
     void setupUi();
     void positionCentered();
+    void fitToContent();
 
     QWidget *m_contentWidget = nullptr;
     QLabel *m_titleLabel = nullptr;
