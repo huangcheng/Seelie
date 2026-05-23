@@ -100,6 +100,10 @@ begin
   WizardForm.Font.Size := 9;
   WizardForm.Font.Color := NEAR_BLACK;
 
+  { Remove dated 3D bevel border; ensure white panel background }
+  WizardForm.Bevel.Visible := False;
+  WizardForm.MainPanel.Color := clWhite;
+
   { --- Page name + description label styling (all pages) --- }
   if WizardForm.PageNameLabel <> nil then
   begin
