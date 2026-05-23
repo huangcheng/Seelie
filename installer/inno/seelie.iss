@@ -108,7 +108,7 @@ begin
   if WizardForm.PageNameLabel <> nil then
   begin
     WizardForm.PageNameLabel.Font.Name := 'Segoe UI';
-    WizardForm.PageNameLabel.Font.Size := 14;
+    WizardForm.PageNameLabel.Font.Size := 12;
     WizardForm.PageNameLabel.Font.Style := [fsBold];
     WizardForm.PageNameLabel.Font.Color := NEAR_BLACK;
   end;
