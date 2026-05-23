@@ -44,51 +44,6 @@ static QString configDir() {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
 }
 
-// Animation fan-out: route a named animation through the priority chain
-// Live2D > Lottie > Sprite, picking the first engine that has animations
-// loaded. Three call sites used to duplicate this — TipsEngine signal,
-// IPC tip handler, PetStateMachine signal. Audit H2/H3.
-static void dispatchAnimation(MainWindow &w, const QString &anim,
-                              AnimationEngine::Priority priority = AnimationEngine::NormalPriority)
-{
-    if (anim.isEmpty()) return;
-#ifdef SEELIE_LIVE2D_SUPPORT
-    if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-        w.live2dEngine()->playAnimation(anim, priority);
-        return;
-    }
-#endif
-    if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-        w.lottieEngine()->playAnimation(anim, priority);
-        return;
-    }
-    if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
-        w.animationEngine()->playAnimation(anim, priority);
-    }
-}
-
-// Chain variant: Live2D understands the full chain (it can try each motion
-// group in order); Lottie and Sprite only know individual names, so they
-// fall back to chain.first().
-static void dispatchAnimationChain(MainWindow &w, const QStringList &chain,
-                                   AnimationEngine::Priority priority)
-{
-    if (chain.isEmpty()) return;
-#ifdef SEELIE_LIVE2D_SUPPORT
-    if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-        w.live2dEngine()->playAnimationChain(chain, priority);
-        return;
-    }
-#endif
-    if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-        w.lottieEngine()->playAnimation(chain.first(), priority);
-        return;
-    }
-    if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
-        w.animationEngine()->playAnimation(chain.first(), priority);
-    }
-}
-
 static QString dataDir() {
     // AppLocalDataLocation is for user data (packs, logs), not config.
     // macOS: ~/Library/Application Support/Seelie/
@@ -417,7 +372,7 @@ int main(int argc, char *argv[])
     // Live2D > Lottie > Sprite priority chain. Audit H1.
     QObject::connect(&tipsEngine, &TipsEngine::animationRequested,
                      &w, [&w](const QString &anim) {
-        dispatchAnimation(w, anim);
+        w.dispatchAnimation(anim);
     });
 
     // --- Event router --------------------------------------------------------
@@ -455,7 +410,7 @@ int main(int argc, char *argv[])
         const QString anim = tip.value("animation").toString();
 
         w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
-        dispatchAnimation(w, anim);
+        w.dispatchAnimation(anim);
     });
 
     ipcServer.start(config.ipcEndpoint());
@@ -541,7 +496,7 @@ int main(int argc, char *argv[])
         const auto p = (priority == PetStateMachine::HighPriority)
                            ? AnimationEngine::HighPriority
                            : AnimationEngine::NormalPriority;
-        dispatchAnimationChain(w, chain, p);
+        w.dispatchAnimationChain(chain, p);
     });
 
     if (config.displayMode() == ConfigManager::DisplayMode::Character) {

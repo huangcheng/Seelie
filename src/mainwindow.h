@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QMenu>
 
+#include "AnimationEngine.h"
 #include "ConfigManager.h"
 
 class SpriteAnimationEngine;
@@ -50,6 +51,15 @@ public:
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
+
+    /// Fan out a named animation through Live2D > Lottie > Sprite engines.
+    void dispatchAnimation(const QString &anim,
+                           AnimationEngine::Priority priority = AnimationEngine::NormalPriority);
+
+    /// Fan out an animation chain. Live2D understands the full chain;
+    /// Lottie and Sprite fall back to chain.first().
+    void dispatchAnimationChain(const QStringList &chain,
+                                AnimationEngine::Priority priority);
 
 signals:
     void positionChanged(const QPoint &pos);

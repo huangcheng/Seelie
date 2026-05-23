@@ -440,10 +440,13 @@ void CharacterPackManager::reloadCurrentPack()
         return;
     }
 
-    // Replace loaded pack
-    delete m_loadedPacks[m_activePackId];
+    // Replace loaded pack. Update m_activePack before deleting the old
+    // object so no signal emitted between the two (future-proofing against
+    // a use-after-free if a refactor inserts emit/slot dispatch here).
+    CharacterPack *oldPack = m_loadedPacks[m_activePackId];
     m_loadedPacks[m_activePackId] = newPack;
     m_activePack = newPack;
+    delete oldPack;
 
     qDebug() << "CharacterPackManager: Reloaded pack:" << info.name;
     emit packReloaded(m_activePack);

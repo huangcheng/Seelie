@@ -226,6 +226,48 @@ MainWindow::~MainWindow()
     }
 }
 
+// ── Animation dispatch (was free functions in main.cpp) ──────────────────
+// Centralises the Live2D > Lottie > Sprite fallback chain so call sites
+// don't duplicate it. Audit H3.
+
+void MainWindow::dispatchAnimation(const QString &anim,
+                                   AnimationEngine::Priority priority)
+{
+    if (anim.isEmpty()) return;
+#ifdef SEELIE_LIVE2D_SUPPORT
+    if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+        m_live2dEngine->playAnimation(anim, priority);
+        return;
+    }
+#endif
+    if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
+        m_lottieEngine->playAnimation(anim, priority);
+        return;
+    }
+    if (m_engine && m_engine->hasAnimations()) {
+        m_engine->playAnimation(anim, priority);
+    }
+}
+
+void MainWindow::dispatchAnimationChain(const QStringList &chain,
+                                        AnimationEngine::Priority priority)
+{
+    if (chain.isEmpty()) return;
+#ifdef SEELIE_LIVE2D_SUPPORT
+    if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+        m_live2dEngine->playAnimationChain(chain, priority);
+        return;
+    }
+#endif
+    if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
+        m_lottieEngine->playAnimation(chain.first(), priority);
+        return;
+    }
+    if (m_engine && m_engine->hasAnimations()) {
+        m_engine->playAnimation(chain.first(), priority);
+    }
+}
+
 void MainWindow::setupWindowFlags()
 {
     setWindowFlags(

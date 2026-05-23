@@ -1,6 +1,7 @@
 # Code Review Checklist — Preventing Common Bugs in Seelie
 
-This checklist captures the mistakes that were fixed during the May 2026 comprehensive audit. Use it when writing or reviewing new features.
+This checklist captures the mistakes that were fixed during the May 2026 comprehensive audit
+and a follow-up re-audit (2026-05-23). Use it when writing or reviewing new features.
 
 ---
 
@@ -73,6 +74,22 @@ This checklist captures the mistakes that were fixed during the May 2026 compreh
 
 ### Dialog Lifecycle
 - [ ] **Never** combine `WA_DeleteOnClose` **and** `dismissed → deleteLater` on the same dialog. Pick one deletion strategy and stick to it.
+
+### Pointer Update Ordering
+- [ ] **Always** update live pointers to an object *before* deleting the old one, even when all code runs synchronously on the same thread.
+  ```cpp
+  // Wrong — m_activePack points to freed memory between delete and reassignment.
+  // A future refactor inserting an emit between the two lines creates a UAF.
+  delete m_loadedPacks[id];
+  m_loadedPacks[id] = newPack;
+  m_activePack = newPack;             // still dangling for one line
+
+  // Right — update the live pointer first, then delete.
+  CharacterPack *old = m_loadedPacks[id];
+  m_loadedPacks[id] = newPack;
+  m_activePack = newPack;             // never dangling
+  delete old;
+  ```
 
 ---
 
@@ -185,6 +202,10 @@ This checklist captures the mistakes that were fixed during the May 2026 compreh
       m_baseState = s;
   }
   ```
+  Re-audit (2026-05-23): this pattern was initially flagged as a bug but verified correct.
+  Grace timers (`onWorkingGraceExpired` etc.) call `enterBase(Idle)`, which updates
+  `m_savedSustained` when an overlay is active.  `onOneShotFinished` then sees matching
+  states and does not restore the stale sustained state.  No fix needed.
 - [ ] **Always** restart timers that guard continuous actions (e.g., walking idle timeout) even on no-op early returns.
 
 ### OpenGL / GPU Resources
@@ -205,6 +226,19 @@ This checklist captures the mistakes that were fixed during the May 2026 compreh
   if (effect.frameRate <= 0.0) continue;
   double msPerFrame = 1000.0 / effect.frameRate;
   ```
+
+### Dispatch Centralization
+- [ ] **Never** duplicate the engine fallback chain (Live2D > Lottie > Sprite) across call sites. Centralize it in a single method so adding an engine type requires changing exactly one place.
+  ```cpp
+  // Wrong — three call sites in main.cpp independently check every engine.
+  static void dispatchAnimation(MainWindow &w, const QString &anim, Priority prio) { ... }
+  static void dispatchAnimationChain(MainWindow &w, ...) { ... }
+
+  // Right — one method on the window, called from every signal handler.
+  void MainWindow::dispatchAnimation(const QString &anim, AnimationEngine::Priority priority);
+  void MainWindow::dispatchAnimationChain(const QStringList &chain, AnimationEngine::Priority priority);
+  ```
+- [ ] When moving a free function that takes `Widget &w` into a member method, verify that the original call sites never captured `w` by value in a lambda (member access is implicit).
 
 ---
 
@@ -299,4 +333,8 @@ Before opening a PR, run through this mini-list for every new or modified file:
 
 ---
 
-*Derived from the May 2026 comprehensive audit. If you find a new category of bug, add it here so the whole team benefits.*
+*Derived from the May 2026 comprehensive audit and follow-up re-audit (2026-05-23).
+Three findings were investigated: one false positive (state machine pattern already correct),
+one pointer-ordering fix (CharacterPackManager::reloadCurrentPack), and one design
+consolidation (animation dispatch moved from free functions into MainWindow).
+If you find a new category of bug, add it here so the whole team benefits.*
