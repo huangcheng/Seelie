@@ -112,12 +112,10 @@ begin
     WizardForm.PageNameLabel.Font.Style := [fsBold];
     WizardForm.PageNameLabel.Font.Color := NEAR_BLACK;
   end;
+  { Hide the subtitle label — Inno's default text overlaps with the actual
+    page content (description paragraphs, license text, etc.) on every page. }
   if WizardForm.PageDescriptionLabel <> nil then
-  begin
-    WizardForm.PageDescriptionLabel.Font.Name := 'Segoe UI';
-    WizardForm.PageDescriptionLabel.Font.Size := 9;
-    WizardForm.PageDescriptionLabel.Font.Color := GRAY_SECONDARY;
-  end;
+    WizardForm.PageDescriptionLabel.Visible := False;
 
   { --- Welcome Page styling --- }
   if WizardForm.WelcomeLabel1 <> nil then
@@ -173,24 +171,14 @@ begin
 
   case CurPageID of
     wpSelectDir:
-    begin
       WizardForm.PageNameLabel.Caption := 'Where should Seelie live?';
-      WizardForm.PageDescriptionLabel.Caption := 'Choose a folder or accept the default.';
-    end;
     wpSelectTasks:
-    begin
       WizardForm.PageNameLabel.Caption := 'Almost ready';
-      WizardForm.PageDescriptionLabel.Caption := 'Pick any extras you want.';
-    end;
     wpReady:
-    begin
       WizardForm.PageNameLabel.Caption := 'Ready to install';
-      WizardForm.PageDescriptionLabel.Caption := 'Everything looks good. Click Install to begin.';
-    end;
     wpInstalling:
     begin
       WizardForm.PageNameLabel.Caption := 'Installing Seelie...';
-      WizardForm.PageDescriptionLabel.Caption := '';
       SendMessage(WizardForm.ProgressGauge.Handle, PBM_SETBARCOLOR, 0, SEELIE_ORANGE);
     end;
   end;
