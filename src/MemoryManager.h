@@ -14,20 +14,20 @@ public:
 
     bool isValid() const { return m_valid; }
 
-    QString value(const QString &key, const QString &defaultValue = QString());
+    QString value(const QString &key, const QString &defaultValue = QString()) const;
     bool setValue(const QString &key, const QString &value);
 
     int increment(const QString &key, int delta = 1);
 
-    QString lastGreeting();
+    QString lastGreeting() const;
     bool setLastGreeting(const QString &text);
 
-    QString userName();
+    QString userName() const;
     void setUserName(const QString &name);
-    QString displayName();
+    QString displayName() const;
     void setDisplayName(const QString &name);
 
-    bool hasMilestone(const QString &key);
+    bool hasMilestone(const QString &key) const;
     bool setMilestone(const QString &key);
     void checkMilestone(const QString &key, const QString &title, const QString &body);
 
