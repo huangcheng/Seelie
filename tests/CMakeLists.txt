@@ -42,6 +42,8 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.h
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.cpp
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.h
+    ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/MemoryManager.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
     ${CMAKE_SOURCE_DIR}/src/tts/ITtsProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/ProviderConfig.h
