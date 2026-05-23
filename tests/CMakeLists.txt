@@ -67,7 +67,7 @@ qt_add_executable(test_tts_live
     ${SEELIEPET_LIB_SOURCES}
 )
 target_link_libraries(test_tts_live PRIVATE
-    Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Test rlottie::rlottie)
+    Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Sql Qt::Test rlottie::rlottie)
 target_include_directories(test_tts_live PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${rlottie_SOURCE_DIR}/inc)
@@ -108,6 +108,7 @@ foreach(test_src ${TEST_SOURCES})
             Qt::Widgets
             Qt::Network
             Qt::Multimedia
+            Qt::Sql
             Qt::Test
             rlottie::rlottie
     )
