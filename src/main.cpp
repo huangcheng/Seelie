@@ -37,6 +37,7 @@
 #include <optional>
 
 #include "TipsCatalog.h"
+#include "MemoryManager.h"
 
 static QString configDir() {
     // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
@@ -289,8 +290,15 @@ int main(int argc, char *argv[])
         }
     }
 
+    // --- Memory manager ------------------------------------------------------
+    MemoryManager memory(configDir() + "/memory.db");
+    if (!memory.isValid()) {
+        qWarning() << "MemoryManager: database could not be opened — pet memory features disabled";
+    }
+
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
+    w.setMemoryManager(&memory);
 
     // --- Sprite pack manager -------------------------------------------------
     CharacterPackManager packManager;
@@ -367,6 +375,7 @@ int main(int argc, char *argv[])
     // --- Tips engine ---------------------------------------------------------
     TipsEngine tipsEngine;
     tipsEngine.setTipWidget(w.tipWidget());
+    tipsEngine.setMemoryManager(&memory);
 
     // TipsEngine is engine-agnostic — fan out across active engines in the
     // Live2D > Lottie > Sprite priority chain. Audit H1.
@@ -414,6 +423,12 @@ int main(int argc, char *argv[])
     });
 
     ipcServer.start(config.ipcEndpoint());
+
+    // Milestone achievements → tip bubble
+    QObject::connect(&memory, &MemoryManager::milestoneReached,
+                     &w, [&w](const QString &title, const QString &body) {
+        w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
+    });
 
     // Restart IPC server when port changes
     QObject::connect(&config, &ConfigManager::ipcEndpointChanged,

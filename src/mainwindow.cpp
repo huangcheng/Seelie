@@ -701,6 +701,17 @@ void MainWindow::setMemoryManager(MemoryManager *memory)
     if (m_settingsPanel) {
         m_settingsPanel->setMemoryManager(memory);
     }
+    // Wire gaming_mode milestone (deferred until MemoryManager is available)
+    if (m_memory && m_config) {
+        connect(m_config, &ConfigManager::gamingModeEnabledChanged,
+                m_memory, [this](bool enabled) {
+            if (enabled) {
+                m_memory->checkMilestone(QStringLiteral("gaming_mode"),
+                    tr("Gaming Mode activated!"),
+                    tr("Seelie will hide when fullscreen apps are detected."));
+            }
+        });
+    }
 }
 
 void MainWindow::onActivePackChanged()
