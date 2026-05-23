@@ -678,6 +678,65 @@ Path: %2</source>
     </message>
 </context>
 <context>
+    <name>SettingsPanelWidget</name>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Profile</source>
+        <translation>资料</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Name</source>
+        <translation>名字</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Display name</source>
+        <translation>显示名称</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Your name</source>
+        <translation>您的名字</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Shown in greetings</source>
+        <translation>在问候语中显示</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="+"/>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+</context>
+<context>
+    <name>TipsEngine</name>
+    <message>
+        <location filename="src/TipsEngine.cpp" line="+"/>
+        <source>Seelie noticed something!</source>
+        <translation>Seelie 注意到了一些事情！</translation>
+    </message>
+    <message>
+        <location filename="src/TipsEngine.cpp" line="+"/>
+        <source>I'll try to give helpful tips while you work.</source>
+        <translation>我会在你工作时给出有用的建议。</translation>
+    </message>
+</context>
+<context>
+    <name>MainWindow</name>
+    <message>
+        <location filename="src/mainwindow.cpp" line="+"/>
+        <source>Gaming Mode activated!</source>
+        <translation>游戏模式已启用！</translation>
+    </message>
+    <message>
+        <location filename="src/mainwindow.cpp" line="+"/>
+        <source>Seelie will hide when fullscreen apps are detected.</source>
+        <translation>检测到全屏应用时 Seelie 会自动隐藏。</translation>
+    </message>
+</context>
+<context>
     <name>Tts</name>
     <message>
         <location filename="src/tts/TtsProviderRegistry.cpp" line="24"/>

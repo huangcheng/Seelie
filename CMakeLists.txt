@@ -370,6 +370,8 @@ qt_add_executable(Seelie
     src/TipWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/MemoryManager.cpp
+    src/MemoryManager.h
     src/PackManagerWidget.cpp
     src/PackManagerWidget.h
     src/StyledAlertWidget.cpp
