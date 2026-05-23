@@ -19,16 +19,16 @@
     "todo.updated":         {"title": "Task complete!",       "body": "Nice work checking off that todo!"}
   },
   "greetings": [
-    {"title": "Hi there!",   "body": "Need any help today?"},
+    {"title": "Hi there, {name}!",   "body": "Need any help today?"},
     {"title": "Hey!",        "body": "I'm watching you code. Don't mess up!"},
-    {"title": "Hello!",      "body": "Ready to build something amazing?"},
+    {"title": "Hello, {name}!",      "body": "Ready to build something amazing?"},
     {"title": "Psst…",       "body": "Remember to save your work often!"},
-    {"title": "Yo!",         "body": "That code looks pretty good. Keep it up!"},
+    {"title": "Yo, {name}!",         "body": "That code looks pretty good. Keep it up!"},
     {"title": "Hi!",         "body": "Let me know if you need a second pair of eyes."},
     {"title": "Hey there!",  "body": "Don't forget to take breaks and stretch!"},
-    {"title": "Hiya!",       "body": "Coffee break? I'm just a click away."},
+    {"title": "Hiya, {name}!",       "body": "Coffee break? I'm just a click away."},
     {"title": "Oh hello!",   "body": "I see you're coding. Want a tip?"},
-    {"title": "Greetings!",  "body": "The code is strong with this one."}
+    {"title": "Greetings, {name}!",  "body": "The code is strong with this one."}
   ],
   "messages": {
     "about":               {"title": "About",                "body": "<a href=\"https://seelie.cheng.im\" style=\"color:#F36F1A; text-decoration:none;\">Seelie Desktop Pet</a><br>v{version}<br>© 2026 <a href=\"mailto:cheng@duck.com\" style=\"color:#F36F1A; text-decoration:none;\">HUANG Cheng</a>"},

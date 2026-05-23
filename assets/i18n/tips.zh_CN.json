@@ -19,16 +19,16 @@
     "todo.updated":         {"title": "任务完成！",     "body": "干得漂亮，又完成了一项待办！"}
   },
   "greetings": [
-    {"title": "你好呀！",   "body": "今天需要点什么帮助吗？"},
+    {"title": "你好呀，{name}！",   "body": "今天需要点什么帮助吗？"},
     {"title": "嘿！",       "body": "我在看你写代码哦，可别写错啦！"},
-    {"title": "你好！",     "body": "准备好造点厉害的东西了吗？"},
+    {"title": "你好，{name}！",     "body": "准备好造点厉害的东西了吗？"},
     {"title": "嘘…",        "body": "记得经常保存你的工作！"},
-    {"title": "哟！",       "body": "代码看起来不错，继续保持！"},
+    {"title": "哟，{name}！",       "body": "代码看起来不错，继续保持！"},
     {"title": "嗨！",       "body": "需要找另一双眼睛帮你看看的话告诉我。"},
     {"title": "嘿嘿！",     "body": "别忘了休息一下，伸伸懒腰！"},
-    {"title": "嗨呀！",     "body": "要不要喝杯咖啡？我就在这儿。"},
+    {"title": "嗨呀，{name}！",     "body": "要不要喝杯咖啡？我就在这儿。"},
     {"title": "诶你来啦！", "body": "看你正在写代码，要听点小建议吗？"},
-    {"title": "你好！",     "body": "代码原力与你同在。"}
+    {"title": "你好，{name}！",     "body": "代码原力与你同在。"}
   ],
   "messages": {
     "about":               {"title": "关于",       "body": "<a href=\"https://seelie.cheng.im\" style=\"color:#F36F1A; text-decoration:none;\">Seelie 桌面宠物</a><br>v{version}<br>© 2026 <a href=\"mailto:cheng@duck.com\" style=\"color:#F36F1A; text-decoration:none;\">HUANG Cheng</a>"},

@@ -1,6 +1,7 @@
 #include "TipsEngine.h"
 #include "CanonicalEvents.h"
 #include "TipWidget.h"
+#include "MemoryManager.h"
 
 #include <QJsonObject>
 #include <QDateTime>
@@ -62,6 +63,13 @@ void TipsEngine::processEvent(const QString &eventName, const QJsonObject &event
                 // SpriteAnimationEngine, which meant tip animations were
                 // silently dropped for Lottie and Live2D packs (audit H1).
                 emit animationRequested(matcher.animation);
+            }
+
+            // first_tip milestone — fires once, the first time any tip is shown
+            if (m_memory) {
+                m_memory->checkMilestone(QStringLiteral("first_tip"),
+                                          tr("Seelie noticed something!"),
+                                          tr("I'll try to give helpful tips while you work."));
             }
 
             qDebug() << "TipsEngine: Pattern matched:" << matcher.name;

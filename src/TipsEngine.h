@@ -8,6 +8,7 @@
 #include <QJsonObject>
 
 class TipWidget;
+class MemoryManager;
 
 /**
  * Pattern-matches recent events into contextual tips ("Working on tests?",
@@ -29,6 +30,7 @@ public:
     explicit TipsEngine(QObject *parent = nullptr);
 
     void setTipWidget(TipWidget *bubble) { m_tipWidget = bubble; }
+    void setMemoryManager(MemoryManager *memory) { m_memory = memory; }
 
 public slots:
     void processEvent(const QString &eventName, const QJsonObject &eventData);
@@ -70,6 +72,7 @@ private:
     QVector<PatternMatcher> m_matchers;
 
     TipWidget *m_tipWidget = nullptr;
+    MemoryManager *m_memory = nullptr;
 };
 
 #endif // TIPSENGINE_H
