@@ -85,6 +85,8 @@ ChangesAssociations=no
 const
   NEAR_BLACK     = $001A1A1A;
   GRAY_SECONDARY = $00888888;
+  SEELIE_ORANGE   = $001A6FF3;  // BGR (Windows COLORREF): #F36F1A → 0xF3,0x6F,0x1A → bytes reversed
+  PBM_SETBARCOLOR = $0409;
 
 procedure InitializeWizard();
 begin
@@ -185,6 +187,7 @@ begin
     begin
       WizardForm.PageNameLabel.Caption := 'Installing Seelie...';
       WizardForm.PageDescriptionLabel.Caption := '';
+      SendMessage(WizardForm.ProgressGauge.Handle, PBM_SETBARCOLOR, 0, SEELIE_ORANGE);
     end;
   end;
 end;
