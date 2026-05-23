@@ -2,6 +2,7 @@
 #include "ConfigManager.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
+#include "MemoryManager.h"
 #ifdef SEELIE_TTS_ENABLED
 #include "tts/TtsProviderRegistry.h"
 #endif
@@ -107,6 +108,7 @@ protected:
 SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     : QWidget(parent)
     , m_config(config)
+    , m_memory(nullptr)
 {
     setWindowFlags(
         Qt::FramelessWindowHint |
@@ -164,7 +166,9 @@ void SettingsPanelWidget::showEvent(QShowEvent *event)
     // re-poke is a no-op visually if styles were already correct, but
     // ensures both tabs render their padding+border on first paint.
     if (m_generalTabBtn && m_aiTabBtn) {
-        const int currentTab = m_aiTab && m_aiTab->isVisible() ? 1 : 0;
+        int currentTab = 0;
+        if (m_profileTab && m_profileTab->isVisible()) currentTab = 2;
+        else if (m_aiTab && m_aiTab->isVisible()) currentTab = 1;
         onTabChanged(currentTab);
     }
 }
@@ -630,14 +634,23 @@ void SettingsPanelWidget::setupUi()
     m_aiTabBtn->setCheckable(true);
     m_aiTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
+    m_profileTabBtn = new QPushButton(tr("Profile"), m_contentWidget);
+    m_profileTabBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_profileTabBtn->setFixedWidth(70);
+    m_profileTabBtn->setCursor(Qt::PointingHandCursor);
+    m_profileTabBtn->setCheckable(true);
+    m_profileTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
+
     QVBoxLayout *tabBtnLayout = new QVBoxLayout();
     tabBtnLayout->setSpacing(8);
     tabBtnLayout->addWidget(m_generalTabBtn);
     tabBtnLayout->addWidget(m_aiTabBtn);
+    tabBtnLayout->addWidget(m_profileTabBtn);
     tabBtnLayout->addStretch(1);
 
     connect(m_generalTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(0); });
     connect(m_aiTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(1); });
+    connect(m_profileTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(2); });
 
     // General tab content
     m_generalTab = new QWidget(m_contentWidget);
@@ -673,12 +686,17 @@ void SettingsPanelWidget::setupUi()
     aiLayout->addStretch(1);
 #endif
 
+    // Profile tab content (created empty — populated when MemoryManager is wired)
+    m_profileTab = new QWidget(m_contentWidget);
+    m_profileTab->setVisible(false);
+
     // Tab content stacked area
     QHBoxLayout *tabContentLayout = new QHBoxLayout();
     tabContentLayout->setSpacing(8);
     tabContentLayout->addLayout(tabBtnLayout);
     tabContentLayout->addWidget(m_generalTab, 1);
     tabContentLayout->addWidget(m_aiTab, 1);
+    tabContentLayout->addWidget(m_profileTab, 1);
 
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
@@ -892,6 +910,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
 {
     m_generalTab->setVisible(tabIndex == 0);
     m_aiTab->setVisible(tabIndex == 1);
+    m_profileTab->setVisible(tabIndex == 2);
 
     const QString activeStyle = R"(
         QPushButton {
@@ -921,6 +940,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
 
     m_generalTabBtn->setStyleSheet(tabIndex == 0 ? activeStyle : inactiveStyle);
     m_aiTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
+    m_profileTabBtn->setStyleSheet(tabIndex == 2 ? activeStyle : inactiveStyle);
 }
 
 #ifdef SEELIE_TTS_ENABLED
@@ -963,6 +983,79 @@ void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
     }
 }
 #endif
+
+void SettingsPanelWidget::setMemoryManager(MemoryManager *memory)
+{
+    m_memory = memory;
+    if (m_memory) {
+        setupProfileTab();
+    }
+}
+
+void SettingsPanelWidget::setupProfileTab()
+{
+    if (!m_memory || !m_profileTab) return;
+
+    auto *layout = new QVBoxLayout(m_profileTab);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(VERTICAL_SPACING);
+
+    // Name field
+    auto *nameLabel = new QLabel(tr("Name"), m_profileTab);
+    nameLabel->setFont(harmonyFont(10));
+    nameLabel->setStyleSheet("color: black; background: transparent;");
+    auto *nameEdit  = new QLineEdit(m_profileTab);
+    nameEdit->setFont(harmonyFont(10));
+    nameEdit->setPlaceholderText(tr("Your name"));
+    nameEdit->setText(m_memory->userName());
+    nameEdit->setFixedHeight(24);
+    nameEdit->setStyleSheet(m_portInput->styleSheet());
+
+    // Display name field
+    auto *displayLabel = new QLabel(tr("Display name"), m_profileTab);
+    displayLabel->setFont(harmonyFont(10));
+    displayLabel->setStyleSheet("color: black; background: transparent;");
+    auto *displayEdit  = new QLineEdit(m_profileTab);
+    displayEdit->setFont(harmonyFont(10));
+    displayEdit->setPlaceholderText(tr("Shown in greetings"));
+    displayEdit->setText(m_memory->displayName());
+    displayEdit->setFixedHeight(24);
+    displayEdit->setStyleSheet(m_portInput->styleSheet());
+
+    // Save button
+    auto *saveBtn = new QPushButton(tr("Save"), m_profileTab);
+    saveBtn->setFont(harmonyFont(10, QFont::Bold));
+    saveBtn->setFixedHeight(28);
+    saveBtn->setCursor(Qt::PointingHandCursor);
+    saveBtn->setStyleSheet(QStringLiteral(R"(
+        QPushButton {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            color: #2C2C2E;
+            padding: 2px 12px;
+        }
+        QPushButton:hover {
+            background: #F36F1A;
+            color: white;
+        }
+        QPushButton:pressed {
+            background: #C85A12;
+            color: white;
+        }
+    )"));
+    connect(saveBtn, &QPushButton::clicked, this, [=]() {
+        m_memory->setUserName(nameEdit->text().trimmed());
+        m_memory->setDisplayName(displayEdit->text().trimmed());
+    });
+
+    layout->addWidget(nameLabel);
+    layout->addWidget(nameEdit);
+    layout->addWidget(displayLabel);
+    layout->addWidget(displayEdit);
+    layout->addWidget(saveBtn);
+    layout->addStretch(1);
+}
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
@@ -1114,6 +1207,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
+    if (m_profileTabBtn) m_profileTabBtn->setText(tr("Profile"));
 #ifdef SEELIE_TTS_ENABLED
     if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));

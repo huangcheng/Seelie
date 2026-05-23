@@ -695,6 +695,14 @@ void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
     }
 }
 
+void MainWindow::setMemoryManager(MemoryManager *memory)
+{
+    m_memory = memory;
+    if (m_settingsPanel) {
+        m_settingsPanel->setMemoryManager(memory);
+    }
+}
+
 void MainWindow::onActivePackChanged()
 {
     qDebug() << "[ONACTIVE] onActivePackChanged called";

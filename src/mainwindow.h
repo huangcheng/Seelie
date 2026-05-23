@@ -52,7 +52,7 @@ public:
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
-    void setMemoryManager(MemoryManager *memory) { m_memory = memory; }
+    void setMemoryManager(MemoryManager *memory);
 
     /// Fan out a named animation through Live2D > Lottie > Sprite engines.
     void dispatchAnimation(const QString &anim,

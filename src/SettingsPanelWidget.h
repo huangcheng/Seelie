@@ -7,6 +7,7 @@
 
 class ConfigManager;
 class CharacterPackManager;
+class MemoryManager;
 
 class QLabel;
 class QPushButton;
@@ -35,6 +36,9 @@ public:
 
     // Set sprite pack manager for pack selection
     void setCharacterPackManager(CharacterPackManager *manager);
+
+    // Set memory manager for profile tab
+    void setMemoryManager(MemoryManager *memory);
 
     // Retranslate UI when language changes at runtime
     void retranslateUi();
@@ -85,6 +89,7 @@ private slots:
 
 private:
     void setupUi();
+    void setupProfileTab();
 #ifdef SEELIE_TTS_ENABLED
     /// Builds the TTS tab content (Provider combo, per-provider field
     /// pages, Test + Clear voice cache action row). Extracted from
@@ -100,6 +105,7 @@ private:
 
     ConfigManager *m_config;
     CharacterPackManager *m_packManager = nullptr;
+    MemoryManager *m_memory = nullptr;
 
     // UI elements
     QLabel *m_titleLabel = nullptr;
@@ -125,10 +131,12 @@ private:
     // Tab buttons (left side)
     QPushButton *m_generalTabBtn = nullptr;
     QPushButton *m_aiTabBtn = nullptr;
+    QPushButton *m_profileTabBtn = nullptr;
 
     // Tab content containers
     QWidget *m_generalTab = nullptr;
     QWidget *m_aiTab = nullptr;
+    QWidget *m_profileTab = nullptr;
 
 #ifdef SEELIE_TTS_ENABLED
     QLabel       *m_ttsEnabledLabel = nullptr;
