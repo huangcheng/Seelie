@@ -98,6 +98,21 @@ begin
   WizardForm.Font.Size := 9;
   WizardForm.Font.Color := NEAR_BLACK;
 
+  { --- Page name + description label styling (all pages) --- }
+  if WizardForm.PageNameLabel <> nil then
+  begin
+    WizardForm.PageNameLabel.Font.Name := 'Segoe UI';
+    WizardForm.PageNameLabel.Font.Size := 16;
+    WizardForm.PageNameLabel.Font.Style := [fsBold];
+    WizardForm.PageNameLabel.Font.Color := NEAR_BLACK;
+  end;
+  if WizardForm.PageDescriptionLabel <> nil then
+  begin
+    WizardForm.PageDescriptionLabel.Font.Name := 'Segoe UI';
+    WizardForm.PageDescriptionLabel.Font.Size := 9;
+    WizardForm.PageDescriptionLabel.Font.Color := GRAY_SECONDARY;
+  end;
+
   { --- Welcome Page styling --- }
   if WizardForm.WelcomeLabel1 <> nil then
   begin
@@ -145,10 +160,33 @@ begin
   end;
 end;
 
-{ Bold Next button across all pages }
 procedure CurPageChanged(CurPageID: Integer);
 begin
   WizardForm.NextButton.Font.Style := [fsBold];
+  WizardForm.BackButton.Font.Style := [fsBold];
+
+  case CurPageID of
+    wpSelectDir:
+    begin
+      WizardForm.PageNameLabel.Caption := 'Where should Seelie live?';
+      WizardForm.PageDescriptionLabel.Caption := 'Choose a folder or accept the default.';
+    end;
+    wpSelectTasks:
+    begin
+      WizardForm.PageNameLabel.Caption := 'Almost ready';
+      WizardForm.PageDescriptionLabel.Caption := 'Pick any extras you want.';
+    end;
+    wpReady:
+    begin
+      WizardForm.PageNameLabel.Caption := 'Ready to install';
+      WizardForm.PageDescriptionLabel.Caption := 'Everything looks good. Click Install to begin.';
+    end;
+    wpInstalling:
+    begin
+      WizardForm.PageNameLabel.Caption := 'Installing Seelie...';
+      WizardForm.PageDescriptionLabel.Caption := '';
+    end;
+  end;
 end;
 
 [Languages]
