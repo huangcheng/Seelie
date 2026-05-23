@@ -1,0 +1,148 @@
+#include "MemoryManager.h"
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QThread>
+#include <QtGlobal>
+#include <QDir>
+
+MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
+    : QObject(parent)
+    , m_connectionName(QStringLiteral("seelie_memory_%1")
+                          .arg(reinterpret_cast<quintptr>(QThread::currentThreadId())))
+{
+    m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_connectionName);
+    m_db.setDatabaseName(dbPath);
+    m_valid = m_db.open();
+    if (!m_valid) {
+        qWarning() << "MemoryManager: failed to open database:" << dbPath
+                    << m_db.lastError().text();
+        return;
+    }
+
+    QSqlQuery q(m_db);
+    if (!q.exec(QStringLiteral("CREATE TABLE IF NOT EXISTS memory ("
+                               "key TEXT PRIMARY KEY, value TEXT NOT NULL)")))
+    {
+        qWarning() << "MemoryManager: failed to create table:" << q.lastError().text();
+        m_valid = false;
+    }
+}
+
+MemoryManager::~MemoryManager()
+{
+    m_db.close();
+    QSqlDatabase::removeDatabase(m_connectionName);
+}
+
+QString MemoryManager::value(const QString &key, const QString &defaultValue) const
+{
+    if (!m_valid) return defaultValue;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT value FROM memory WHERE key = ?"));
+    q.addBindValue(key);
+    if (q.exec() && q.next())
+        return q.value(0).toString();
+    return defaultValue;
+}
+
+bool MemoryManager::setValue(const QString &key, const QString &value)
+{
+    if (!m_valid) return false;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT OR REPLACE INTO memory(key, value) VALUES(?, ?)"));
+    q.addBindValue(key);
+    q.addBindValue(value);
+    if (!q.exec()) {
+        qWarning() << "MemoryManager::setValue failed:" << q.lastError().text();
+        return false;
+    }
+    return true;
+}
+
+int MemoryManager::increment(const QString &key, int delta)
+{
+    if (!m_valid) return -1;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral(
+        "INSERT INTO memory(key, value) VALUES(:key, :delta) "
+        "ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + :delta"));
+    q.bindValue(QStringLiteral(":key"), key);
+    q.bindValue(QStringLiteral(":delta"), delta);
+    if (!q.exec()) {
+        qWarning() << "MemoryManager::increment failed:" << q.lastError().text();
+        return -1;
+    }
+
+    QSqlQuery r(m_db);
+    r.prepare(QStringLiteral("SELECT value FROM memory WHERE key = ?"));
+    r.addBindValue(key);
+    if (r.exec() && r.next()) {
+        bool ok = false;
+        int v = r.value(0).toInt(&ok);
+        return ok ? v : -1;
+    }
+    return -1;
+}
+
+QString MemoryManager::lastGreeting() const
+{
+    return value(QStringLiteral("greeting.last_text"));
+}
+
+bool MemoryManager::setLastGreeting(const QString &text)
+{
+    return setValue(QStringLiteral("greeting.last_text"), text);
+}
+
+QString MemoryManager::userName() const
+{
+    return value(QStringLiteral("profile.name"));
+}
+
+void MemoryManager::setUserName(const QString &name)
+{
+    setValue(QStringLiteral("profile.name"), name);
+    emit userNameChanged(name);
+}
+
+QString MemoryManager::displayName() const
+{
+    return value(QStringLiteral("profile.display_name"));
+}
+
+void MemoryManager::setDisplayName(const QString &name)
+{
+    setValue(QStringLiteral("profile.display_name"), name);
+}
+
+bool MemoryManager::hasMilestone(const QString &key) const
+{
+    return !value(QStringLiteral("milestone.") + key).isEmpty();
+}
+
+bool MemoryManager::setMilestone(const QString &key)
+{
+    return setValue(QStringLiteral("milestone.") + key, QStringLiteral("1"));
+}
+
+void MemoryManager::checkMilestone(const QString &key, const QString &title, const QString &body)
+{
+    if (hasMilestone(key)) return;
+    if (!setMilestone(key)) return;
+    emit milestoneReached(title, body);
+}
+
+QString MemoryManager::effectiveName() const
+{
+    // displayName → userName → OS env → home dir name → ""
+    const QString dn = displayName();
+    if (!dn.isEmpty()) return dn;
+    const QString un = userName();
+    if (!un.isEmpty()) return un;
+
+    QString env = qEnvironmentVariable("USER");
+    if (env.isEmpty()) env = qEnvironmentVariable("USERNAME");
+    if (!env.isEmpty()) return env;
+
+    return QDir::home().dirName();
+}
