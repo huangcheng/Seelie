@@ -20,7 +20,7 @@ endif()
 # Neovim) can resolve Qt headers without choking on every QObject include.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia LinguistTools Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Sql LinguistTools Test)
 
 # TTS support is now HTTP-based (no WebSocket dependency). Kept as an
 # optional feature so the build can still drop the AI tab on minimal builds.
@@ -485,6 +485,7 @@ target_link_libraries(Seelie
         Qt::Gui
         Qt::Widgets
         Qt::Network
+        Qt::Sql
         Qt::Multimedia
         rlottie::rlottie
         QHotkey::QHotkey

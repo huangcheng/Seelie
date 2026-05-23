@@ -151,3 +151,19 @@ foreach(test_src ${TEST_SOURCES})
             ENVIRONMENT "PATH=${_qt_bin_dir}\\;${_ctest_path}")
     endif()
 endforeach()
+
+# --- MemoryManager test (standalone — does not need the full app lib) --------
+add_executable(test_memory_manager
+    test_memory_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
+)
+target_link_libraries(test_memory_manager PRIVATE Qt::Sql Qt::Core Qt::Test)
+target_include_directories(test_memory_manager PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_memory_manager COMMAND test_memory_manager)
+if(WIN32)
+    get_target_property(_qt_qmake_loc Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
+    string(REPLACE ";" "\\;" _ctest_path "$ENV{PATH}")
+    set_tests_properties(test_memory_manager PROPERTIES
+        ENVIRONMENT "PATH=${_qt_bin_dir}\\;${_ctest_path}")
+endif()
