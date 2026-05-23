@@ -9,6 +9,7 @@
 #include "AnimationEngine.h"
 #include "ConfigManager.h"
 
+class MemoryManager;
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
 class Live2DAnimationEngine;  // forward-declared even when SEELIE_LIVE2D_SUPPORT
@@ -51,6 +52,7 @@ public:
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
+    void setMemoryManager(MemoryManager *memory) { m_memory = memory; }
 
     /// Fan out a named animation through Live2D > Lottie > Sprite engines.
     void dispatchAnimation(const QString &anim,
@@ -126,6 +128,7 @@ private:
     EventRouter *m_eventRouter = nullptr;
     PetStateMachine *m_stateMachine = nullptr;
     GlobalShortcutManager *m_shortcutManager = nullptr;
+    MemoryManager *m_memory = nullptr;
 
     // Gaming Mode
     FullscreenWatcher *m_fullscreenWatcher = nullptr;

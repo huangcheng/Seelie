@@ -20,8 +20,10 @@
 #include "TipsCatalog.h"
 #include "FullscreenWatcher.h"
 #include "PetStateMachine.h"
+#include "MemoryManager.h"
 
 #include <QPainter>
+#include <QRegularExpression>
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
@@ -865,8 +867,36 @@ void MainWindow::onLanguageChanged(const QString &lang)
 void MainWindow::showRandomGreeting()
 {
     if (!m_tipWidget) return;
+
     const auto g = TipsCatalog::instance().randomGreeting();
-    if (!g.title.isEmpty()) {
-        m_tipWidget->showBubble(g.title, g.body, TipWidget::TipBubble);
+    if (g.title.isEmpty()) return;
+
+    QString title = g.title;
+    QString body  = g.body;
+
+    // Greeting dedup + {name} substitution (only if MemoryManager is wired)
+    if (m_memory && m_memory->isValid()) {
+        // Skip greeting if it's the same as last time
+        if (g.title == m_memory->lastGreeting()) {
+            const auto g2 = TipsCatalog::instance().randomGreeting();
+            if (!g2.title.isEmpty()) {
+                title = g2.title;
+                body  = g2.body;
+            }
+        }
+        m_memory->setLastGreeting(title);
+
+        // {name} substitution
+        const QString name = m_memory->effectiveName();
+        if (!name.isEmpty()) {
+            title.replace(QStringLiteral("{name}"), name.toHtmlEscaped());
+            body.replace(QStringLiteral("{name}"),  name.toHtmlEscaped());
+        } else {
+            static const QRegularExpression strip(QStringLiteral(",?\\s*\\{name\\}"));
+            title.replace(strip, QString());
+            body.replace(strip,  QString());
+        }
     }
+
+    m_tipWidget->showBubble(title, body, TipWidget::TipBubble);
 }
