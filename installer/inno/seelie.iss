@@ -111,7 +111,8 @@ begin
     WizardForm.PageNameLabel.Font.Size := 12;
     WizardForm.PageNameLabel.Font.Style := [fsBold];
     WizardForm.PageNameLabel.Font.Color := NEAR_BLACK;
-    WizardForm.PageNameLabel.Top := ScaleY(16);
+    WizardForm.PageNameLabel.Top := ScaleY(20);
+    WizardForm.PageNameLabel.Left := ScaleX(12);
   end;
   { Hide the subtitle label — Inno's default text overlaps with the actual
     page content (description paragraphs, license text, etc.) on every page. }
