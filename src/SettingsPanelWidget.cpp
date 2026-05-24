@@ -3,6 +3,8 @@
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "MemoryManager.h"
+#include "PersonaEngine.h"
+#include "llm/LLMProfile.h"
 #ifdef SEELIE_TTS_ENABLED
 #include "tts/TtsProviderRegistry.h"
 #endif
@@ -38,6 +40,8 @@
 #include <QPolygon>
 #include <QFile>
 #include <QListView>
+#include <QListWidget>
+#include <QGroupBox>
 #include <QToolButton>
 #include <QMenu>
 #include <QActionGroup>
@@ -166,7 +170,8 @@ void SettingsPanelWidget::showEvent(QShowEvent *event)
     // ensures both tabs render their padding+border on first paint.
     if (m_generalTabBtn && m_ttsTabBtn) {
         int currentTab = 0;
-        if (m_profileTab && m_profileTab->isVisible()) currentTab = 2;
+        if (m_llmTab && m_llmTab->isVisible()) currentTab = 3;
+        else if (m_profileTab && m_profileTab->isVisible()) currentTab = 2;
         else if (m_ttsTab && m_ttsTab->isVisible()) currentTab = 1;
         onTabChanged(currentTab);
     }
@@ -640,16 +645,25 @@ void SettingsPanelWidget::setupUi()
     m_profileTabBtn->setCheckable(true);
     m_profileTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
+    m_llmTabBtn = new QPushButton(tr("AI"), m_contentWidget);
+    m_llmTabBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_llmTabBtn->setFixedWidth(70);
+    m_llmTabBtn->setCursor(Qt::PointingHandCursor);
+    m_llmTabBtn->setCheckable(true);
+    m_llmTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
+
     QVBoxLayout *tabBtnLayout = new QVBoxLayout();
     tabBtnLayout->setSpacing(8);
     tabBtnLayout->addWidget(m_generalTabBtn);
     tabBtnLayout->addWidget(m_ttsTabBtn);
     tabBtnLayout->addWidget(m_profileTabBtn);
+    tabBtnLayout->addWidget(m_llmTabBtn);
     tabBtnLayout->addStretch(1);
 
     connect(m_generalTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(0); });
     connect(m_ttsTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(1); });
     connect(m_profileTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(2); });
+    connect(m_llmTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(3); });
 
     // General tab content
     m_generalTab = new QWidget(m_contentWidget);
@@ -689,6 +703,95 @@ void SettingsPanelWidget::setupUi()
     m_profileTab = new QWidget(m_contentWidget);
     m_profileTab->setVisible(false);
 
+    // AI / LLM tab content
+    m_llmTab = new QWidget(m_contentWidget);
+    m_llmTab->setVisible(false);
+    {
+        auto *llmLayout = new QVBoxLayout(m_llmTab);
+        llmLayout->setContentsMargins(0, 0, 0, 0);
+        llmLayout->setSpacing(VERTICAL_SPACING);
+
+        // --- Profiles group ---
+        auto *profilesGroup = new QGroupBox(tr("Profiles"), m_llmTab);
+        auto *pgLayout = new QVBoxLayout(profilesGroup);
+        m_llmProfilesList = new QListWidget(profilesGroup);
+        m_llmProfilesList->setFont(harmonyFont(9));
+        pgLayout->addWidget(m_llmProfilesList);
+        auto *pgBtnRow = new QHBoxLayout;
+        m_llmAddBtn    = new QPushButton(tr("Add"),    profilesGroup);
+        m_llmEditBtn   = new QPushButton(tr("Edit"),   profilesGroup);
+        m_llmDeleteBtn = new QPushButton(tr("Delete"), profilesGroup);
+        m_llmTestBtn   = new QPushButton(tr("Test connection"), profilesGroup);
+        for (auto *btn : {m_llmAddBtn, m_llmEditBtn, m_llmDeleteBtn, m_llmTestBtn}) {
+            btn->setFont(harmonyFont(9));
+            btn->setCursor(Qt::PointingHandCursor);
+        }
+        pgBtnRow->addWidget(m_llmAddBtn);
+        pgBtnRow->addWidget(m_llmEditBtn);
+        pgBtnRow->addWidget(m_llmDeleteBtn);
+        pgBtnRow->addWidget(m_llmTestBtn);
+        pgLayout->addLayout(pgBtnRow);
+        llmLayout->addWidget(profilesGroup);
+
+        // --- Persona group ---
+        auto *personaGroup = new QGroupBox(tr("Persona"), m_llmTab);
+        auto *pgForm = new QFormLayout(personaGroup);
+        pgForm->setHorizontalSpacing(10);
+        m_personaProfileCombo = new QComboBox(personaGroup);
+        m_personaProfileCombo->setFont(harmonyFont(9));
+        m_personaEnabledCheck = new CheckMarkBox(tr("Enabled"), personaGroup);
+        m_personaEnabledCheck->setFixedSize(16, 16);
+        m_personaEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+        pgForm->addRow(tr("Profile:"), m_personaProfileCombo);
+        pgForm->addRow(QString(), m_personaEnabledCheck);
+        llmLayout->addWidget(personaGroup);
+
+        // --- Privacy group ---
+        auto *privacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
+        auto *privLayout = new QVBoxLayout(privacyGroup);
+        m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI (name, milestones)"), privacyGroup);
+        m_shareMemoryCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+        privLayout->addWidget(m_shareMemoryCheck);
+        llmLayout->addWidget(privacyGroup);
+
+        // --- Tools group ---
+        auto *toolsGroup = new QGroupBox(tr("Tools"), m_llmTab);
+        auto *toolsLayout = new QVBoxLayout(toolsGroup);
+        m_regenPoolBtn = new QPushButton(tr("Regenerate persona pool for active pack"), toolsGroup);
+        m_regenPoolBtn->setFont(harmonyFont(9));
+        m_regenPoolBtn->setCursor(Qt::PointingHandCursor);
+        toolsLayout->addWidget(m_regenPoolBtn);
+        llmLayout->addWidget(toolsGroup);
+
+        // --- Status label ---
+        m_llmLastErrorLabel = new QLabel(tr("Last error: —"), m_llmTab);
+        m_llmLastErrorLabel->setFont(harmonyFont(9));
+        m_llmLastErrorLabel->setStyleSheet("color: #888; background: transparent;");
+        m_llmLastErrorLabel->setWordWrap(true);
+        llmLayout->addWidget(m_llmLastErrorLabel);
+        llmLayout->addStretch();
+
+        // --- Signal connections ---
+        connect(m_llmAddBtn,    &QPushButton::clicked, this, &SettingsPanelWidget::onAddProfileClicked);
+        connect(m_llmEditBtn,   &QPushButton::clicked, this, &SettingsPanelWidget::onEditProfileClicked);
+        connect(m_llmDeleteBtn, &QPushButton::clicked, this, &SettingsPanelWidget::onDeleteProfileClicked);
+        connect(m_llmTestBtn,   &QPushButton::clicked, this, &SettingsPanelWidget::onTestConnectionClicked);
+        connect(m_regenPoolBtn, &QPushButton::clicked, this, &SettingsPanelWidget::onRegenPoolClicked);
+
+        connect(m_personaEnabledCheck, &QCheckBox::toggled,
+                m_config, &ConfigManager::setPersonaEnabled);
+        connect(m_shareMemoryCheck, &QCheckBox::toggled,
+                m_config, &ConfigManager::setShareMemoryWithAi);
+        connect(m_personaProfileCombo, &QComboBox::currentTextChanged,
+                m_config, &ConfigManager::setPersonaProfile);
+
+        connect(m_config, &ConfigManager::llmProfilesChanged,
+                this, &SettingsPanelWidget::refreshLlmProfilesUi);
+    }
+
+    // Populate profile list now that all widgets exist and signals are wired
+    refreshLlmProfilesUi();
+
     // Tab content stacked area
     QHBoxLayout *tabContentLayout = new QHBoxLayout();
     tabContentLayout->setSpacing(8);
@@ -696,6 +799,7 @@ void SettingsPanelWidget::setupUi()
     tabContentLayout->addWidget(m_generalTab, 1);
     tabContentLayout->addWidget(m_ttsTab, 1);
     tabContentLayout->addWidget(m_profileTab, 1);
+    tabContentLayout->addWidget(m_llmTab, 1);
 
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
@@ -910,6 +1014,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
     m_generalTab->setVisible(tabIndex == 0);
     m_ttsTab->setVisible(tabIndex == 1);
     m_profileTab->setVisible(tabIndex == 2);
+    if (m_llmTab) m_llmTab->setVisible(tabIndex == 3);
 
     const QString activeStyle = R"(
         QPushButton {
@@ -940,6 +1045,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
     m_generalTabBtn->setStyleSheet(tabIndex == 0 ? activeStyle : inactiveStyle);
     m_ttsTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
     m_profileTabBtn->setStyleSheet(tabIndex == 2 ? activeStyle : inactiveStyle);
+    if (m_llmTabBtn) m_llmTabBtn->setStyleSheet(tabIndex == 3 ? activeStyle : inactiveStyle);
 }
 
 #ifdef SEELIE_TTS_ENABLED
@@ -1207,6 +1313,7 @@ void SettingsPanelWidget::retranslateUi()
     m_packLabel->setText(tr("Model"));
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
     if (m_profileTabBtn) m_profileTabBtn->setText(tr("Profile"));
+    if (m_llmTabBtn) m_llmTabBtn->setText(tr("AI"));
 #ifdef SEELIE_TTS_ENABLED
     if (m_ttsTabBtn) m_ttsTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
@@ -1392,3 +1499,51 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
     aiLayout->addLayout(actionRow);
 }
 #endif
+
+// ---------------------------------------------------------------------------
+// LLM / AI tab slots
+// ---------------------------------------------------------------------------
+
+void SettingsPanelWidget::refreshLlmProfilesUi()
+{
+    if (!m_config) return;
+    m_llmProfilesList->clear();
+    m_personaProfileCombo->blockSignals(true);
+    m_personaProfileCombo->clear();
+    for (const auto &p : m_config->llmProfiles()) {
+        QString protoName;
+        switch (p.protocol) {
+        case LLMProfile::Protocol::OpenAIChat:        protoName = tr("OpenAI Chat"); break;
+        case LLMProfile::Protocol::OpenAIResponses:   protoName = tr("OpenAI Responses"); break;
+        case LLMProfile::Protocol::AnthropicMessages: protoName = tr("Anthropic"); break;
+        }
+        m_llmProfilesList->addItem(QStringLiteral("%1   %2   %3").arg(p.name, protoName, p.model));
+        m_personaProfileCombo->addItem(p.name);
+    }
+    m_personaProfileCombo->setCurrentText(m_config->personaProfile());
+    m_personaProfileCombo->blockSignals(false);
+    m_personaEnabledCheck->setChecked(m_config->personaEnabled());
+    m_shareMemoryCheck->setChecked(m_config->shareMemoryWithAi());
+}
+
+void SettingsPanelWidget::onAddProfileClicked()    { /* Task 14 */ }
+void SettingsPanelWidget::onEditProfileClicked()   { /* Task 14 */ }
+void SettingsPanelWidget::onTestConnectionClicked(){ /* Task 14 */ }
+
+void SettingsPanelWidget::onDeleteProfileClicked()
+{
+    if (!m_config) return;
+    auto *item = m_llmProfilesList->currentItem();
+    if (!item) return;
+    const QString name = item->text().split(QChar(' ')).first().trimmed();
+    auto profiles = m_config->llmProfiles();
+    profiles.erase(std::remove_if(profiles.begin(), profiles.end(),
+        [&](const LLMProfile &p){ return p.name == name; }), profiles.end());
+    m_config->setLLMProfiles(profiles);
+    refreshLlmProfilesUi();
+}
+
+void SettingsPanelWidget::onRegenPoolClicked()
+{
+    if (m_personaEngine) m_personaEngine->regenerateActivePackPool();
+}

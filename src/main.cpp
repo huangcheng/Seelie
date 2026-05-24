@@ -39,6 +39,7 @@
 #include "TipsCatalog.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
+#include "SettingsPanelWidget.h"
 
 static QString configDir() {
     // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
@@ -397,6 +398,7 @@ int main(int argc, char *argv[])
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
     w.setPersonaEngine(&personaEngine);
+    if (w.settingsPanel()) w.settingsPanel()->setPersonaEngine(&personaEngine);
 
     // Tip-bubble user toggle: apply current value, then track changes live.
     w.tipWidget()->setSuppressedByUser(!config.tipBubblesEnabled());

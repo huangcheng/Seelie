@@ -47,6 +47,7 @@ public:
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
     TipWidget *tipWidget() const { return m_tipWidget; }
     EcgWidget *ecgWidget() const { return m_ecgWidget; }
+    SettingsPanelWidget *settingsPanel() const { return m_settingsPanel; }
 
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);

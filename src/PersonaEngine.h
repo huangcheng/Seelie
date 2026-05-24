@@ -45,6 +45,9 @@ public:
     void setActivePackId(const QString &packId) { m_activePackId = packId; }
     void setPersonaHash(const QString &hash) { m_personaHash = hash; }
 
+    /// Wipe the entire pool for the active pack. Triggered by the "Regenerate" button.
+    void regenerateActivePackPool() { m_pool.wipePack(m_activePackId); }
+
     /// Synchronous entry point. Always returns a non-empty text (or empty if
     /// no fallback is available).
     Resolved resolve(const QString &eventName, const QJsonObject &payload);

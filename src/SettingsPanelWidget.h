@@ -4,10 +4,12 @@
 #include <QWidget>
 #include <QString>
 #include <QPropertyAnimation>
+#include <QListWidget>
 
 class ConfigManager;
 class CharacterPackManager;
 class MemoryManager;
+class PersonaEngine;
 
 class QLabel;
 class QPushButton;
@@ -39,6 +41,9 @@ public:
 
     // Set memory manager for profile tab
     void setMemoryManager(MemoryManager *memory);
+
+    // Set persona engine for the AI tab's Regenerate button
+    void setPersonaEngine(PersonaEngine *engine) { m_personaEngine = engine; }
 
     // Retranslate UI when language changes at runtime
     void retranslateUi();
@@ -81,6 +86,12 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
+    void refreshLlmProfilesUi();
+    void onAddProfileClicked();
+    void onEditProfileClicked();
+    void onDeleteProfileClicked();
+    void onTestConnectionClicked();
+    void onRegenPoolClicked();
 #ifdef SEELIE_TTS_ENABLED
     void onTtsEnabledToggled(bool checked);
     void onTtsProviderChanged(int comboIndex);
@@ -132,11 +143,26 @@ private:
     QPushButton *m_generalTabBtn = nullptr;
     QPushButton *m_ttsTabBtn = nullptr;
     QPushButton *m_profileTabBtn = nullptr;
+    QPushButton *m_llmTabBtn = nullptr;
 
     // Tab content containers
     QWidget *m_generalTab = nullptr;
     QWidget *m_ttsTab = nullptr;
     QWidget *m_profileTab = nullptr;
+    QWidget *m_llmTab = nullptr;
+
+    // LLM / AI tab widgets
+    QListWidget  *m_llmProfilesList = nullptr;
+    QPushButton  *m_llmAddBtn = nullptr;
+    QPushButton  *m_llmEditBtn = nullptr;
+    QPushButton  *m_llmDeleteBtn = nullptr;
+    QPushButton  *m_llmTestBtn = nullptr;
+    QComboBox    *m_personaProfileCombo = nullptr;
+    QCheckBox    *m_personaEnabledCheck = nullptr;
+    QCheckBox    *m_shareMemoryCheck = nullptr;
+    QPushButton  *m_regenPoolBtn = nullptr;
+    QLabel       *m_llmLastErrorLabel = nullptr;
+    PersonaEngine *m_personaEngine = nullptr;
 
     // Profile tab widgets (stored for retranslation)
     QLabel *m_nameLabel = nullptr;
