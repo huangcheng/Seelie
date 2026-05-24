@@ -608,6 +608,22 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_ttsEnabledCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
 #endif
 
+    // --- AI persona toggle (lives in General alongside TTS Enable) -------
+    m_personaEnabledLabel = new QLabel(tr("Enable AI persona"), m_contentWidget);
+    m_personaEnabledLabel->setFont(harmonyFont(10));
+    m_personaEnabledLabel->setStyleSheet("color: black; background: transparent;");
+    m_personaEnabledLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_personaEnabledCheck = new CheckMarkBox(m_contentWidget);
+    m_personaEnabledCheck->setFixedSize(16, 16);
+    m_personaEnabledCheck->setChecked(m_config->personaEnabled());
+    m_personaEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+    connect(m_personaEnabledCheck, &QCheckBox::toggled,
+            m_config, &ConfigManager::setPersonaEnabled);
+
+    formGrid->addWidget(m_personaEnabledLabel, 9, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_personaEnabledCheck, 9, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     // Tab buttons (left side). The active-vs-inactive stylesheet is
     // applied by onTabChanged() at the end of setupUi, but the buttons
     // need *some* padded stylesheet at construction time so their
@@ -746,11 +762,9 @@ void SettingsPanelWidget::setupUi()
         m_personaProfileCombo->setFont(harmonyFont(9));
         m_personaProfileCombo->setMaximumWidth(140);
         m_personaProfileCombo->setStyleSheet(StyleUtils::personaComboQss());
-        m_personaEnabledCheck = new CheckMarkBox(tr("Enabled"), personaGroup);
-        m_personaEnabledCheck->setFont(harmonyFont(9));
-        m_personaEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+        // m_personaEnabledCheck lives in the General tab next to "Enable TTS"
+        // so the two global feature toggles are co-located.
         pgForm->addRow(tr("Profile:"), m_personaProfileCombo);
-        pgForm->addRow(QString(), m_personaEnabledCheck);
         llmLayout->addWidget(personaGroup);
 
         // --- Privacy group ---
@@ -785,8 +799,7 @@ void SettingsPanelWidget::setupUi()
         connect(m_llmTestBtn,   &QPushButton::clicked, this, &SettingsPanelWidget::onTestConnectionClicked);
         connect(m_regenPoolBtn, &QPushButton::clicked, this, &SettingsPanelWidget::onRegenPoolClicked);
 
-        connect(m_personaEnabledCheck, &QCheckBox::toggled,
-                m_config, &ConfigManager::setPersonaEnabled);
+        // m_personaEnabledCheck::toggled is connected in the General tab section.
         connect(m_shareMemoryCheck, &QCheckBox::toggled,
                 m_config, &ConfigManager::setShareMemoryWithAi);
         connect(m_personaProfileCombo, &QComboBox::currentTextChanged,
@@ -1324,6 +1337,7 @@ void SettingsPanelWidget::retranslateUi()
 #ifdef SEELIE_TTS_ENABLED
     if (m_ttsTabBtn) m_ttsTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
+    if (m_personaEnabledLabel) m_personaEnabledLabel->setText(tr("Enable AI persona"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
     if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
     if (m_ttsClearCacheButton) {

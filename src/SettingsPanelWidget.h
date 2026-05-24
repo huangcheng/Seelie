@@ -140,6 +140,7 @@ private:
     QCheckBox *m_gamingModeCheck = nullptr;
     QLabel *m_tipBubblesLabel = nullptr;
     QCheckBox *m_tipBubblesCheck = nullptr;
+    QLabel *m_personaEnabledLabel = nullptr;
 
     // Tab buttons (left side)
     QPushButton *m_generalTabBtn = nullptr;
