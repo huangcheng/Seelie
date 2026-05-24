@@ -55,23 +55,26 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     // mismatches (Chinese-Windows toolchains can interpret the literal × in
     // the source as the wrong byte sequence, rendering it as Ā or Ã—).
     m_closeButton = new QPushButton(QString(QChar(0x00D7)), m_panelWidget);
+    m_closeButton->setObjectName(QStringLiteral("personaCloseButton"));
     m_closeButton->setFont(personaFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
-    // Identical to SettingsPanelWidget's close button styling.
+    // ID selector (#personaCloseButton) so it beats the type-selector rule in
+    // personaDialogQss (QPushButton { min-width: 60px }), which would otherwise
+    // stretch the close button horizontally into a rectangle.
     m_closeButton->setStyleSheet(QStringLiteral(R"(
-        QPushButton {
+        QPushButton#personaCloseButton {
             background: transparent;
             border: none;
             border-radius: 3px;
             color: #888;
             padding: 0px;
-            min-width: 0;       /* override personaDialogQss cascade */
-            min-height: 0;
+            min-width: 22px;
+            min-height: 22px;
             max-width: 22px;
             max-height: 22px;
         }
-        QPushButton:hover {
+        QPushButton#personaCloseButton:hover {
             background: #F36F1A;
             color: white;
         }
