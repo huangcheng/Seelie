@@ -65,6 +65,10 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
             border-radius: 0;
             color: black;
             padding: 0;
+            min-width: 0;       /* override personaDialogQss cascade */
+            min-height: 0;
+            max-width: 22px;
+            max-height: 22px;
         }
         QPushButton:hover {
             background: #F36F1A;
