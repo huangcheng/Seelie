@@ -675,7 +675,7 @@ void MainWindow::onShowStatistics()
     TTSEngine *tts = nullptr;
 #endif
     m_statsDialog = new StatisticsDialog(m_memory, tts,
-                                         m_eventRouter, nullptr,
+                                         m_eventRouter, m_ipcServer,
                                          m_personaEngine, this);
     m_statsDialog->setAttribute(Qt::WA_DeleteOnClose);
     m_statsDialog->show();

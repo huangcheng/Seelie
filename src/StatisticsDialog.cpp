@@ -44,8 +44,8 @@ StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
     };
 
     auto *tts = mkSection(tr("TTS Cache"));
-    tts->addRow(tr("Requests (lifetime):"), mkVal(QStringLiteral("ttsRequestsLabel"), this));
-    tts->addRow(tr("Hits (lifetime):"),     mkVal(QStringLiteral("ttsHitsLabel"), this));
+    tts->addRow(tr("Requests:"), mkVal(QStringLiteral("ttsRequestsLabel"), this));
+    tts->addRow(tr("Hits:"),     mkVal(QStringLiteral("ttsHitsLabel"), this));
 
     auto *persona = mkSection(tr("AI Persona"));
     persona->addRow(tr("Refills ok / fail:"),    mkVal(QStringLiteral("personaRefillsLabel"), this));
@@ -88,37 +88,69 @@ void StatisticsDialog::refresh()
         return m_memory ? m_memory->value(key, QStringLiteral("0")) : QStringLiteral("0");
     };
 
-    if (auto *l = findChild<QLabel*>(QStringLiteral("ttsRequestsLabel"))) l->setText(val("stats.tts.requests"));
-    if (auto *l = findChild<QLabel*>(QStringLiteral("ttsHitsLabel")))     l->setText(val("stats.tts.hits"));
+    // TTS — live from TTSEngine (worker thread; safe to read since stats struct
+    // is a value copy)
+    if (auto *l = findChild<QLabel*>(QStringLiteral("ttsRequestsLabel"))) {
+        l->setText(m_tts ? QString::number(m_tts->stats().sessionRequests)
+                         : QStringLiteral("0"));
+    }
+    if (auto *l = findChild<QLabel*>(QStringLiteral("ttsHitsLabel"))) {
+        l->setText(m_tts ? QString::number(m_tts->stats().sessionHits)
+                         : QStringLiteral("0"));
+    }
 
+    // Persona — prefer live counts so refresh shows current session activity
+    // even before lifetime values land in MemoryManager.
     if (auto *l = findChild<QLabel*>(QStringLiteral("personaRefillsLabel"))) {
-        l->setText(QStringLiteral("%1 / %2").arg(val("stats.persona.refills.ok"),
-                                                  val("stats.persona.refills.fail")));
+        if (m_persona) {
+            const auto s = m_persona->stats();
+            l->setText(QStringLiteral("%1 / %2").arg(s.refillsOk).arg(s.refillsFail));
+        } else {
+            l->setText(QStringLiteral("0 / 0"));
+        }
     }
     if (auto *l = findChild<QLabel*>(QStringLiteral("personaOndemandLabel"))) {
-        l->setText(QStringLiteral("%1 / %2").arg(val("stats.persona.ondemand.ok"),
-                                                  val("stats.persona.ondemand.fail")));
+        if (m_persona) {
+            const auto s = m_persona->stats();
+            l->setText(QStringLiteral("%1 / %2").arg(s.ondemandOk).arg(s.ondemandFail));
+        } else {
+            l->setText(QStringLiteral("0 / 0"));
+        }
     }
     if (auto *l = findChild<QLabel*>(QStringLiteral("personaTokensLabel"))) {
-        l->setText(QStringLiteral("%1 / %2").arg(val("stats.persona.tokens.in"),
-                                                  val("stats.persona.tokens.out")));
+        if (m_persona) {
+            const auto s = m_persona->stats();
+            l->setText(QStringLiteral("%1 / %2").arg(s.tokensIn).arg(s.tokensOut));
+        } else {
+            l->setText(QStringLiteral("0 / 0"));
+        }
     }
     if (auto *l = findChild<QLabel*>(QStringLiteral("personaLastErrorLabel"))) {
         const QString err = m_persona ? m_persona->stats().lastError : QString();
         l->setText(err.isEmpty() ? QStringLiteral("—") : err);
     }
 
-    if (auto *l = findChild<QLabel*>(QStringLiteral("eventsTotalLabel"))) l->setText(val("stats.events.total"));
+    // Events — live from EventRouter
+    if (auto *l = findChild<QLabel*>(QStringLiteral("eventsTotalLabel"))) {
+        l->setText(m_events ? QString::number(m_events->stats().total)
+                            : QStringLiteral("0"));
+    }
     if (auto *l = findChild<QLabel*>(QStringLiteral("eventsLastLabel"))) {
-        l->setText(m_events ? m_events->stats().lastEventName : QStringLiteral("—"));
+        const QString last = m_events ? m_events->stats().lastEventName : QString();
+        l->setText(last.isEmpty() ? QStringLiteral("—") : last);
     }
 
+    // IPC — live from IpcServer
     if (auto *l = findChild<QLabel*>(QStringLiteral("ipcPacketsLabel"))) {
-        l->setText(m_ipc ? QString::number(m_ipc->stats().packets) : QStringLiteral("0"));
+        l->setText(m_ipc ? QString::number(m_ipc->stats().packets)
+                         : QStringLiteral("0"));
     }
     if (auto *l = findChild<QLabel*>(QStringLiteral("ipcErrorsLabel"))) {
-        l->setText(m_ipc ? QString::number(m_ipc->stats().decodeErrors) : QStringLiteral("0"));
+        l->setText(m_ipc ? QString::number(m_ipc->stats().decodeErrors)
+                         : QStringLiteral("0"));
     }
+
+    Q_UNUSED(val)  // kept for potential future MemoryManager fallback fields
 }
 
 void StatisticsDialog::resetStats()

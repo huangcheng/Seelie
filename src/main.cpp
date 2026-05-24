@@ -431,6 +431,7 @@ int main(int argc, char *argv[])
     });
 
     ipcServer.start(config.ipcEndpoint());
+    w.setIpcServer(&ipcServer);
 
     // Milestone achievements → tip bubble
     QObject::connect(&memory, &MemoryManager::milestoneReached,
