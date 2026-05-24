@@ -2,6 +2,12 @@
 
 #include <QStyle>
 #include <QWidget>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QPixmap>
+#include <QPainter>
+#include <QPolygon>
 
 namespace StyleUtils {
 
@@ -19,11 +25,33 @@ void setVariant(QWidget *w, const char *variant)
     }
 }
 
+QString comboArrowPath()
+{
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    QDir().mkpath(cacheDir);
+    const QString arrowPath = cacheDir + QStringLiteral("/combo_arrow.png");
+    if (!QFile::exists(arrowPath)) {
+        QPixmap arrow(8, 5);
+        arrow.fill(Qt::transparent);
+        QPainter p(&arrow);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setBrush(Qt::black);
+        p.setPen(Qt::NoPen);
+        QPolygon tri;
+        tri << QPoint(0, 0) << QPoint(8, 0) << QPoint(4, 5);
+        p.drawPolygon(tri);
+        p.end();
+        arrow.save(arrowPath);
+    }
+    return arrowPath;
+}
+
 QString personaDialogQss()
 {
     // Mirrors the Settings panel's Persona 5 Royal visual language:
     // white backgrounds, 2px black borders on interactive widgets,
     // #2C2C2E text, orange (#F36F1A) hover/selection accents.
+    const QString arrowPath = QString(comboArrowPath()).replace(QLatin1Char('\\'), QLatin1Char('/'));
     return QStringLiteral(R"(
         QDialog {
             background: white;
@@ -63,10 +91,16 @@ QString personaDialogQss()
             min-width: 70px;
         }
         QComboBox::drop-down {
+            background: white;
             border-left: 2px solid black;
-            border-top-right-radius: 6px;
-            border-bottom-right-radius: 6px;
             width: 18px;
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
+        }
+        QComboBox::down-arrow {
+            image: url(%1);
+            width: 8px;
+            height: 5px;
         }
         QComboBox QAbstractItemView {
             background: white;
@@ -125,7 +159,7 @@ QString personaDialogQss()
             background: #F36F1A;
             color: white;
         }
-    )");
+    )").arg(arrowPath);
 }
 
 } // namespace StyleUtils

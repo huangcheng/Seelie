@@ -24,6 +24,11 @@ namespace StyleUtils {
 ///   QPushButton[variant="secondary"] { ... }
 void setVariant(QWidget *w, const char *variant);
 
+/// Returns the absolute path to a small 8x5 black down-arrow PNG, generated
+/// lazily into AppLocalDataLocation on first call. Reused by personaDialogQss
+/// and by SettingsPanelWidget's combo style. Idempotent.
+QString comboArrowPath();
+
 /// Returns a QSS string that gives a QDialog (or any container) the
 /// Settings panel's Persona 5 Royal look: white body, black 2px borders
 /// on inputs and buttons, transparent labels with black text, white

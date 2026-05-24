@@ -60,14 +60,18 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     m_closeButton->setCursor(Qt::PointingHandCursor);
     m_closeButton->setStyleSheet(QStringLiteral(R"(
         QPushButton {
-            background: transparent;
-            border: none;
-            border-radius: 3px;
-            color: #888;
-            padding: 0px;
+            background: white;
+            border: 2px solid black;
+            border-radius: 0;
+            color: black;
+            padding: 0;
         }
         QPushButton:hover {
             background: #F36F1A;
+            color: white;
+        }
+        QPushButton:pressed {
+            background: #C95A14;
             color: white;
         }
     )"));
