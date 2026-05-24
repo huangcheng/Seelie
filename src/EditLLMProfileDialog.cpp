@@ -1,4 +1,5 @@
 #include "EditLLMProfileDialog.h"
+#include "StyleUtils.h"
 #include <QLineEdit>
 #include <QComboBox>
 #include <QFormLayout>
@@ -9,6 +10,7 @@ EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *p
     : QDialog(parent)
 {
     setWindowTitle(tr("LLM Profile"));
+    setStyleSheet(StyleUtils::retroDialogQss());
     auto *form = new QFormLayout(this);
 
     m_name = new QLineEdit(initial.name, this);

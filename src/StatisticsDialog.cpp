@@ -1,4 +1,5 @@
 #include "StatisticsDialog.h"
+#include "StyleUtils.h"
 #include "MemoryManager.h"
 #include "TTSEngine.h"
 #include "EventRouter.h"
@@ -32,6 +33,7 @@ StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
 {
     setWindowTitle(tr("Statistics"));
     setFixedSize(480, 620);
+    setStyleSheet(StyleUtils::retroDialogQss());
 
     auto *root = new QVBoxLayout(this);
 

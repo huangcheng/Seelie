@@ -24,6 +24,13 @@ namespace StyleUtils {
 ///   QPushButton[variant="secondary"] { ... }
 void setVariant(QWidget *w, const char *variant);
 
+/// Returns a QSS string that gives a QDialog (or any container) the
+/// Settings panel's retro look: white body, black 2px borders on inputs
+/// and buttons, transparent labels with black text, white groupboxes.
+/// Apply via:
+///   dialog->setStyleSheet(StyleUtils::retroDialogQss());
+QString retroDialogQss();
+
 } // namespace StyleUtils
 
 #endif // SEELIE_STYLEUTILS_H
