@@ -92,12 +92,20 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
     connect(m_tipWidget, &TipWidget::bubbleRequested,
             this, [this](const QString &title, const QString &message, TipWidget::BubbleType type) {
+        Q_UNUSED(title)
         if (type != TipWidget::TipBubble) return;
         if (!m_ttsEngine || !m_config->ttsEnabled()) return;
         // ECG mode hides the pet entirely — speaking would be an out-of-context
         // surprise. Match the visual tip suppression in onDisplayModeChanged().
         if (m_config->displayMode() == ConfigManager::DisplayMode::Ecg) return;
-        m_ttsEngine->speak(title + ". " + message);
+        // If persona is active, the queued personaEngine path is about to
+        // replace the body. Defer TTS to that path so audio matches the
+        // final visible text instead of speaking stale catalog body.
+        const bool personaActive = m_personaEngine
+            && m_config->personaEnabled()
+            && !m_config->personaProfile().isEmpty();
+        if (personaActive) return;
+        m_ttsEngine->speak(message);
     });
 
     connect(m_ttsEngine, &TTSEngine::authFailed,
@@ -757,6 +765,12 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
             if (!m_tipWidget || !m_tipWidget->isVisible()) return;
             m_activeBubbleRequestId = r.requestId;
             m_tipWidget->updateMessage(r.text);
+            // TTS the final body (catalog-driven speak was suppressed earlier
+            // when persona is active — see TipWidget::bubbleRequested handler).
+            if (m_ttsEngine && m_config && m_config->ttsEnabled()
+                && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
+                m_ttsEngine->speak(r.text);
+            }
         }, Qt::QueuedConnection);
     }
 
@@ -803,10 +817,7 @@ void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)
     if (!m_tipWidget || !m_tipWidget->isVisible()) return;
     m_tipWidget->updateMessage(newText);
 
-    // Re-fire TTS for the upgraded text. The normal pipe runs via
-    // TipWidget::bubbleRequested, but updateMessage doesn't emit that —
-    // so without an explicit speak() here the TTS engine would only ever
-    // read the original (catalog) fallback, never the LLM-generated line.
+    // Re-fire TTS for the upgraded body.
     if (m_ttsEngine && m_config && m_config->ttsEnabled()
         && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
         m_ttsEngine->speak(newText);
