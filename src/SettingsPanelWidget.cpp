@@ -723,7 +723,8 @@ void SettingsPanelWidget::setupUi()
         m_llmAddBtn    = new QPushButton(tr("Add"),    profilesGroup);
         m_llmEditBtn   = new QPushButton(tr("Edit"),   profilesGroup);
         m_llmDeleteBtn = new QPushButton(tr("Delete"), profilesGroup);
-        m_llmTestBtn   = new QPushButton(tr("Test connection"), profilesGroup);
+        m_llmTestBtn   = new QPushButton(tr("Test"),   profilesGroup);
+        m_llmTestBtn->setToolTip(tr("Test connection — sends a 1-token request to the selected profile"));
         for (auto *btn : {m_llmAddBtn, m_llmEditBtn, m_llmDeleteBtn, m_llmTestBtn}) {
             btn->setFont(harmonyFont(9));
             btn->setCursor(Qt::PointingHandCursor);
@@ -741,6 +742,7 @@ void SettingsPanelWidget::setupUi()
         pgForm->setHorizontalSpacing(10);
         m_personaProfileCombo = new QComboBox(personaGroup);
         m_personaProfileCombo->setFont(harmonyFont(9));
+        m_personaProfileCombo->setMaximumWidth(140);
         m_personaEnabledCheck = new CheckMarkBox(tr("Enabled"), personaGroup);
         m_personaEnabledCheck->setFixedSize(16, 16);
         m_personaEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
@@ -751,19 +753,18 @@ void SettingsPanelWidget::setupUi()
         // --- Privacy group ---
         auto *privacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
         auto *privLayout = new QVBoxLayout(privacyGroup);
-        m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI (name, milestones)"), privacyGroup);
+        m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI"), privacyGroup);
+        m_shareMemoryCheck->setToolTip(tr("Sends your name and milestones to the AI provider with each on-demand event."));
         m_shareMemoryCheck->setStyleSheet(m_autoStartCheck->styleSheet());
         privLayout->addWidget(m_shareMemoryCheck);
         llmLayout->addWidget(privacyGroup);
 
-        // --- Tools group ---
-        auto *toolsGroup = new QGroupBox(tr("Tools"), m_llmTab);
-        auto *toolsLayout = new QVBoxLayout(toolsGroup);
-        m_regenPoolBtn = new QPushButton(tr("Regenerate persona pool for active pack"), toolsGroup);
+        // --- Regenerate button (inline — no group box needed for a single action) ---
+        m_regenPoolBtn = new QPushButton(tr("Regenerate pool"), m_llmTab);
         m_regenPoolBtn->setFont(harmonyFont(9));
         m_regenPoolBtn->setCursor(Qt::PointingHandCursor);
-        toolsLayout->addWidget(m_regenPoolBtn);
-        llmLayout->addWidget(toolsGroup);
+        m_regenPoolBtn->setToolTip(tr("Wipe cached LLM responses for the active pack so they will be regenerated."));
+        llmLayout->addWidget(m_regenPoolBtn);
 
         // --- Status label ---
         m_llmLastErrorLabel = new QLabel(tr("Last error: —"), m_llmTab);
@@ -1519,7 +1520,12 @@ void SettingsPanelWidget::refreshLlmProfilesUi()
         case LLMProfile::Protocol::OpenAIResponses:   protoName = tr("OpenAI Responses"); break;
         case LLMProfile::Protocol::AnthropicMessages: protoName = tr("Anthropic"); break;
         }
-        m_llmProfilesList->addItem(QStringLiteral("%1   %2   %3").arg(p.name, protoName, p.model));
+        auto *item = new QListWidgetItem(
+            QStringLiteral("%1  ·  %2").arg(p.name, p.model));
+        item->setToolTip(protoName + (p.baseUrl.isEmpty()
+                                      ? QString()
+                                      : QStringLiteral("\n") + p.baseUrl));
+        m_llmProfilesList->addItem(item);
         m_personaProfileCombo->addItem(p.name);
     }
     m_personaProfileCombo->setCurrentText(m_config->personaProfile());
@@ -1589,7 +1595,7 @@ void SettingsPanelWidget::onDeleteProfileClicked()
     if (!m_config) return;
     auto *item = m_llmProfilesList->currentItem();
     if (!item) return;
-    const QString name = item->text().split(QChar(' ')).first().trimmed();
+    const QString name = item->text().split(QStringLiteral("  ·  ")).first().trimmed();
     auto profiles = m_config->llmProfiles();
     profiles.erase(std::remove_if(profiles.begin(), profiles.end(),
         [&](const LLMProfile &p){ return p.name == name; }), profiles.end());
