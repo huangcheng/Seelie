@@ -19,11 +19,11 @@ void setVariant(QWidget *w, const char *variant)
     }
 }
 
-QString retroDialogQss()
+QString personaDialogQss()
 {
-    // Mirrors the Settings panel's visual language: white backgrounds,
-    // 2px black borders on interactive widgets, #2C2C2E text, orange
-    // (#F36F1A) hover/selection accents.
+    // Mirrors the Settings panel's Persona 5 Royal visual language:
+    // white backgrounds, 2px black borders on interactive widgets,
+    // #2C2C2E text, orange (#F36F1A) hover/selection accents.
     return QStringLiteral(R"(
         QDialog {
             background: white;

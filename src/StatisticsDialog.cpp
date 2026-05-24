@@ -33,7 +33,7 @@ StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
 {
     setWindowTitle(tr("Statistics"));
     setFixedSize(480, 620);
-    setStyleSheet(StyleUtils::retroDialogQss());
+    setStyleSheet(StyleUtils::personaDialogQss());
 
     auto *root = new QVBoxLayout(this);
 

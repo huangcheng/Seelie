@@ -25,11 +25,12 @@ namespace StyleUtils {
 void setVariant(QWidget *w, const char *variant);
 
 /// Returns a QSS string that gives a QDialog (or any container) the
-/// Settings panel's retro look: white body, black 2px borders on inputs
-/// and buttons, transparent labels with black text, white groupboxes.
+/// Settings panel's Persona 5 Royal look: white body, black 2px borders
+/// on inputs and buttons, transparent labels with black text, white
+/// groupboxes, orange (#F36F1A) accent on hover/pressed.
 /// Apply via:
-///   dialog->setStyleSheet(StyleUtils::retroDialogQss());
-QString retroDialogQss();
+///   dialog->setStyleSheet(StyleUtils::personaDialogQss());
+QString personaDialogQss();
 
 } // namespace StyleUtils
 

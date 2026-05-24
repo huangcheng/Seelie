@@ -10,7 +10,7 @@ EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *p
     : QDialog(parent)
 {
     setWindowTitle(tr("LLM Profile"));
-    setStyleSheet(StyleUtils::retroDialogQss());
+    setStyleSheet(StyleUtils::personaDialogQss());
     auto *form = new QFormLayout(this);
 
     m_name = new QLineEdit(initial.name, this);
