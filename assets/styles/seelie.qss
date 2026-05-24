@@ -125,11 +125,13 @@ QPushButton {
 
 QPushButton:hover {
     background: #F36F1A;
+    border: 2px solid black;    /* restate border so QSS renderer wins over native */
     color: white;
 }
 
 QPushButton:pressed {
     background: #C85A12;
+    border: 2px solid black;
     color: white;
 }
 
