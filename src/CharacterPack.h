@@ -100,6 +100,16 @@ public:
     };
 
     /**
+     * @brief Pack persona for AI persona layer
+     */
+    struct Persona {
+        QString system;
+        QString language;
+        QStringList styleExamples;
+        bool isEmpty() const { return system.isEmpty() && language.isEmpty() && styleExamples.isEmpty(); }
+    };
+
+    /**
      * @brief Character configuration
      */
     struct CharacterConfig {
@@ -152,6 +162,17 @@ public:
      * @brief Get character configuration
      */
     const CharacterConfig &characterConfig() const { return m_characterConfig; }
+
+    /**
+     * @brief Get pack persona (may be empty if manifest has no persona block)
+     */
+    const Persona &persona() const { return m_persona; }
+
+    /**
+     * @brief SHA-256 hex digest of the canonical persona JSON (system + language + style_examples).
+     *        Stable even for an empty persona. Used by PersonaPool for cache invalidation.
+     */
+    QString personaHash() const;
 
     /**
      * @brief Get all animations
@@ -257,6 +278,7 @@ private:
     bool parseEffectTriggers(const QJsonObject &triggers);
     bool parseStateMap(const QJsonObject &map);
     bool loadAnimationsFromDefinitions(const QString &definitionsPath);
+    bool parsePersona(const QJsonObject &persona);
 
     bool m_valid = false;
     QString m_rootPath;
@@ -273,6 +295,8 @@ private:
     QVector<IdleEntry> m_idlePool;
     QMap<QString, QString> m_nameMap;
     QMap<QString, QStringList> m_stateMap;
+    Persona m_persona;
+    mutable QString m_personaHashCache;
 };
 
 #endif // CHARACTERPACK_H

@@ -95,6 +95,7 @@ set(TEST_SOURCES
     test_autostart_manager.cpp
     test_platform_window.cpp
     test_character_pack_manager_errors.cpp
+    test_character_pack_persona.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})

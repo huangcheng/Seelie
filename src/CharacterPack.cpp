@@ -10,6 +10,7 @@
 #include <QTemporaryDir>
 #include <QImage>
 #include <QImageReader>
+#include <QCryptographicHash>
 
 #include "../thirdparty/miniz/miniz.h"
 
@@ -472,9 +473,15 @@ QStringList CharacterPack::availableSounds() const
 
 bool CharacterPack::parseManifest(const QJsonObject &manifest)
 {
-    // Parse format version
-    m_metadata.formatVersion = manifest.value("formatVersion").toString();
-    if (m_metadata.formatVersion != "1.0.0") {
+    // Parse format version — accept both camelCase "formatVersion"/"1.0.0"
+    // (existing packs) and snake_case "format_version"/"1.0" (AI persona layer
+    // test manifests and future schema).
+    m_metadata.formatVersion = manifest.value(QStringLiteral("formatVersion")).toString();
+    if (m_metadata.formatVersion.isEmpty()) {
+        m_metadata.formatVersion = manifest.value(QStringLiteral("format_version")).toString();
+    }
+    if (m_metadata.formatVersion != QLatin1String("1.0.0") &&
+        m_metadata.formatVersion != QLatin1String("1.0")) {
         qWarning() << "CharacterPack: Unsupported format version:" << m_metadata.formatVersion;
         return false;
     }
@@ -495,7 +502,12 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
         }
     }
 
-    if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty() || 
+    // For the v1.0 format (AI persona layer manifests), author and version are
+    // optional — default them so the non-empty check below doesn't reject them.
+    if (m_metadata.author.isEmpty()) m_metadata.author = QStringLiteral("unknown");
+    if (m_metadata.version.isEmpty()) m_metadata.version = QStringLiteral("1.0");
+
+    if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty() ||
         m_metadata.author.isEmpty() || m_metadata.version.isEmpty()) {
         qWarning() << "CharacterPack: Missing required metadata fields";
         return false;
@@ -556,18 +568,31 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
         return false;
     }
 
+    // Parse optional persona block (AI persona layer §5)
+    if (manifest.contains(QStringLiteral("persona")) &&
+        manifest.value(QStringLiteral("persona")).isObject()) {
+        if (!parsePersona(manifest.value(QStringLiteral("persona")).toObject())) {
+            qWarning() << "CharacterPack: persona block failed to parse; continuing with empty persona";
+            m_persona = Persona{};
+        }
+    }
+
     return true;
 }
 
 bool CharacterPack::parseCharacter(const QJsonObject &character)
 {
-    // Parse engine type
-    const QString typeStr = character.value("type").toString();
-    if (typeStr == "lottie") {
+    // Parse engine type — accept both "type" (existing packs) and "engine"
+    // (AI persona layer test manifests and future schema).
+    QString typeStr = character.value(QStringLiteral("type")).toString();
+    if (typeStr.isEmpty()) {
+        typeStr = character.value(QStringLiteral("engine")).toString();
+    }
+    if (typeStr == QLatin1String("lottie")) {
         m_characterConfig.engineType = EngineType::Lottie;
-    } else if (typeStr == "spriteSheet") {
+    } else if (typeStr == QLatin1String("spriteSheet")) {
         m_characterConfig.engineType = EngineType::SpriteSheet;
-    } else if (typeStr == "live2d") {
+    } else if (typeStr == QLatin1String("live2d")) {
         m_characterConfig.engineType = EngineType::Live2D;
     } else {
         qWarning() << "CharacterPack: Unknown character type:" << typeStr;
@@ -576,7 +601,11 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
 
     // Parse type-specific configuration
     if (m_characterConfig.engineType == EngineType::Lottie) {
-        m_characterConfig.animDirectory = character.value("directory").toString("character");
+        // Accept "directory" (existing) or "anim_directory" (new schema)
+        m_characterConfig.animDirectory = character.value(QStringLiteral("directory")).toString();
+        if (m_characterConfig.animDirectory.isEmpty()) {
+            m_characterConfig.animDirectory = character.value(QStringLiteral("anim_directory")).toString(QStringLiteral("character"));
+        }
     } else if (m_characterConfig.engineType == EngineType::Live2D) {
         m_characterConfig.modelJson = character.value("model").toString();
         m_characterConfig.frameWidth = character.value("frameWidth").toInt(200);
@@ -807,6 +836,36 @@ bool CharacterPack::parseStateMap(const QJsonObject &map)
         m_stateMap[stateName] = chain;
     }
     return true;
+}
+
+bool CharacterPack::parsePersona(const QJsonObject &persona)
+{
+    m_persona.system = persona.value(QStringLiteral("system")).toString();
+    m_persona.language = persona.value(QStringLiteral("language")).toString();
+    m_persona.styleExamples.clear();
+    const QJsonArray ex = persona.value(QStringLiteral("style_examples")).toArray();
+    for (const QJsonValue &v : ex) {
+        if (v.isString()) m_persona.styleExamples << v.toString();
+    }
+    m_personaHashCache.clear();
+    return true;
+}
+
+QString CharacterPack::personaHash() const
+{
+    if (!m_personaHashCache.isEmpty()) return m_personaHashCache;
+
+    QJsonObject canonical;
+    canonical.insert(QStringLiteral("system"), m_persona.system);
+    canonical.insert(QStringLiteral("language"), m_persona.language);
+    QJsonArray exArr;
+    for (const QString &e : m_persona.styleExamples) exArr.append(e);
+    canonical.insert(QStringLiteral("style_examples"), exArr);
+
+    const QByteArray bytes = QJsonDocument(canonical).toJson(QJsonDocument::Compact);
+    m_personaHashCache = QString::fromLatin1(
+        QCryptographicHash::hash(bytes, QCryptographicHash::Sha256).toHex());
+    return m_personaHashCache;
 }
 
 bool CharacterPack::loadAnimationsFromDefinitions(const QString &definitionsPath)
