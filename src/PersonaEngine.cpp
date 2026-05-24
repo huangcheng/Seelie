@@ -25,16 +25,36 @@ PersonaEngine::PersonaEngine(MemoryManager *memory, ConfigManager *config, QObje
     , m_config(config)
     , m_pool(memory ? memory->database() : QSqlDatabase{})
 {
-    // Pick the profile assigned to the persona feature.
+    refreshActiveProfile();
+
+    // Keep m_provider in sync when the user adds/edits profiles or changes
+    // the default. Without this, a profile configured AFTER startup never
+    // takes effect — resolveOnDemand silently early-returns on the
+    // !isConfigured() guard and counters stay at zero.
     if (m_config) {
-        const auto profiles = m_config->llmProfiles();
-        for (const auto &p : profiles) {
-            if (p.name == m_config->personaProfile()) {
-                m_provider.setProfile(p);
-                break;
-            }
+        connect(m_config, &ConfigManager::personaProfileChanged,
+                this, [this](const QString &) { refreshActiveProfile(); });
+        connect(m_config, &ConfigManager::llmProfilesChanged,
+                this, [this]() { refreshActiveProfile(); });
+    }
+}
+
+void PersonaEngine::refreshActiveProfile()
+{
+    if (!m_config) return;
+    const QString name = m_config->personaProfile();
+    if (name.isEmpty()) {
+        m_provider.setProfile({});
+        return;
+    }
+    for (const auto &p : m_config->llmProfiles()) {
+        if (p.name == name) {
+            m_provider.setProfile(p);
+            return;
         }
     }
+    // Selected profile no longer exists (e.g. deleted) — clear provider.
+    m_provider.setProfile({});
 }
 
 PersonaEngine::Tier PersonaEngine::tierFor(const QString &eventName)

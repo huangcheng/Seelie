@@ -66,6 +66,10 @@ private:
     Resolved resolvePool(const QString &eventName);
     Resolved resolveOnDemand(const QString &eventName, const QJsonObject &payload);
     QString fallbackTip(const QString &eventName) const;
+    /// Re-resolve m_provider from the current ConfigManager state. Called from
+    /// the ctor and whenever ConfigManager::personaProfileChanged or
+    /// llmProfilesChanged fires.
+    void refreshActiveProfile();
 
     MemoryManager *m_memory;
     ConfigManager *m_config;
