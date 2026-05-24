@@ -17,6 +17,25 @@ const QSet<QString> &poolTierEvents()
     };
     return s;
 }
+
+QString localeToHuman(const QString &locale)
+{
+    // Map Qt locale codes (en, zh_CN, ja_JP, ...) to a language name the LLM
+    // recognises. Falls back to "English" so we never send an empty token.
+    if (locale.startsWith(QLatin1String("zh"), Qt::CaseInsensitive))
+        return QStringLiteral("Simplified Chinese (zh-CN)");
+    if (locale.startsWith(QLatin1String("ja"), Qt::CaseInsensitive))
+        return QStringLiteral("Japanese");
+    if (locale.startsWith(QLatin1String("ko"), Qt::CaseInsensitive))
+        return QStringLiteral("Korean");
+    if (locale.startsWith(QLatin1String("fr"), Qt::CaseInsensitive))
+        return QStringLiteral("French");
+    if (locale.startsWith(QLatin1String("de"), Qt::CaseInsensitive))
+        return QStringLiteral("German");
+    if (locale.startsWith(QLatin1String("es"), Qt::CaseInsensitive))
+        return QStringLiteral("Spanish");
+    return QStringLiteral("English");
+}
 }  // namespace
 
 PersonaEngine::PersonaEngine(MemoryManager *memory, ConfigManager *config, QObject *parent)
@@ -94,10 +113,12 @@ PersonaEngine::Resolved PersonaEngine::resolvePool(const QString &eventName)
     {
         m_pool.markRefillStarted(m_activePackId, eventName);
 
+        const QString lang = m_config ? localeToHuman(m_config->language())
+                                      : QStringLiteral("English");
         const QString system = QStringLiteral(
             "You write short in-character reactions for a desktop pet. "
-            "Each line: one short sentence, under 200 characters. "
-            "Stay in character.");
+            "Each line: one short sentence, under 200 characters, "
+            "in %1. Stay in character.").arg(lang);
         const QString user = QStringLiteral(
             "Generate %1 distinct one-sentence reactions to the event '%2'.")
             .arg(PersonaPool::TARGET_POOL_SIZE).arg(eventName);
@@ -138,9 +159,15 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
     QStringList recent;
     for (const QString &e : m_eventWindow) recent << e;
 
+    // Tell the LLM the user's language explicitly. ConfigManager stores it
+    // as a Qt locale code ("en", "zh_CN", ...); map to a human name the
+    // model recognises.
+    const QString lang = m_config ? localeToHuman(m_config->language())
+                                  : QStringLiteral("English");
     QString systemPrompt = QStringLiteral(
         "You are a desktop pet companion to a software developer. "
-        "Reply with ONE short sentence in the user's language.");
+        "Reply with ONE short sentence in %1. Do not add quotes, "
+        "translation, or commentary — just the sentence itself.").arg(lang);
     QString userPrompt = QStringLiteral("Event: %1\nRecent events: %2\nReact in-character.")
                           .arg(eventName, recent.join(QStringLiteral(", ")));
 

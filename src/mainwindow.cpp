@@ -802,6 +802,15 @@ void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)
     if (requestId != m_activeBubbleRequestId) return;
     if (!m_tipWidget || !m_tipWidget->isVisible()) return;
     m_tipWidget->updateMessage(newText);
+
+    // Re-fire TTS for the upgraded text. The normal pipe runs via
+    // TipWidget::bubbleRequested, but updateMessage doesn't emit that —
+    // so without an explicit speak() here the TTS engine would only ever
+    // read the original (catalog) fallback, never the LLM-generated line.
+    if (m_ttsEngine && m_config && m_config->ttsEnabled()
+        && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
+        m_ttsEngine->speak(newText);
+    }
 }
 
 void MainWindow::onActivePackChanged()
