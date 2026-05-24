@@ -129,10 +129,12 @@ QString personaDialogQss()
         }
         QPushButton:hover {
             background: #F36F1A;
+            border: 2px solid black;   /* keep border so QSS renderer wins over native */
             color: white;
         }
         QPushButton:pressed {
             background: #C95A14;
+            border: 2px solid black;
             color: white;
         }
         QCheckBox {
