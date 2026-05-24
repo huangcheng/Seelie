@@ -51,7 +51,10 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     m_titleLabel->setStyleSheet(QStringLiteral("color: black; background: transparent;"));
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_closeButton = new QPushButton(tr("×"), m_panelWidget);
+    // Use QChar(0x00D7) for ×, bulletproof against source-file encoding
+    // mismatches (Chinese-Windows toolchains can interpret the literal × in
+    // the source as the wrong byte sequence, rendering it as Ā or Ã—).
+    m_closeButton = new QPushButton(QString(QChar(0x00D7)), m_panelWidget);
     m_closeButton->setFont(personaFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
