@@ -98,9 +98,6 @@ QNetworkReply *LLMProvider::sendOpenAiChat(const QString &system, const QString 
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("Authorization", ("Bearer " + m_profile.apiKey).toUtf8());
-    // Force HTTP/1.1: Qt 6.x HTTP/2 strict header validation rejects some
-    // legal HTTP/1.1 header values (e.g. from local test servers).
-    req.setAttribute(QNetworkRequest::Http2AllowedAttribute, false);
 
     QJsonObject body;
     body["model"] = m_profile.model;
@@ -122,9 +119,12 @@ LLMResult LLMProvider::parseOpenAiChat(const QByteArray &body)
     const QJsonObject obj = doc.object();
     const QJsonArray choices = obj.value("choices").toArray();
     if (choices.isEmpty()) { r.error = "no choices in response"; return r; }
-    r.text = choices.first().toObject()
-                     .value("message").toObject()
-                     .value("content").toString();
+    const QJsonObject first = choices.first().toObject();
+    if (!first.contains(QStringLiteral("message")) || !first.value(QStringLiteral("message")).isObject()) {
+        r.error = "missing message field in choice";
+        return r;
+    }
+    r.text = first.value(QStringLiteral("message")).toObject().value(QStringLiteral("content")).toString();
     if (r.text.isEmpty()) { r.error = "empty content"; return r; }
 
     const QJsonObject usage = obj.value("usage").toObject();
