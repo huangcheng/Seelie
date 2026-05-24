@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QPoint>
+#include <QPointer>
 #include <QTimer>
 #include <QMenu>
 
@@ -31,6 +32,7 @@ class PersonaEngine;
 
 class QTranslator;
 class SystemTray;
+class StatisticsDialog;
 
 class MainWindow : public QWidget
 {
@@ -101,6 +103,7 @@ public slots:
 private slots:
     void toggleVisibility();
     void openSettings();
+    void onShowStatistics();
     void onActivePackChanged();
     void onDisplayModeChanged(ConfigManager::DisplayMode mode);
     void onFullscreenStarted();
@@ -135,6 +138,7 @@ private:
     MemoryManager *m_memory = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
     quint64 m_activeBubbleRequestId = 0;
+    QPointer<StatisticsDialog> m_statsDialog;
 
     // Gaming Mode
     FullscreenWatcher *m_fullscreenWatcher = nullptr;

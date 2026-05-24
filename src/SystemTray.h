@@ -41,6 +41,9 @@ public:
     // already wires TipWidget::bubbleRequested into TTSEngine::speak.
     void setTipWidget(TipWidget *tipWidget);
 
+signals:
+    void statisticsTriggered();
+
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
     void onPackActionTriggered();
@@ -63,6 +66,7 @@ private:
     QAction *m_quitAction = nullptr;
     QAction *m_checkUpdateAction = nullptr;
     QAction *m_manageModelsAction = nullptr;
+    QAction *m_statsAction = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;

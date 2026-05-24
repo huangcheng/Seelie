@@ -22,6 +22,7 @@
 #include "PetStateMachine.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
+#include "StatisticsDialog.h"
 
 #include <QPainter>
 #include <QRegularExpression>
@@ -652,9 +653,32 @@ void MainWindow::openSettings()
 void MainWindow::setSystemTray(SystemTray *tray)
 {
     m_systemTray = tray;
-    if (m_systemTray && m_packManager) {
-        m_systemTray->setCharacterPackManager(m_packManager);
+    if (m_systemTray) {
+        if (m_packManager) {
+            m_systemTray->setCharacterPackManager(m_packManager);
+        }
+        connect(m_systemTray, &SystemTray::statisticsTriggered,
+                this, &MainWindow::onShowStatistics);
     }
+}
+
+void MainWindow::onShowStatistics()
+{
+    if (m_statsDialog) {
+        m_statsDialog->raise();
+        m_statsDialog->activateWindow();
+        return;
+    }
+#ifdef SEELIE_TTS_ENABLED
+    TTSEngine *tts = m_ttsEngine;
+#else
+    TTSEngine *tts = nullptr;
+#endif
+    m_statsDialog = new StatisticsDialog(m_memory, tts,
+                                         m_eventRouter, nullptr,
+                                         m_personaEngine, this);
+    m_statsDialog->setAttribute(Qt::WA_DeleteOnClose);
+    m_statsDialog->show();
 }
 
 void MainWindow::setGlobalShortcutManager(GlobalShortcutManager *manager)

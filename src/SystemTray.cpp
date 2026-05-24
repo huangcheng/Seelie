@@ -137,6 +137,10 @@ void SystemTray::setupMenu()
     m_manageModelsAction = m_trayMenu->addAction(tr("Manage Models"));
     connect(m_manageModelsAction, &QAction::triggered, this, &SystemTray::onManageModelsClicked);
 
+    // Statistics dialog
+    m_statsAction = m_trayMenu->addAction(tr("Statistics..."));
+    connect(m_statsAction, &QAction::triggered, this, &SystemTray::statisticsTriggered);
+
     m_trayMenu->addSeparator();
 
     // Check for updates
@@ -390,6 +394,9 @@ void SystemTray::retranslateUi()
     }
     if (m_manageModelsAction) {
         m_manageModelsAction->setText(tr("Manage Models"));
+    }
+    if (m_statsAction) {
+        m_statsAction->setText(tr("Statistics..."));
     }
     refreshPackMenu();
 }
