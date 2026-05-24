@@ -91,8 +91,12 @@ PersonaEngine::Resolved PersonaEngine::resolvePool(const QString &eventName)
                 m_pool.markRefillFinished(pack, ev);
                 if (lines.isEmpty()) {
                     m_pool.recordEmptyRefill(pack, ev);
+                    ++m_stats.refillsFail;
+                    if (m_memory) m_memory->increment(QStringLiteral("stats.persona.refills.fail"));
                     return;
                 }
+                ++m_stats.refillsOk;
+                if (m_memory) m_memory->increment(QStringLiteral("stats.persona.refills.ok"));
                 QStringList qsList;
                 for (const auto &l : lines) qsList << l;
                 m_pool.insertMany(pack, ev, hash, qsList);
@@ -128,7 +132,21 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
 
     m_provider.generate(systemPrompt, userPrompt,
         [this, requestId](LLMResult r) {
-            if (!r.ok || r.text.trimmed().isEmpty()) return;
+            if (!r.ok || r.text.trimmed().isEmpty()) {
+                ++m_stats.ondemandFail;
+                m_stats.lastError = r.error;
+                if (m_memory) m_memory->increment(QStringLiteral("stats.persona.ondemand.fail"));
+                return;
+            }
+            ++m_stats.ondemandOk;
+            m_stats.tokensIn  += r.tokensIn;
+            m_stats.tokensOut += r.tokensOut;
+            m_stats.lastError.clear();
+            if (m_memory) {
+                m_memory->increment(QStringLiteral("stats.persona.ondemand.ok"));
+                m_memory->increment(QStringLiteral("stats.persona.tokens.in"),  r.tokensIn);
+                m_memory->increment(QStringLiteral("stats.persona.tokens.out"), r.tokensOut);
+            }
             QString t = r.text.trimmed();
             if (t.length() > PersonaPool::MAX_TIP_CHARS) t.truncate(PersonaPool::MAX_TIP_CHARS);
             emit tipUpgraded(requestId, t);

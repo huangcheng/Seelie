@@ -1,6 +1,7 @@
 #include "IpcServer.h"
 #include "UdpWorker.h"
 
+#include <QDateTime>
 #include <QThread>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -9,6 +10,7 @@
 IpcServer::IpcServer(QObject *parent)
     : QObject(parent)
 {
+    m_stats.startedAtMs = QDateTime::currentMSecsSinceEpoch();
 }
 
 IpcServer::~IpcServer()
@@ -45,6 +47,14 @@ bool IpcServer::start(const QString &endpoint)
     connect(m_worker, &UdpWorker::errorOccurred, this, &IpcServer::onWorkerError);
 
     connect(m_worker, &UdpWorker::datagramReceived, this, &IpcServer::onDatagramReceived);
+
+    // Stats: worker-thread signals → main-thread slots via queued connection.
+    // Qt picks QueuedConnection automatically (different threads), so we don't
+    // need to specify it explicitly, but being explicit documents the intent.
+    connect(m_worker, &UdpWorker::packetReceived, this, &IpcServer::onPacketReceived,
+            Qt::QueuedConnection);
+    connect(m_worker, &UdpWorker::decodeError, this, &IpcServer::onDecodeError,
+            Qt::QueuedConnection);
 
     // H2: avoid deleteLater on finished thread — the worker thread's event
     // loop has already stopped, so deleteLater can never be dispatched and
@@ -122,11 +132,13 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "IPC: Malformed JSON:" << error.errorString()
                     << "data:" << data.left(200);
+        ++m_stats.decodeErrors;
         return;
     }
 
     if (!doc.isObject()) {
         qWarning() << "IPC: Expected JSON object, got:" << data.left(200);
+        ++m_stats.decodeErrors;
         return;
     }
 
@@ -165,4 +177,14 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
     } else {
         qWarning() << "IPC: Unknown message type:" << type;
     }
+}
+
+void IpcServer::onPacketReceived()
+{
+    ++m_stats.packets;
+}
+
+void IpcServer::onDecodeError()
+{
+    ++m_stats.decodeErrors;
 }

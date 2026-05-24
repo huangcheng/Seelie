@@ -1,11 +1,20 @@
 #ifndef EVENTROUTER_H
 #define EVENTROUTER_H
 
+#include <QHash>
 #include <QObject>
 #include <QSet>
 
 class TipWidget;
 class TipsEngine;
+class MemoryManager;
+
+struct EventStats {
+    int total = 0;
+    QHash<QString, int> perEvent;
+    qint64 lastEventMs   = 0;
+    QString lastEventName;
+};
 
 /**
  * Validates incoming canonical events, fires tip-text bubbles, and emits
@@ -21,6 +30,9 @@ public:
 
     void setTipWidget(TipWidget *bubble) { m_tipWidget = bubble; }
     void setTipsEngine(TipsEngine *tips) { m_tips = tips; }
+    void setMemoryManager(MemoryManager *mm) { m_memory = mm; }
+
+    EventStats stats() const { return m_stats; }
 
 public slots:
     void routeEvent(const QJsonObject &event);
@@ -35,6 +47,9 @@ private:
 
     TipWidget *m_tipWidget = nullptr;
     TipsEngine *m_tips = nullptr;
+    MemoryManager *m_memory = nullptr;
+
+    EventStats m_stats;
 
     static const QSet<QString> s_validEvents;
     static const QSet<QString> s_validSources;

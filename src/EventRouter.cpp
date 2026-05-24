@@ -1,9 +1,11 @@
 #include "EventRouter.h"
 #include "CanonicalEvents.h"
+#include "MemoryManager.h"
 #include "TipWidget.h"
 #include "TipsEngine.h"
 #include "TipsCatalog.h"
 
+#include <QDateTime>
 #include <QJsonObject>
 #include <QDebug>
 
@@ -31,6 +33,18 @@ void EventRouter::routeEvent(const QJsonObject &event)
     if (!validateEvent(event)) return;
 
     const QString eventName = event.value("event").toString();
+
+    // --- Stats bookkeeping ---------------------------------------------------
+    ++m_stats.total;
+    m_stats.perEvent[eventName] += 1;
+    m_stats.lastEventMs   = QDateTime::currentMSecsSinceEpoch();
+    m_stats.lastEventName = eventName;
+    if (m_memory) {
+        m_memory->increment(QStringLiteral("stats.events.total"));
+        m_memory->increment(QStringLiteral("stats.events.") + eventName);
+    }
+    // -------------------------------------------------------------------------
+
     const QString source = event.value("source").toString();
     const QString session = event.value("session").toString();
     const QString sourceLabel = session.isEmpty() ? source : source + " · " + session;

@@ -116,6 +116,7 @@ void UdpWorker::onReadyRead()
         m_socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
 
         if (!datagram.isEmpty()) {
+            emit packetReceived();
             emit datagramReceived(datagram.trimmed(), sender, senderPort);
         }
     }

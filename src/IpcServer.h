@@ -8,6 +8,16 @@
 class QThread;
 class UdpWorker;
 
+// NOTE: IPC packet counters are in-memory only (no MemoryManager persistence).
+// UdpWorker lives on a worker thread; marshalling SQLite writes from there
+// would violate the single-connection thread invariant. Per-session packet
+// counts are sufficient for the StatisticsDialog.
+struct IpcStats {
+    qint64 packets      = 0;
+    qint64 decodeErrors = 0;
+    qint64 startedAtMs  = 0;
+};
+
 class IpcServer : public QObject
 {
     Q_OBJECT
@@ -20,6 +30,8 @@ public:
     void stop();
     bool restart(const QString &endpoint);
 
+    IpcStats stats() const { return m_stats; }
+
 signals:
     void eventReceived(const QJsonObject &event);
     void tipReceived(const QJsonObject &tip);
@@ -28,12 +40,15 @@ signals:
 private slots:
     void onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port);
     void onWorkerError(const QString &message);
+    void onPacketReceived();
+    void onDecodeError();
 
 private:
     void parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
     QThread *m_thread = nullptr;
     UdpWorker *m_worker = nullptr;
+    IpcStats m_stats;
 };
 
 #endif // IPCSERVER_H

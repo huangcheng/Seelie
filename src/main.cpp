@@ -392,6 +392,7 @@ int main(int argc, char *argv[])
     EventRouter eventRouter;
     eventRouter.setTipWidget(w.tipWidget());
     eventRouter.setTipsEngine(&tipsEngine);
+    eventRouter.setMemoryManager(&memory);
     // MainWindow uses the FSM (via setStateMachine) for mouse-driven synthetic
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);

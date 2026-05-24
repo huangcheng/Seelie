@@ -24,6 +24,10 @@ signals:
     void stopped();
     void errorOccurred(const QString &message);
     void datagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port);
+    /// Emitted from the worker thread once per successfully read datagram.
+    void packetReceived();
+    /// Emitted from the worker thread when a datagram cannot be JSON-decoded.
+    void decodeError();
 
 private slots:
     void onReadyRead();

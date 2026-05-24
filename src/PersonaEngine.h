@@ -19,6 +19,16 @@ class CharacterPack;
  * a TipsCatalog fallback synchronously; in Task 9 they will also fire an
  * LLM call and emit tipUpgraded() when the response arrives.
  */
+struct PersonaStats {
+    int refillsOk    = 0;
+    int refillsFail  = 0;
+    int ondemandOk   = 0;
+    int ondemandFail = 0;
+    qint64 tokensIn  = 0;
+    qint64 tokensOut = 0;
+    QString lastError;
+};
+
 class PersonaEngine : public QObject
 {
     Q_OBJECT
@@ -42,6 +52,8 @@ public:
     /// Test seam — expose internal pool for seeding.
     PersonaPool &pool() { return m_pool; }
 
+    PersonaStats stats() const { return m_stats; }
+
     static Tier tierFor(const QString &eventName);
 
 signals:
@@ -57,6 +69,8 @@ private:
 
     QString m_activePackId;
     QString m_personaHash;
+
+    PersonaStats m_stats;
 
     PersonaPool m_pool;
     LLMProvider m_provider;

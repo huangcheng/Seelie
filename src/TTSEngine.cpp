@@ -3,6 +3,7 @@
 
 #include <QAudioDecoder>
 #include <QBuffer>
+#include <QDateTime>
 #include <QDebug>
 #include <QLoggingCategory>
 #include <QMediaDevices>
@@ -300,11 +301,13 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
         m_pendingCacheKey = seelie::tts::TtsVoiceCache::cacheKey(
             providerId, voiceId, modelId, opts, text);
 
+        ++m_stats.sessionRequests;
         if (!bypassCacheRead && m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {
             QByteArray cachedAudio = m_voiceCache->getCachedAudio(m_pendingCacheKey);
             if (!cachedAudio.isEmpty()) {
                 qCInfo(lcTts) << "cache hit, returning cached audio for key:"
                               << m_pendingCacheKey;
+                ++m_stats.sessionHits;
                 SynthesisResult result;
                 result.audio = std::move(cachedAudio);
                 QString cachedMime = m_voiceCache->getCachedMimeType(m_pendingCacheKey);
@@ -315,6 +318,9 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
                 return;
             }
         }
+        // Cache miss — record for diagnostics.
+        m_stats.lastMissMs   = QDateTime::currentMSecsSinceEpoch();
+        m_stats.lastMissText = text;
     } else {
         m_pendingCacheKey.clear();
     }

@@ -18,6 +18,17 @@
 class ConfigManager;
 class QNetworkAccessManager;
 
+// NOTE: TTS counters are in-memory only (no MemoryManager persistence).
+// TTSEngine runs on a worker thread; calling SQLite from the worker would
+// violate the single-connection thread invariant. Per-session hit rate is
+// sufficient — a TTSEngine restart resets the counters intentionally.
+struct TtsStats {
+    int sessionRequests = 0;
+    int sessionHits     = 0;
+    qint64 lastMissMs   = 0;
+    QString lastMissText;
+};
+
 class TTSEngine : public QObject
 {
     Q_OBJECT
@@ -28,6 +39,8 @@ public:
 
     void start();
     void stop();
+
+    TtsStats stats() const { return m_stats; }
 
 public slots:
     void speak(const QString &text);
@@ -106,6 +119,8 @@ private:
     bool m_speaking = false;
 
     static constexpr int kMaxRetries = 2;
+
+    TtsStats m_stats;
 };
 
 #endif
