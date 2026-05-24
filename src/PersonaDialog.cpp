@@ -58,13 +58,14 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     m_closeButton->setFont(personaFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
+    // Identical to SettingsPanelWidget's close button styling.
     m_closeButton->setStyleSheet(QStringLiteral(R"(
         QPushButton {
-            background: white;
-            border: 2px solid black;
-            border-radius: 0;
-            color: black;
-            padding: 0;
+            background: transparent;
+            border: none;
+            border-radius: 3px;
+            color: #888;
+            padding: 0px;
             min-width: 0;       /* override personaDialogQss cascade */
             min-height: 0;
             max-width: 22px;
@@ -72,10 +73,6 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
         }
         QPushButton:hover {
             background: #F36F1A;
-            color: white;
-        }
-        QPushButton:pressed {
-            background: #C95A14;
             color: white;
         }
     )"));
