@@ -1,4 +1,5 @@
 #include "SettingsPanelWidget.h"
+#include "EditLLMProfileDialog.h"
 #include "ConfigManager.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
@@ -46,6 +47,7 @@
 #include <QMenu>
 #include <QActionGroup>
 #include <QTransform>
+#include <QElapsedTimer>
 
 // All UI fonts in this panel are HarmonyOS Sans SC. The panel is translucent,
 // so Windows can't apply ClearType subpixel AA — Qt falls back to grayscale.
@@ -1526,9 +1528,61 @@ void SettingsPanelWidget::refreshLlmProfilesUi()
     m_shareMemoryCheck->setChecked(m_config->shareMemoryWithAi());
 }
 
-void SettingsPanelWidget::onAddProfileClicked()    { /* Task 14 */ }
-void SettingsPanelWidget::onEditProfileClicked()   { /* Task 14 */ }
-void SettingsPanelWidget::onTestConnectionClicked(){ /* Task 14 */ }
+void SettingsPanelWidget::onAddProfileClicked()
+{
+    if (!m_config) return;
+    EditLLMProfileDialog dlg({}, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    auto profiles = m_config->llmProfiles();
+    profiles.append(dlg.profile());
+    m_config->setLLMProfiles(profiles);
+    refreshLlmProfilesUi();
+}
+
+void SettingsPanelWidget::onEditProfileClicked()
+{
+    if (!m_config) return;
+    const int row = m_llmProfilesList->currentRow();
+    if (row < 0) return;
+    auto profiles = m_config->llmProfiles();
+    if (row >= profiles.size()) return;
+    EditLLMProfileDialog dlg(profiles[row], this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    profiles[row] = dlg.profile();
+    m_config->setLLMProfiles(profiles);
+    refreshLlmProfilesUi();
+}
+
+void SettingsPanelWidget::onTestConnectionClicked()
+{
+    if (!m_config) return;
+    const int row = m_llmProfilesList->currentRow();
+    if (row < 0) {
+        m_llmLastErrorLabel->setText(tr("Select a profile first"));
+        return;
+    }
+    const auto profile = m_config->llmProfiles().value(row);
+
+    if (m_testProvider.isNull()) m_testProvider.reset(new LLMProvider(this));
+    m_testProvider->setProfile(profile);
+    m_testProvider->setTimeoutMs(5000);
+
+    auto elapsed = std::make_shared<QElapsedTimer>();
+    elapsed->start();
+    m_llmLastErrorLabel->setText(tr("Testing..."));
+    m_testProvider->generate(
+        QStringLiteral("Reply with the single word OK."),
+        QStringLiteral("ping"),
+        [this, elapsed](LLMResult r) {
+            const qint64 ms = elapsed->elapsed();
+            if (!m_llmLastErrorLabel) return;
+            if (r.ok) {
+                m_llmLastErrorLabel->setText(tr("✓ %1 ms").arg(ms));
+            } else {
+                m_llmLastErrorLabel->setText(tr("✗ %1").arg(r.error));
+            }
+        });
+}
 
 void SettingsPanelWidget::onDeleteProfileClicked()
 {

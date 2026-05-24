@@ -1,10 +1,12 @@
 #ifndef SETTINGSPANELWIDGET_H
 #define SETTINGSPANELWIDGET_H
 
+#include "llm/LLMProvider.h"
 #include <QWidget>
 #include <QString>
 #include <QPropertyAnimation>
 #include <QListWidget>
+#include <QScopedPointer>
 
 class ConfigManager;
 class CharacterPackManager;
@@ -163,6 +165,7 @@ private:
     QPushButton  *m_regenPoolBtn = nullptr;
     QLabel       *m_llmLastErrorLabel = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
+    QScopedPointer<LLMProvider> m_testProvider;
 
     // Profile tab widgets (stored for retranslation)
     QLabel *m_nameLabel = nullptr;
