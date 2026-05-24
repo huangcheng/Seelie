@@ -28,7 +28,7 @@ QLabel *mkVal(const QString &objectName, QWidget *parent)
 StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
                                    EventRouter *e, IpcServer *i,
                                    PersonaEngine *p, QWidget *parent)
-    : PersonaDialog(tr("Statistics"), 480, 620, parent),
+    : PersonaDialog(tr("Statistics"), 480, 660, parent),
       m_memory(m), m_tts(t), m_events(e), m_ipc(i), m_persona(p),
       m_refreshTimer(new QTimer(this))
 {

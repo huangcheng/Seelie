@@ -2,7 +2,9 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QFrame>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QMouseEvent>
@@ -23,30 +25,33 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     , m_bodyWidth(bodyW)
     , m_bodyHeight(bodyH)
 {
-    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint);
+    setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground, true);
+    setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_NoSystemBackground, true);
 
-    // Total window size: body + shadow margins on all sides + title bar on top
-    setFixedSize(bodyW + SHADOW_BLUR * 2,
-                 bodyH + TITLE_BAR_HEIGHT + SHADOW_BLUR * 2);
+    // Window size: body + shadow margins on all sides (mirrors Settings)
+    setFixedSize(bodyW + SHADOW_BLUR * 2, bodyH + SHADOW_BLUR * 2);
 
-    // --- Title bar (drawn over the painted chrome, at the top of the body rect) ---
-    m_titleBar = new QWidget(this);
-    m_titleBar->setGeometry(SHADOW_BLUR, SHADOW_BLUR, bodyW, TITLE_BAR_HEIGHT);
-    m_titleBar->setStyleSheet(QStringLiteral("background: transparent;"));
-    m_titleBar->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+    // Single panel widget spans the full body
+    m_panelWidget = new QWidget(this);
+    m_panelWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, bodyW, bodyH);
+    m_panelWidget->setStyleSheet(QStringLiteral("background: transparent;"));
 
-    auto *titleBarLayout = new QHBoxLayout(m_titleBar);
-    titleBarLayout->setContentsMargins(10, 0, 4, 0);
-    titleBarLayout->setSpacing(4);
+    auto *mainLayout = new QVBoxLayout(m_panelWidget);
+    mainLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
+    mainLayout->setSpacing(VERTICAL_SPACING);
 
-    m_titleLabel = new QLabel(title, m_titleBar);
+    // Title row
+    auto *titleRow = new QHBoxLayout;
+    titleRow->setSpacing(4);
+
+    m_titleLabel = new QLabel(title, m_panelWidget);
     m_titleLabel->setFont(personaFont(10, QFont::Bold));
     m_titleLabel->setStyleSheet(QStringLiteral("color: black; background: transparent;"));
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_closeButton = new QPushButton(tr("×"), m_titleBar);
+    m_closeButton = new QPushButton(tr("×"), m_panelWidget);
     m_closeButton->setFont(personaFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
@@ -65,20 +70,24 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     )"));
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::reject);
 
-    titleBarLayout->addWidget(m_titleLabel, 1);
-    titleBarLayout->addWidget(m_closeButton);
+    titleRow->addWidget(m_titleLabel, 1);
+    titleRow->addWidget(m_closeButton);
+    mainLayout->addLayout(titleRow);
 
-    // --- Content widget (sits below the title bar, inside the shadow margins) ---
-    m_contentWidget = new QWidget(this);
-    m_contentWidget->setGeometry(SHADOW_BLUR,
-                                  SHADOW_BLUR + TITLE_BAR_HEIGHT,
-                                  bodyW,
-                                  bodyH);
-    m_contentWidget->setStyleSheet(QStringLiteral("background: white;"));
+    // Separator line — QFrame widget, NOT painted
+    m_separator = new QFrame(m_panelWidget);
+    m_separator->setFrameShape(QFrame::HLine);
+    m_separator->setFrameShadow(QFrame::Plain);
+    m_separator->setStyleSheet(QStringLiteral("border: none; border-top: 2px solid black; background: transparent;"));
+    m_separator->setFixedHeight(1);
+    mainLayout->addWidget(m_separator);
 
-    // Open centered on the primary screen so the soft shadow gutter
-    // doesn't overlap the SettingsPanel (which would show through and
-    // look broken).
+    // Content area below separator (this is what subclasses fill)
+    m_contentArea = new QWidget(m_panelWidget);
+    m_contentArea->setStyleSheet(QStringLiteral("background: transparent;"));
+    mainLayout->addWidget(m_contentArea, 1);  // takes remaining space
+
+    // Center on primary screen (keep existing behavior)
     if (auto *screen = QGuiApplication::primaryScreen()) {
         const QRect avail = screen->availableGeometry();
         move(avail.center().x() - width() / 2,
@@ -99,9 +108,7 @@ void PersonaDialog::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // The body rect spans the full height including title bar + content.
-    const qreal totalBodyH = m_bodyHeight + TITLE_BAR_HEIGHT;
-    const QRectF body(SHADOW_BLUR, SHADOW_BLUR, m_bodyWidth, totalBodyH);
+    const QRectF body(SHADOW_BLUR, SHADOW_BLUR, m_bodyWidth, m_bodyHeight);
     const qreal r  = CORNER_RADIUS;
     const qreal sk = SKEW_PX;
 
@@ -140,22 +147,14 @@ void PersonaDialog::paintEvent(QPaintEvent *event)
     painter.setBrush(QColor(0xF3, 0x6F, 0x1A));
     painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
     painter.restore();
-
-    // Separator line between title bar and content
-    painter.save();
-    painter.setClipPath(panelPath);
-    painter.setPen(QPen(Qt::black, 2));
-    const qreal sepY = body.top() + TITLE_BAR_HEIGHT;
-    painter.drawLine(QPointF(body.left(), sepY), QPointF(body.right() + sk, sepY));
-    painter.restore();
 }
 
 void PersonaDialog::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Allow dragging from the title bar area
-        const QRect titleBarRect(SHADOW_BLUR, SHADOW_BLUR, m_bodyWidth, TITLE_BAR_HEIGHT);
-        if (titleBarRect.contains(event->pos())) {
+        // Drag region: top 32px of the panel where the title row lives.
+        const QRect dragZone(SHADOW_BLUR, SHADOW_BLUR, m_bodyWidth, 32);
+        if (dragZone.contains(event->pos())) {
             m_dragging = true;
             m_dragOffset = event->globalPosition().toPoint() - frameGeometry().topLeft();
             event->accept();

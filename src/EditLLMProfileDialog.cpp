@@ -7,7 +7,7 @@
 #include <QPushButton>
 
 EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *parent)
-    : PersonaDialog(tr("LLM Profile"), 320, 220, parent)
+    : PersonaDialog(tr("LLM Profile"), 320, 260, parent)
 {
     setStyleSheet(StyleUtils::personaDialogQss());
     auto *form = new QFormLayout(contentWidget());

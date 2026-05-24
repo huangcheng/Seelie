@@ -5,6 +5,7 @@
 
 class QLabel;
 class QPushButton;
+class QFrame;
 class QVBoxLayout;
 
 /**
@@ -25,14 +26,15 @@ class PersonaDialog : public QDialog
 {
     Q_OBJECT
 public:
-    /// title — drawn in the dialog's hand-painted title bar.
-    /// bodyW / bodyH — the inner content area dimensions (excluding the
-    ///   shadow + title bar). The actual window is larger by SHADOW_BLUR
-    ///   on all four sides plus title bar height on top.
+    /// title — drawn in the dialog's title row.
+    /// bodyW / bodyH — the FULL panel dimensions (excluding shadow margins
+    ///   on all four sides). Matches SettingsPanelWidget's PANEL_WIDTH ×
+    ///   PANEL_HEIGHT semantics.
     PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget *parent = nullptr);
 
-    /// Container for dialog content. Add a layout to this, not to `this`.
-    QWidget *contentWidget() const { return m_contentWidget; }
+    /// Container for dialog content (below the separator). Add a layout to
+    /// this, not to `this`.
+    QWidget *contentWidget() const { return m_contentArea; }
 
     /// Re-emit the title (used if subclass changes its own title).
     void setPersonaTitle(const QString &title);
@@ -44,10 +46,11 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
-    QLabel *m_titleLabel = nullptr;
+    QLabel      *m_titleLabel  = nullptr;
     QPushButton *m_closeButton = nullptr;
-    QWidget *m_titleBar = nullptr;
-    QWidget *m_contentWidget = nullptr;
+    QFrame      *m_separator   = nullptr;
+    QWidget     *m_panelWidget = nullptr;   // spans the full body (transparent bg)
+    QWidget     *m_contentArea = nullptr;   // child of m_panelWidget, below separator
 
     int m_bodyWidth;
     int m_bodyHeight;
@@ -56,11 +59,12 @@ private:
     QPoint m_dragOffset;
     bool m_dragging = false;
 
-    static constexpr int SHADOW_BLUR    = 10;
-    static constexpr int CORNER_RADIUS  = 4;
-    static constexpr int BORDER_WIDTH   = 3;
-    static constexpr int SKEW_PX        = 4;
-    static constexpr int TITLE_BAR_HEIGHT = 30;
+    static constexpr int SHADOW_BLUR   = 10;
+    static constexpr int CORNER_RADIUS = 4;
+    static constexpr int BORDER_WIDTH  = 3;
+    static constexpr int SKEW_PX       = 4;
+    static constexpr int PADDING       = 14;   // match SettingsPanelWidget
+    static constexpr int VERTICAL_SPACING = 12; // match SettingsPanelWidget
 };
 
 #endif // PERSONA_DIALOG_H
