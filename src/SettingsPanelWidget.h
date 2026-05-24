@@ -94,6 +94,7 @@ private slots:
     void onDeleteProfileClicked();
     void onTestConnectionClicked();
     void onRegenPoolClicked();
+    void onProfilesListContextMenu(const QPoint &pos);
 #ifdef SEELIE_TTS_ENABLED
     void onTtsEnabledToggled(bool checked);
     void onTtsProviderChanged(int comboIndex);
@@ -160,7 +161,6 @@ private:
     QPushButton  *m_llmEditBtn = nullptr;
     QPushButton  *m_llmDeleteBtn = nullptr;
     QPushButton  *m_llmTestBtn = nullptr;
-    QComboBox    *m_personaProfileCombo = nullptr;
     QCheckBox    *m_personaEnabledCheck = nullptr;
     QCheckBox    *m_shareMemoryCheck = nullptr;
     QPushButton  *m_regenPoolBtn = nullptr;

@@ -46,6 +46,7 @@
 #include <QGroupBox>
 #include <QToolButton>
 #include <QMenu>
+#include <QAction>
 #include <QActionGroup>
 #include <QTransform>
 #include <QElapsedTimer>
@@ -754,18 +755,13 @@ void SettingsPanelWidget::setupUi()
         pgLayout->addLayout(pgBtnRow);
         llmLayout->addWidget(profilesGroup);
 
-        // --- Persona group ---
-        auto *personaGroup = new QGroupBox(tr("Persona"), m_llmTab);
-        auto *pgForm = new QFormLayout(personaGroup);
-        pgForm->setHorizontalSpacing(10);
-        m_personaProfileCombo = new QComboBox(personaGroup);
-        m_personaProfileCombo->setFont(harmonyFont(9));
-        m_personaProfileCombo->setMaximumWidth(140);
-        m_personaProfileCombo->setStyleSheet(StyleUtils::personaComboQss());
+        // The default-profile picker is the right-click context menu on the
+        // Profiles list above; the default profile is marked with a ✓ prefix.
         // m_personaEnabledCheck lives in the General tab next to "Enable TTS"
         // so the two global feature toggles are co-located.
-        pgForm->addRow(tr("Profile:"), m_personaProfileCombo);
-        llmLayout->addWidget(personaGroup);
+        m_llmProfilesList->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_llmProfilesList, &QListWidget::customContextMenuRequested,
+                this, &SettingsPanelWidget::onProfilesListContextMenu);
 
         // --- Privacy group ---
         auto *privacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
@@ -802,11 +798,13 @@ void SettingsPanelWidget::setupUi()
         // m_personaEnabledCheck::toggled is connected in the General tab section.
         connect(m_shareMemoryCheck, &QCheckBox::toggled,
                 m_config, &ConfigManager::setShareMemoryWithAi);
-        connect(m_personaProfileCombo, &QComboBox::currentTextChanged,
-                m_config, &ConfigManager::setPersonaProfile);
 
         connect(m_config, &ConfigManager::llmProfilesChanged,
                 this, &SettingsPanelWidget::refreshLlmProfilesUi);
+        // Re-render the list when the default profile changes so the ✓
+        // moves to the right row.
+        connect(m_config, &ConfigManager::personaProfileChanged,
+                this, [this](const QString &) { refreshLlmProfilesUi(); });
     }
 
     // Populate profile list now that all widgets exist and signals are wired
@@ -1529,8 +1527,7 @@ void SettingsPanelWidget::refreshLlmProfilesUi()
 {
     if (!m_config) return;
     m_llmProfilesList->clear();
-    m_personaProfileCombo->blockSignals(true);
-    m_personaProfileCombo->clear();
+    const QString defaultProfile = m_config->personaProfile();
     for (const auto &p : m_config->llmProfiles()) {
         QString protoName;
         switch (p.protocol) {
@@ -1538,18 +1535,50 @@ void SettingsPanelWidget::refreshLlmProfilesUi()
         case LLMProfile::Protocol::OpenAIResponses:   protoName = tr("OpenAI Responses"); break;
         case LLMProfile::Protocol::AnthropicMessages: protoName = tr("Anthropic"); break;
         }
+        // ✓ prefix on the default profile, two spaces on the others so names
+        // stay column-aligned. Right-click → "Set as default" moves the mark.
+        const QString prefix = (p.name == defaultProfile)
+                               ? QStringLiteral("✓ ")
+                               : QStringLiteral("  ");
         auto *item = new QListWidgetItem(
-            QStringLiteral("%1  ·  %2").arg(p.name, p.model));
+            prefix + QStringLiteral("%1  ·  %2").arg(p.name, p.model));
+        item->setData(Qt::UserRole, p.name);  // raw name, no prefix
         item->setToolTip(protoName + (p.baseUrl.isEmpty()
                                       ? QString()
                                       : QStringLiteral("\n") + p.baseUrl));
         m_llmProfilesList->addItem(item);
-        m_personaProfileCombo->addItem(p.name);
     }
-    m_personaProfileCombo->setCurrentText(m_config->personaProfile());
-    m_personaProfileCombo->blockSignals(false);
     m_personaEnabledCheck->setChecked(m_config->personaEnabled());
     m_shareMemoryCheck->setChecked(m_config->shareMemoryWithAi());
+}
+
+void SettingsPanelWidget::onProfilesListContextMenu(const QPoint &pos)
+{
+    if (!m_config) return;
+    auto *item = m_llmProfilesList->itemAt(pos);
+    if (!item) return;
+    const QString name = item->data(Qt::UserRole).toString();
+    if (name.isEmpty()) return;
+
+    QMenu menu(this);
+    QAction *setDefault = menu.addAction(tr("Set as default"));
+    setDefault->setEnabled(name != m_config->personaProfile());
+    menu.addSeparator();
+    QAction *editAction   = menu.addAction(tr("Edit..."));
+    QAction *deleteAction = menu.addAction(tr("Delete"));
+    QAction *testAction   = menu.addAction(tr("Test connection"));
+
+    QAction *chosen = menu.exec(m_llmProfilesList->viewport()->mapToGlobal(pos));
+    if (!chosen) return;
+    if (chosen == setDefault) {
+        m_config->setPersonaProfile(name);
+    } else if (chosen == editAction) {
+        onEditProfileClicked();
+    } else if (chosen == deleteAction) {
+        onDeleteProfileClicked();
+    } else if (chosen == testAction) {
+        onTestConnectionClicked();
+    }
 }
 
 void SettingsPanelWidget::onAddProfileClicked()
@@ -1613,11 +1642,17 @@ void SettingsPanelWidget::onDeleteProfileClicked()
     if (!m_config) return;
     auto *item = m_llmProfilesList->currentItem();
     if (!item) return;
-    const QString name = item->text().split(QStringLiteral("  ·  ")).first().trimmed();
+    const QString name = item->data(Qt::UserRole).toString();
+    if (name.isEmpty()) return;
     auto profiles = m_config->llmProfiles();
     profiles.erase(std::remove_if(profiles.begin(), profiles.end(),
         [&](const LLMProfile &p){ return p.name == name; }), profiles.end());
     m_config->setLLMProfiles(profiles);
+    // If we deleted the default profile, clear the assignment so the user
+    // has to explicitly mark another (no silent inheritance of a stale name).
+    if (m_config->personaProfile() == name) {
+        m_config->setPersonaProfile(QString());
+    }
     refreshLlmProfilesUi();
 }
 
