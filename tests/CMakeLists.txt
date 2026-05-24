@@ -59,6 +59,7 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.h
     ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.cpp
+    ${CMAKE_SOURCE_DIR}/src/llm/LLMProfile.h
 )
 
 # Manual live tests. Compiled by `cmake --build . --target test_tts_live`
@@ -96,6 +97,7 @@ set(TEST_SOURCES
     test_platform_window.cpp
     test_character_pack_manager_errors.cpp
     test_character_pack_persona.cpp
+    test_llm_profile.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})

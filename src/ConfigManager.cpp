@@ -68,6 +68,28 @@ ConfigManager::ConfigManager(QObject *parent)
 
 void ConfigManager::load()
 {
+    // Always read LLM settings regardless of whether a full config exists.
+    // This ensures testEmptyOnFirstRun (and any cleared-settings scenario)
+    // gets empty profiles rather than stale in-memory data, since these keys
+    // live in a separate section and must always reflect the on-disk state.
+    m_llmProfiles.clear();
+    const int llmN = m_settings.beginReadArray(QStringLiteral("llm/profiles"));
+    for (int i = 0; i < llmN; ++i) {
+        m_settings.setArrayIndex(i);
+        LLMProfile p;
+        p.name = m_settings.value(QStringLiteral("name")).toString();
+        p.protocol = static_cast<LLMProfile::Protocol>(
+            m_settings.value(QStringLiteral("protocol"), 0).toInt());
+        p.baseUrl = m_settings.value(QStringLiteral("baseUrl")).toString();
+        p.apiKey = m_settings.value(QStringLiteral("apiKey")).toString();
+        p.model = m_settings.value(QStringLiteral("model")).toString();
+        if (!p.name.isEmpty()) m_llmProfiles.append(p);
+    }
+    m_settings.endArray();
+    m_personaProfile = m_settings.value(QStringLiteral("llm/personaProfile")).toString();
+    m_personaEnabled = m_settings.value(QStringLiteral("llm/personaEnabled"), false).toBool();
+    m_shareMemoryWithAi = m_settings.value(QStringLiteral("llm/shareMemoryWithAi"), false).toBool();
+
     if (!m_settings.contains("language")) {
         qDebug() << "No config file found, using defaults";
         return;
@@ -403,4 +425,53 @@ void ConfigManager::setTtsProviderField(const QString &providerId,
 QHash<QString, QString> ConfigManager::ttsProviderConfig(const QString &providerId) const
 {
     return m_ttsProviders.value(providerId);
+}
+
+void ConfigManager::setLLMProfiles(const QVector<LLMProfile> &profiles)
+{
+    m_llmProfiles = profiles;
+
+    // QSettings arrays must be cleared first or stale entries persist.
+    m_settings.remove(QStringLiteral("llm/profiles"));
+
+    m_settings.beginWriteArray(QStringLiteral("llm/profiles"));
+    for (int i = 0; i < m_llmProfiles.size(); ++i) {
+        const auto &p = m_llmProfiles[i];
+        m_settings.setArrayIndex(i);
+        m_settings.setValue(QStringLiteral("name"), p.name);
+        m_settings.setValue(QStringLiteral("protocol"), static_cast<int>(p.protocol));
+        m_settings.setValue(QStringLiteral("baseUrl"), p.baseUrl);
+        m_settings.setValue(QStringLiteral("apiKey"), p.apiKey);
+        m_settings.setValue(QStringLiteral("model"), p.model);
+    }
+    m_settings.endArray();
+    save();
+    emit llmProfilesChanged();
+}
+
+void ConfigManager::setPersonaProfile(const QString &name)
+{
+    if (m_personaProfile == name) return;
+    m_personaProfile = name;
+    m_settings.setValue(QStringLiteral("llm/personaProfile"), name);
+    save();
+    emit personaProfileChanged(name);
+}
+
+void ConfigManager::setPersonaEnabled(bool enabled)
+{
+    if (m_personaEnabled == enabled) return;
+    m_personaEnabled = enabled;
+    m_settings.setValue(QStringLiteral("llm/personaEnabled"), enabled);
+    save();
+    emit personaEnabledChanged(enabled);
+}
+
+void ConfigManager::setShareMemoryWithAi(bool enabled)
+{
+    if (m_shareMemoryWithAi == enabled) return;
+    m_shareMemoryWithAi = enabled;
+    m_settings.setValue(QStringLiteral("llm/shareMemoryWithAi"), enabled);
+    save();
+    emit shareMemoryWithAiChanged(enabled);
 }

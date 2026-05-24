@@ -7,6 +7,8 @@
 #include <QString>
 #include <QSettings>
 #include <QTimer>
+#include <QVector>
+#include "llm/LLMProfile.h"
 
 class ConfigManager : public QObject
 {
@@ -96,6 +98,20 @@ public:
     /** Read all fields for a given provider stable ID. */
     QHash<QString, QString> ttsProviderConfig(const QString &providerId) const;
 
+    // --- LLM (AI Persona Layer) -------------------------------------------------
+
+    QVector<LLMProfile> llmProfiles() const { return m_llmProfiles; }
+    void setLLMProfiles(const QVector<LLMProfile> &profiles);
+
+    QString personaProfile() const { return m_personaProfile; }
+    void setPersonaProfile(const QString &name);
+
+    bool personaEnabled() const { return m_personaEnabled; }
+    void setPersonaEnabled(bool enabled);
+
+    bool shareMemoryWithAi() const { return m_shareMemoryWithAi; }
+    void setShareMemoryWithAi(bool enabled);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -127,6 +143,10 @@ signals:
                                  const QString &field,
                                  const QString &value);
     void ttsCacheInvalidated();
+    void llmProfilesChanged();
+    void personaProfileChanged(const QString &name);
+    void personaEnabledChanged(bool enabled);
+    void shareMemoryWithAiChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -146,6 +166,11 @@ private:
     bool m_ttsEnabled = false;
     QString m_ttsActiveProvider = QStringLiteral("stepfun");
     QHash<QString, QHash<QString, QString>> m_ttsProviders;  // providerId -> field -> value
+
+    QVector<LLMProfile> m_llmProfiles;
+    QString m_personaProfile;
+    bool m_personaEnabled = false;
+    bool m_shareMemoryWithAi = false;
 
 };
 
