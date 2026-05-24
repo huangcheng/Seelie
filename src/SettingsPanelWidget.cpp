@@ -1502,7 +1502,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
     actionRow->setContentsMargins(0, 0, 0, 0);
     actionRow->setSpacing(8);
     actionRow->addWidget(m_ttsTestButton, 1);
-    actionRow->addWidget(m_ttsClearCacheButton, 0);
+    actionRow->addWidget(m_ttsClearCacheButton, 1);
     aiLayout->addLayout(actionRow);
 }
 #endif
