@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QMouseEvent>
 #include <QFont>
+#include <QGuiApplication>
+#include <QScreen>
 
 static QFont personaFont(int pointSize, QFont::Weight weight = QFont::Normal)
 {
@@ -44,7 +46,7 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
     m_titleLabel->setStyleSheet(QStringLiteral("color: black; background: transparent;"));
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_closeButton = new QPushButton(QStringLiteral("\xC3\x97"), m_titleBar); // UTF-8 ×
+    m_closeButton = new QPushButton(tr("×"), m_titleBar);
     m_closeButton->setFont(personaFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
@@ -73,6 +75,15 @@ PersonaDialog::PersonaDialog(const QString &title, int bodyW, int bodyH, QWidget
                                   bodyW,
                                   bodyH);
     m_contentWidget->setStyleSheet(QStringLiteral("background: white;"));
+
+    // Open centered on the primary screen so the soft shadow gutter
+    // doesn't overlap the SettingsPanel (which would show through and
+    // look broken).
+    if (auto *screen = QGuiApplication::primaryScreen()) {
+        const QRect avail = screen->availableGeometry();
+        move(avail.center().x() - width() / 2,
+             avail.center().y() - height() / 2);
+    }
 }
 
 void PersonaDialog::setPersonaTitle(const QString &title)
