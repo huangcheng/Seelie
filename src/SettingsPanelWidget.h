@@ -214,8 +214,8 @@ private:
     static constexpr int CORNER_RADIUS = 4;
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
-    static constexpr int PANEL_WIDTH = 300;
-    static constexpr int PANEL_HEIGHT = 400;
+    static constexpr int PANEL_WIDTH = 420;
+    static constexpr int PANEL_HEIGHT = 520;
 };
 
 #endif // SETTINGSPANELWIDGET_H
