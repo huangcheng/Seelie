@@ -64,6 +64,8 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/llm/LLMProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/PersonaPool.h
     ${CMAKE_SOURCE_DIR}/src/PersonaPool.cpp
+    ${CMAKE_SOURCE_DIR}/src/PersonaEngine.h
+    ${CMAKE_SOURCE_DIR}/src/PersonaEngine.cpp
 )
 
 # Manual live tests. Compiled by `cmake --build . --target test_tts_live`
@@ -104,6 +106,7 @@ set(TEST_SOURCES
     test_llm_profile.cpp
     test_llm_provider.cpp
     test_persona_pool.cpp
+    test_persona_engine.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
