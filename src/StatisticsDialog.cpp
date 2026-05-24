@@ -28,17 +28,16 @@ QLabel *mkVal(const QString &objectName, QWidget *parent)
 StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
                                    EventRouter *e, IpcServer *i,
                                    PersonaEngine *p, QWidget *parent)
-    : QDialog(parent), m_memory(m), m_tts(t), m_events(e), m_ipc(i), m_persona(p),
+    : PersonaDialog(tr("Statistics"), 480, 620, parent),
+      m_memory(m), m_tts(t), m_events(e), m_ipc(i), m_persona(p),
       m_refreshTimer(new QTimer(this))
 {
-    setWindowTitle(tr("Statistics"));
-    setFixedSize(480, 620);
     setStyleSheet(StyleUtils::personaDialogQss());
 
-    auto *root = new QVBoxLayout(this);
+    auto *root = new QVBoxLayout(contentWidget());
 
     auto mkSection = [&](const QString &title) {
-        auto *g = new QGroupBox(title, this);
+        auto *g = new QGroupBox(title, contentWidget());
         auto *f = new QFormLayout(g);
         root->addWidget(g);
         return f;
@@ -63,9 +62,9 @@ StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
     ipc->addRow(tr("Decode errors:"),    mkVal(QStringLiteral("ipcErrorsLabel"), this));
 
     auto *btnRow = new QHBoxLayout;
-    auto *refreshBtn = new QPushButton(tr("Refresh"), this);
-    auto *resetBtn   = new QPushButton(tr("Reset stats"), this);
-    auto *closeBtn   = new QPushButton(tr("Close"), this);
+    auto *refreshBtn = new QPushButton(tr("Refresh"), contentWidget());
+    auto *resetBtn   = new QPushButton(tr("Reset stats"), contentWidget());
+    auto *closeBtn   = new QPushButton(tr("Close"), contentWidget());
     btnRow->addWidget(refreshBtn);
     btnRow->addWidget(resetBtn);
     btnRow->addStretch();

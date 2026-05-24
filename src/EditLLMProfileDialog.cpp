@@ -7,22 +7,21 @@
 #include <QPushButton>
 
 EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *parent)
-    : QDialog(parent)
+    : PersonaDialog(tr("LLM Profile"), 320, 220, parent)
 {
-    setWindowTitle(tr("LLM Profile"));
     setStyleSheet(StyleUtils::personaDialogQss());
-    auto *form = new QFormLayout(this);
+    auto *form = new QFormLayout(contentWidget());
 
-    m_name = new QLineEdit(initial.name, this);
-    m_protocol = new QComboBox(this);
+    m_name = new QLineEdit(initial.name, contentWidget());
+    m_protocol = new QComboBox(contentWidget());
     m_protocol->addItem(tr("OpenAI Chat"),         int(LLMProfile::Protocol::OpenAIChat));
     m_protocol->addItem(tr("OpenAI Responses"),    int(LLMProfile::Protocol::OpenAIResponses));
     m_protocol->addItem(tr("Anthropic Messages"),  int(LLMProfile::Protocol::AnthropicMessages));
     m_protocol->setCurrentIndex(int(initial.protocol));
-    m_baseUrl = new QLineEdit(initial.baseUrl, this);
-    m_apiKey = new QLineEdit(initial.apiKey, this);
+    m_baseUrl = new QLineEdit(initial.baseUrl, contentWidget());
+    m_apiKey = new QLineEdit(initial.apiKey, contentWidget());
     m_apiKey->setEchoMode(QLineEdit::Password);
-    m_model = new QLineEdit(initial.model, this);
+    m_model = new QLineEdit(initial.model, contentWidget());
 
     form->addRow(tr("Name:"),     m_name);
     form->addRow(tr("Protocol:"), m_protocol);
@@ -30,7 +29,8 @@ EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *p
     form->addRow(tr("API key:"),  m_apiKey);
     form->addRow(tr("Model:"),    m_model);
 
-    auto *bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    auto *bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                                    contentWidget());
     form->addRow(bb);
     connect(bb, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);

@@ -1,7 +1,7 @@
 #ifndef STATISTICS_DIALOG_H
 #define STATISTICS_DIALOG_H
 
-#include <QDialog>
+#include "PersonaDialog.h"
 
 class MemoryManager;
 class TTSEngine;
@@ -10,7 +10,7 @@ class IpcServer;
 class PersonaEngine;
 class QTimer;
 
-class StatisticsDialog : public QDialog
+class StatisticsDialog : public PersonaDialog
 {
     Q_OBJECT
 public:

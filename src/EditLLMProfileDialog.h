@@ -2,12 +2,12 @@
 #define EDIT_LLM_PROFILE_DIALOG_H
 
 #include "llm/LLMProfile.h"
-#include <QDialog>
+#include "PersonaDialog.h"
 
 class QLineEdit;
 class QComboBox;
 
-class EditLLMProfileDialog : public QDialog
+class EditLLMProfileDialog : public PersonaDialog
 {
     Q_OBJECT
 public:

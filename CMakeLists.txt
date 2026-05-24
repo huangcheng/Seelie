@@ -370,6 +370,8 @@ qt_add_executable(Seelie
     src/TipWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/PersonaDialog.cpp
+    src/PersonaDialog.h
     src/EditLLMProfileDialog.cpp
     src/EditLLMProfileDialog.h
     src/StatisticsDialog.cpp
