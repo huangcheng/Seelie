@@ -170,4 +170,26 @@ QString personaDialogQss()
     )").arg(arrowPath);
 }
 
+QString personaButtonQss()
+{
+    return QStringLiteral(R"(
+        QPushButton {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            color: #2C2C2E;
+            padding: 4px 8px;
+            min-width: 60px;
+        }
+        QPushButton:hover {
+            background: #F36F1A;
+            color: white;
+        }
+        QPushButton:pressed {
+            background: #C85A12;
+            color: white;
+        }
+    )");
+}
+
 } // namespace StyleUtils

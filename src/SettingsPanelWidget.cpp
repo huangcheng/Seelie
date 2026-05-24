@@ -1,5 +1,6 @@
 #include "SettingsPanelWidget.h"
 #include "EditLLMProfileDialog.h"
+#include "StyleUtils.h"
 #include "ConfigManager.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
@@ -728,6 +729,7 @@ void SettingsPanelWidget::setupUi()
         for (auto *btn : {m_llmAddBtn, m_llmEditBtn, m_llmDeleteBtn, m_llmTestBtn}) {
             btn->setFont(harmonyFont(9));
             btn->setCursor(Qt::PointingHandCursor);
+            btn->setStyleSheet(StyleUtils::personaButtonQss());
         }
         pgBtnRow->addWidget(m_llmAddBtn);
         pgBtnRow->addWidget(m_llmEditBtn);
@@ -764,6 +766,7 @@ void SettingsPanelWidget::setupUi()
         m_regenPoolBtn->setFont(harmonyFont(9));
         m_regenPoolBtn->setCursor(Qt::PointingHandCursor);
         m_regenPoolBtn->setToolTip(tr("Wipe cached LLM responses for the active pack so they will be regenerated."));
+        m_regenPoolBtn->setStyleSheet(StyleUtils::personaButtonQss());
         llmLayout->addWidget(m_regenPoolBtn);
 
         // --- Status label ---

@@ -37,6 +37,14 @@ QString comboArrowPath();
 ///   dialog->setStyleSheet(StyleUtils::personaDialogQss());
 QString personaDialogQss();
 
+/// Returns the QSS string for a Persona 5 Royal styled QPushButton: white
+/// background, 2px black border, orange (#F36F1A) hover, darker (#C85A12)
+/// pressed. Apply directly to each button via setStyleSheet — applying
+/// it to a parent (dialog or qApp) does NOT work reliably on Windows
+/// because Qt falls back to the native renderer for QPushButton states
+/// when the stylesheet is inherited rather than direct.
+QString personaButtonQss();
+
 } // namespace StyleUtils
 
 #endif // SEELIE_STYLEUTILS_H

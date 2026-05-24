@@ -65,6 +65,8 @@ StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
     auto *refreshBtn = new QPushButton(tr("Refresh"), contentWidget());
     auto *resetBtn   = new QPushButton(tr("Reset stats"), contentWidget());
     auto *closeBtn   = new QPushButton(tr("Close"), contentWidget());
+    for (auto *btn : {refreshBtn, resetBtn, closeBtn})
+        btn->setStyleSheet(StyleUtils::personaButtonQss());
     btnRow->addWidget(refreshBtn);
     btnRow->addWidget(resetBtn);
     btnRow->addStretch();

@@ -31,6 +31,8 @@ EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *p
 
     auto *bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                     contentWidget());
+    for (auto *btn : bb->findChildren<QPushButton*>())
+        btn->setStyleSheet(StyleUtils::personaButtonQss());
     form->addRow(bb);
     connect(bb, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
