@@ -1,7 +1,7 @@
-#ifndef SEELIE_TTS_PROVIDERREGISTRY_H
-#define SEELIE_TTS_PROVIDERREGISTRY_H
+#ifndef SEELIE_TTS_PROVIDER_REGISTRY_H
+#define SEELIE_TTS_PROVIDER_REGISTRY_H
 
-#include "ITtsProvider.h"
+#include "ITTSProvider.h"
 #include "ProviderConfig.h"
 
 #include <QList>
@@ -14,7 +14,7 @@ class QNetworkAccessManager;
 
 namespace seelie::tts {
 
-enum class TtsProviderId {
+enum class TTSProviderId {
     StepFun,
     MiniMax,
     Azure,
@@ -28,26 +28,26 @@ struct VoicePreset {
 };
 
 struct ProviderDescriptor {
-    TtsProviderId      id;
+    TTSProviderId      id;
     QString            stableId;          // "stepfun" — used in QSettings keys
     QString            displayName;       // "StepFun"
     QStringList        requiredFields;    // {"token", "voice"}
     QStringList        optionalFields;    // {"baseUrl", "model"}
     QList<VoicePreset> voiceCatalog;
     QList<Emotion>     supportedEmotions;
-    std::function<std::unique_ptr<ITtsProvider>(
+    std::function<std::unique_ptr<ITTSProvider>(
         const ProviderConfig&,
         QNetworkAccessManager*)> factory;
 };
 
 // All four adapters are registered at static-init time.
-class TtsProviderRegistry {
+class TTSProviderRegistry {
 public:
     static const QList<ProviderDescriptor>& descriptors();
-    static const ProviderDescriptor* find(TtsProviderId id);
+    static const ProviderDescriptor* find(TTSProviderId id);
     static const ProviderDescriptor* findByStableId(const QString& stableId);
 };
 
 } // namespace seelie::tts
 
-#endif
+#endif // SEELIE_TTS_PROVIDER_REGISTRY_H

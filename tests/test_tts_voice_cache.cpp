@@ -1,11 +1,11 @@
 #include <QtTest>
 #include <QFile>
 
-#include "tts/TtsVoiceCache.h"
+#include "tts/TTSVoiceCache.h"
 
 using namespace seelie::tts;
 
-class TestTtsVoiceCache : public QObject
+class TestTTSVoiceCache : public QObject
 {
     Q_OBJECT
 
@@ -27,7 +27,7 @@ private slots:
     void testLruEvictionOnOverflow();
 };
 
-void TestTtsVoiceCache::initTestCase()
+void TestTTSVoiceCache::initTestCase()
 {
     // Use an isolated cache dir per test run to keep results deterministic
     // and avoid clobbering any real cache on the developer's machine.
@@ -35,22 +35,22 @@ void TestTtsVoiceCache::initTestCase()
     QStandardPaths::setTestModeEnabled(true);
 }
 
-void TestTtsVoiceCache::cleanup()
+void TestTTSVoiceCache::cleanup()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     cache.wipeAll();
 }
 
-void TestTtsVoiceCache::testCacheKeyDeterministic()
+void TestTTSVoiceCache::testCacheKeyDeterministic()
 {
     SpeakOptions opts;
-    const QString k1 = TtsVoiceCache::cacheKey(
+    const QString k1 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"),
         QStringLiteral("cixingnansheng"),
         QStringLiteral("stepaudio-2.5-tts"),
         opts,
         QStringLiteral("Hello"));
-    const QString k2 = TtsVoiceCache::cacheKey(
+    const QString k2 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"),
         QStringLiteral("cixingnansheng"),
         QStringLiteral("stepaudio-2.5-tts"),
@@ -60,37 +60,37 @@ void TestTtsVoiceCache::testCacheKeyDeterministic()
     QCOMPARE(k1.length(), 64);
 }
 
-void TestTtsVoiceCache::testCacheKeyDifferentPerProvider()
+void TestTTSVoiceCache::testCacheKeyDifferentPerProvider()
 {
     SpeakOptions opts;
-    const QString k1 = TtsVoiceCache::cacheKey(
+    const QString k1 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("voice1"), QStringLiteral("model1"), opts, QStringLiteral("Hello"));
-    const QString k2 = TtsVoiceCache::cacheKey(
+    const QString k2 = TTSVoiceCache::cacheKey(
         QStringLiteral("minimax"), QStringLiteral("voice1"), QStringLiteral("model1"), opts, QStringLiteral("Hello"));
     QVERIFY(k1 != k2);
 }
 
-void TestTtsVoiceCache::testCacheKeyDifferentPerVoice()
+void TestTTSVoiceCache::testCacheKeyDifferentPerVoice()
 {
     SpeakOptions opts;
-    const QString k1 = TtsVoiceCache::cacheKey(
+    const QString k1 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("voice1"), QStringLiteral("model1"), opts, QStringLiteral("Hello"));
-    const QString k2 = TtsVoiceCache::cacheKey(
+    const QString k2 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("voice2"), QStringLiteral("model1"), opts, QStringLiteral("Hello"));
     QVERIFY(k1 != k2);
 }
 
-void TestTtsVoiceCache::testCacheKeyDifferentPerModel()
+void TestTTSVoiceCache::testCacheKeyDifferentPerModel()
 {
     SpeakOptions opts;
-    const QString k1 = TtsVoiceCache::cacheKey(
+    const QString k1 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("voice1"), QStringLiteral("model1"), opts, QStringLiteral("Hello"));
-    const QString k2 = TtsVoiceCache::cacheKey(
+    const QString k2 = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("voice1"), QStringLiteral("model2"), opts, QStringLiteral("Hello"));
     QVERIFY(k1 != k2);
 }
 
-void TestTtsVoiceCache::testCacheKeyDifferentPerOptions()
+void TestTTSVoiceCache::testCacheKeyDifferentPerOptions()
 {
     SpeakOptions a;
     SpeakOptions b;
@@ -98,33 +98,33 @@ void TestTtsVoiceCache::testCacheKeyDifferentPerOptions()
     SpeakOptions c;
     c.emotion = Emotion::Happy;
 
-    const QString ka = TtsVoiceCache::cacheKey(
+    const QString ka = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("v"), QStringLiteral("m"), a, QStringLiteral("Hi"));
-    const QString kb = TtsVoiceCache::cacheKey(
+    const QString kb = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("v"), QStringLiteral("m"), b, QStringLiteral("Hi"));
-    const QString kc = TtsVoiceCache::cacheKey(
+    const QString kc = TTSVoiceCache::cacheKey(
         QStringLiteral("stepfun"), QStringLiteral("v"), QStringLiteral("m"), c, QStringLiteral("Hi"));
     QVERIFY(ka != kb);
     QVERIFY(ka != kc);
     QVERIFY(kb != kc);
 }
 
-void TestTtsVoiceCache::testCacheKeyNormalizesWhitespace()
+void TestTTSVoiceCache::testCacheKeyNormalizesWhitespace()
 {
     SpeakOptions opts;
-    const QString k1 = TtsVoiceCache::cacheKey(
+    const QString k1 = TTSVoiceCache::cacheKey(
         QStringLiteral("p"), QStringLiteral("v"), QStringLiteral("m"), opts, QStringLiteral("Hello"));
-    const QString k2 = TtsVoiceCache::cacheKey(
+    const QString k2 = TTSVoiceCache::cacheKey(
         QStringLiteral("p"), QStringLiteral("v"), QStringLiteral("m"), opts, QStringLiteral(" Hello "));
-    const QString k3 = TtsVoiceCache::cacheKey(
+    const QString k3 = TTSVoiceCache::cacheKey(
         QStringLiteral("p"), QStringLiteral("v"), QStringLiteral("m"), opts, QStringLiteral("Hello\n"));
     QCOMPARE(k1, k2);
     QCOMPARE(k1, k3);
 }
 
-void TestTtsVoiceCache::testCacheHit()
+void TestTTSVoiceCache::testCacheHit()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     const QString key = QStringLiteral("testkey123");
     const QByteArray audio = QByteArray("fake mp3 data");
 
@@ -134,17 +134,17 @@ void TestTtsVoiceCache::testCacheHit()
     QCOMPARE(cache.getCachedAudio(key), audio);
 }
 
-void TestTtsVoiceCache::testCacheMiss()
+void TestTTSVoiceCache::testCacheMiss()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     const QString key = QStringLiteral("nonexistent_key_12345");
     QVERIFY(!cache.hasCachedAudio(key));
     QVERIFY(cache.getCachedAudio(key).isEmpty());
 }
 
-void TestTtsVoiceCache::testWipeAll()
+void TestTTSVoiceCache::testWipeAll()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     const QString key1 = QStringLiteral("key1");
     const QString key2 = QStringLiteral("key2");
 
@@ -158,9 +158,9 @@ void TestTtsVoiceCache::testWipeAll()
     QVERIFY(!cache.hasCachedAudio(key2));
 }
 
-void TestTtsVoiceCache::testEmptyAudioNotCached()
+void TestTTSVoiceCache::testEmptyAudioNotCached()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     const QString key = QStringLiteral("empty_key");
     QVERIFY(!cache.writeCachedAudio(key, QByteArray(), QStringLiteral("audio/mpeg")));
     QVERIFY(!cache.hasCachedAudio(key));
@@ -168,18 +168,18 @@ void TestTtsVoiceCache::testEmptyAudioNotCached()
     QVERIFY(cache.getCachedMimeType(key).isEmpty());
 }
 
-void TestTtsVoiceCache::testMimeTypeRoundTrip()
+void TestTTSVoiceCache::testMimeTypeRoundTrip()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     const QString key = QStringLiteral("mime_roundtrip");
     const QByteArray audio = QByteArray("RIFF....WAVEfmt ", 16);
     QVERIFY(cache.writeCachedAudio(key, audio, QStringLiteral("audio/wav")));
     QCOMPARE(cache.getCachedMimeType(key), QStringLiteral("audio/wav"));
 }
 
-void TestTtsVoiceCache::testLruEvictionOnOverflow()
+void TestTTSVoiceCache::testLruEvictionOnOverflow()
 {
-    TtsVoiceCache cache;
+    TTSVoiceCache cache;
     // Cap fits two ~1 KB audio entries (plus their tiny mime sidecars) but
     // not a third. After three writes the oldest must be evicted.
     cache.setMaxBytes(2500);
@@ -198,5 +198,5 @@ void TestTtsVoiceCache::testLruEvictionOnOverflow()
     QVERIFY(cache.hasCachedAudio(QStringLiteral("newest")));
 }
 
-QTEST_MAIN(TestTtsVoiceCache)
+QTEST_MAIN(TestTTSVoiceCache)
 #include "test_tts_voice_cache.moc"

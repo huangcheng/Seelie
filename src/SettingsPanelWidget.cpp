@@ -7,7 +7,7 @@
 #include "PersonaEngine.h"
 #include "llm/LLMProfile.h"
 #ifdef SEELIE_TTS_ENABLED
-#include "tts/TtsProviderRegistry.h"
+#include "tts/TTSProviderRegistry.h"
 #endif
 
 #include <QPainter>
@@ -1069,7 +1069,7 @@ void SettingsPanelWidget::onTtsProviderFieldEdited()
 {
     QLineEdit *src = qobject_cast<QLineEdit*>(sender());
     if (!src) return;
-    for (const TtsFieldEdit& f : m_ttsFieldEdits) {
+    for (const TTSFieldEdit& f : m_ttsFieldEdits) {
         if (f.edit == src) {
             m_config->setTtsProviderField(f.providerStableId, f.fieldName,
                                           src->text());
@@ -1080,7 +1080,7 @@ void SettingsPanelWidget::onTtsProviderFieldEdited()
 
 void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
 {
-    for (const TtsFieldEdit& f : m_ttsFieldEdits) {
+    for (const TTSFieldEdit& f : m_ttsFieldEdits) {
         if (f.providerStableId == providerStableId &&
             (f.fieldName == QLatin1String("token") ||
              f.fieldName == QLatin1String("key")))
@@ -1329,7 +1329,7 @@ void SettingsPanelWidget::retranslateUi()
     // Refresh provider-field labels and the voice placeholder. These are
     // built dynamically per-provider in setupUi() and otherwise wouldn't
     // follow a runtime language switch.
-    for (const TtsFieldEdit &f : m_ttsFieldEdits) {
+    for (const TTSFieldEdit &f : m_ttsFieldEdits) {
         if (f.rowLabel) f.rowLabel->setText(labelForField(f.fieldName));
         if (f.edit && f.fieldName == QLatin1String("voice"))
             f.edit->setPlaceholderText(tr("Enter voice ID"));
@@ -1382,7 +1382,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
     using namespace seelie::tts;
     int activeIndex = 0;
     int comboIndex = 0;
-    for (const ProviderDescriptor& desc : TtsProviderRegistry::descriptors()) {
+    for (const ProviderDescriptor& desc : TTSProviderRegistry::descriptors()) {
         m_ttsProviderCombo->addItem(desc.displayName, desc.stableId);
         if (desc.stableId == m_config->ttsActiveProvider())
             activeIndex = comboIndex;

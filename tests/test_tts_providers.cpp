@@ -15,12 +15,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "tts/ITtsProvider.h"
+#include "tts/ITTSProvider.h"
 #include "tts/ProviderConfig.h"
-#include "tts/StepFunHttpProvider.h"
-#include "tts/MiniMaxHttpProvider.h"
+#include "tts/StepFunHTTPProvider.h"
+#include "tts/MiniMaxHTTPProvider.h"
 #include "tts/AzureSpeechProvider.h"
-#include "tts/OpenAiTtsProvider.h"
+#include "tts/OpenAITTSProvider.h"
 
 using namespace seelie::tts;
 
@@ -168,14 +168,14 @@ void TestTtsProviders::stepFun_buildsExpectedRequest()
         {"model",   "stepaudio-2.5-tts"},
         {"voice",   "cixingnansheng"},
     }};
-    StepFunHttpProvider provider(cfg, m_nam);
+    StepFunHTTPProvider provider(cfg, m_nam);
 
     QByteArray gotAudio;
     bool gotError = false;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{ QStringLiteral("hello"), {} },
         [&](SynthesisResult r){ gotAudio = r.audio; loop.quit(); },
-        [&](TtsError){ gotError = true; loop.quit(); });
+        [&](TTSError){ gotError = true; loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -195,14 +195,14 @@ void TestTtsProviders::stepFun_parsesMp3Response()
         {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
-    StepFunHttpProvider provider(cfg, m_nam);
+    StepFunHTTPProvider provider(cfg, m_nam);
 
     QByteArray gotAudio;
     QString gotMime;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
         [&](SynthesisResult r){ gotAudio = r.audio; gotMime = r.mimeType; loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
     QCOMPARE(gotAudio.size(), 11);
@@ -216,14 +216,14 @@ void TestTtsProviders::stepFun_mapsHappyEmotionToInstruction()
         {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
-    StepFunHttpProvider provider(cfg, m_nam);
+    StepFunHTTPProvider provider(cfg, m_nam);
 
     SpeakOptions opts;
     opts.emotion = Emotion::Happy;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), opts},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -238,17 +238,17 @@ void TestTtsProviders::stepFun_returnsAuthFailedOn401()
         {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
-    StepFunHttpProvider provider(cfg, m_nam);
+    StepFunHTTPProvider provider(cfg, m_nam);
 
-    TtsErrorKind gotKind = TtsErrorKind::Unknown;
+    TTSErrorKind gotKind = TTSErrorKind::Unknown;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError e){ gotKind = e.kind; loop.quit(); });
+        [&](TTSError e){ gotKind = e.kind; loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
-    QCOMPARE(gotKind, TtsErrorKind::AuthFailed);
+    QCOMPARE(gotKind, TTSErrorKind::AuthFailed);
 }
 
 void TestTtsProviders::miniMax_buildsExpectedRequest()
@@ -270,13 +270,13 @@ void TestTtsProviders::miniMax_buildsExpectedRequest()
         {"model",   "speech-02-hd"},
         {"voice",   "female-shaonv"},
     }};
-    MiniMaxHttpProvider provider(cfg, m_nam);
+    MiniMaxHTTPProvider provider(cfg, m_nam);
 
     QByteArray gotAudio;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
         [&](SynthesisResult r){ gotAudio = r.audio; loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -306,14 +306,14 @@ void TestTtsProviders::miniMax_mapsHappyEmotionToEnum()
         {"baseUrl", QString("http://127.0.0.1:%1/v1/t2a_v2").arg(m_port)},
         {"token", "T"}, {"groupId", "G"}, {"voice", "v"},
     }};
-    MiniMaxHttpProvider provider(cfg, m_nam);
+    MiniMaxHTTPProvider provider(cfg, m_nam);
 
     SpeakOptions opts;
     opts.emotion = Emotion::Happy;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("x"), opts},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -335,7 +335,7 @@ void TestTtsProviders::azure_buildsExpectedSsml()
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi there"), {}},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -358,7 +358,7 @@ void TestTtsProviders::azure_usesSubscriptionKeyHeader()
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("x"), {}},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -381,7 +381,7 @@ void TestTtsProviders::azure_mapsHappyEmotionToSsmlStyle()
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), opts},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -398,12 +398,12 @@ void TestTtsProviders::openAi_buildsExpectedRequest()
         {"model", "gpt-4o-mini-tts"},
         {"voice", "nova"},
     }};
-    OpenAiTtsProvider provider(cfg, m_nam);
+    OpenAITTSProvider provider(cfg, m_nam);
 
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 
@@ -422,14 +422,14 @@ void TestTtsProviders::openAi_dropsEmotionSilently()
         {"baseUrl", QString("http://127.0.0.1:%1/openai-v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "nova"},
     }};
-    OpenAiTtsProvider provider(cfg, m_nam);
+    OpenAITTSProvider provider(cfg, m_nam);
 
     SpeakOptions opts;
     opts.emotion = Emotion::Happy;
     QEventLoop loop;
     provider.synthesize(SynthesisRequest{QStringLiteral("hi"), opts},
         [&](SynthesisResult){ loop.quit(); },
-        [&](TtsError){ loop.quit(); });
+        [&](TTSError){ loop.quit(); });
     QTimer::singleShot(2000, &loop, &QEventLoop::quit);
     loop.exec();
 

@@ -1,4 +1,4 @@
-#include "TtsVoiceCache.h"
+#include "TTSVoiceCache.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -32,14 +32,14 @@ QString optionsFingerprint(const SpeakOptions &opts)
 
 } // namespace
 
-TtsVoiceCache::TtsVoiceCache(QObject *parent)
+TTSVoiceCache::TTSVoiceCache(QObject *parent)
     : QObject(parent)
 {
     const QString baseDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     m_cacheDir = baseDir + QStringLiteral("/tts_voice_cache");
 }
 
-QString TtsVoiceCache::cacheKey(const QString &providerId,
+QString TTSVoiceCache::cacheKey(const QString &providerId,
                                 const QString &voiceId,
                                 const QString &modelId,
                                 const SpeakOptions &options,
@@ -58,7 +58,7 @@ QString TtsVoiceCache::cacheKey(const QString &providerId,
                                                          QCryptographicHash::Sha256).toHex());
 }
 
-bool TtsVoiceCache::ensureDir() const
+bool TTSVoiceCache::ensureDir() const
 {
     if (QDir().exists(m_cacheDir)) return true;
     if (!QDir().mkpath(m_cacheDir)) {
@@ -68,22 +68,22 @@ bool TtsVoiceCache::ensureDir() const
     return true;
 }
 
-QString TtsVoiceCache::audioPath(const QString &key) const
+QString TTSVoiceCache::audioPath(const QString &key) const
 {
     return m_cacheDir + QStringLiteral("/") + key + QStringLiteral(".bin");
 }
 
-QString TtsVoiceCache::mimePath(const QString &key) const
+QString TTSVoiceCache::mimePath(const QString &key) const
 {
     return m_cacheDir + QStringLiteral("/") + key + QStringLiteral(".mime");
 }
 
-bool TtsVoiceCache::hasCachedAudio(const QString &key) const
+bool TTSVoiceCache::hasCachedAudio(const QString &key) const
 {
     return QFile::exists(audioPath(key));
 }
 
-QByteArray TtsVoiceCache::getCachedAudio(const QString &key) const
+QByteArray TTSVoiceCache::getCachedAudio(const QString &key) const
 {
     const QString path = audioPath(key);
     QFile file(path);
@@ -95,7 +95,7 @@ QByteArray TtsVoiceCache::getCachedAudio(const QString &key) const
     return file.readAll();
 }
 
-QString TtsVoiceCache::getCachedMimeType(const QString &key) const
+QString TTSVoiceCache::getCachedMimeType(const QString &key) const
 {
     QFile file(mimePath(key));
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -104,7 +104,7 @@ QString TtsVoiceCache::getCachedMimeType(const QString &key) const
     return QString::fromUtf8(file.readAll()).trimmed();
 }
 
-bool TtsVoiceCache::writeCachedAudio(const QString &key,
+bool TTSVoiceCache::writeCachedAudio(const QString &key,
                                      const QByteArray &audioData,
                                      const QString &mimeType)
 {
@@ -140,7 +140,7 @@ bool TtsVoiceCache::writeCachedAudio(const QString &key,
     return true;
 }
 
-void TtsVoiceCache::evictIfNeeded()
+void TTSVoiceCache::evictIfNeeded()
 {
     if (m_maxBytes <= 0) return;
     QDir dir(m_cacheDir);
@@ -192,7 +192,7 @@ void TtsVoiceCache::evictIfNeeded()
     }
 }
 
-void TtsVoiceCache::wipeAll()
+void TTSVoiceCache::wipeAll()
 {
     if (!QDir().exists(m_cacheDir)) return;
     QDir dir(m_cacheDir);

@@ -1,7 +1,7 @@
-#ifndef SEELIE_TTS_MINIMAXHTTPPROVIDER_H
-#define SEELIE_TTS_MINIMAXHTTPPROVIDER_H
+#ifndef SEELIE_TTS_MINIMAX_HTTP_PROVIDER_H
+#define SEELIE_TTS_MINIMAX_HTTP_PROVIDER_H
 
-#include "ITtsProvider.h"
+#include "ITTSProvider.h"
 #include "ProviderConfig.h"
 
 #include <QHash>
@@ -13,16 +13,16 @@ class QNetworkReply;
 
 namespace seelie::tts {
 
-class MiniMaxHttpProvider : public QObject, public ITtsProvider {
+class MiniMaxHTTPProvider : public QObject, public ITTSProvider {
     Q_OBJECT
 public:
-    MiniMaxHttpProvider(ProviderConfig cfg, QNetworkAccessManager* nam,
+    MiniMaxHTTPProvider(ProviderConfig cfg, QNetworkAccessManager* nam,
                         QObject* parent = nullptr);
 
     RequestHandle synthesize(
         const SynthesisRequest& req,
         std::function<void(SynthesisResult)> onSuccess,
-        std::function<void(TtsError)> onError) override;
+        std::function<void(TTSError)> onError) override;
 
     void cancel(RequestHandle handle) override;
 
@@ -30,7 +30,7 @@ private:
     struct InFlight {
         QPointer<QNetworkReply> reply;
         std::function<void(SynthesisResult)> onSuccess;
-        std::function<void(TtsError)> onError;
+        std::function<void(TTSError)> onError;
     };
 
     ProviderConfig m_cfg;
@@ -41,4 +41,4 @@ private:
 
 } // namespace seelie::tts
 
-#endif
+#endif // SEELIE_TTS_MINIMAX_HTTP_PROVIDER_H

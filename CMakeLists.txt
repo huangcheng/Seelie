@@ -382,8 +382,8 @@ qt_add_executable(Seelie
     src/PackManagerWidget.h
     src/StyledAlertWidget.cpp
     src/StyledAlertWidget.h
-    src/EcgWidget.cpp
-    src/EcgWidget.h
+    src/ECGWidget.cpp
+    src/ECGWidget.h
     src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     src/PlatformWindow.cpp
@@ -413,20 +413,20 @@ qt_add_executable(Seelie
     src/PersonaEngine.cpp
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITtsProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITTSProvider.h>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ProviderConfig.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsVoiceCache.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsVoiceCache.cpp>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TTSProviderRegistry.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TTSProviderRegistry.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TTSVoiceCache.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TTSVoiceCache.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHTTPProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHTTPProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHTTPProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHTTPProvider.cpp>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
-    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAITTSProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAITTSProvider.cpp>
 )
 
 target_include_directories(Seelie PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

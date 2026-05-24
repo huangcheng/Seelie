@@ -1,4 +1,4 @@
-﻿#include "MiniMaxHttpProvider.h"
+﻿#include "MiniMaxHTTPProvider.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -32,26 +32,26 @@ QUrl buildUrl(const ProviderConfig& cfg)
     return QUrl(cfg.get("baseUrl", "https://api.minimaxi.com/v1/t2a_v2"));
 }
 
-TtsErrorKind classifyHttp(int status)
+TTSErrorKind classifyHttp(int status)
 {
-    if (status == 401 || status == 403) return TtsErrorKind::AuthFailed;
-    if (status == 429)                  return TtsErrorKind::RateLimited;
-    if (status >= 500)                  return TtsErrorKind::Network;
-    if (status >= 400)                  return TtsErrorKind::BadRequest;
-    return TtsErrorKind::Unknown;
+    if (status == 401 || status == 403) return TTSErrorKind::AuthFailed;
+    if (status == 429)                  return TTSErrorKind::RateLimited;
+    if (status >= 500)                  return TTSErrorKind::Network;
+    if (status >= 400)                  return TTSErrorKind::BadRequest;
+    return TTSErrorKind::Unknown;
 }
 
 } // namespace
 
-MiniMaxHttpProvider::MiniMaxHttpProvider(ProviderConfig cfg,
+MiniMaxHTTPProvider::MiniMaxHTTPProvider(ProviderConfig cfg,
                                          QNetworkAccessManager* nam,
                                          QObject* parent)
     : QObject(parent), m_cfg(std::move(cfg)), m_nam(nam) {}
 
-RequestHandle MiniMaxHttpProvider::synthesize(
+RequestHandle MiniMaxHTTPProvider::synthesize(
     const SynthesisRequest& req,
     std::function<void(SynthesisResult)> onSuccess,
-    std::function<void(TtsError)> onError)
+    std::function<void(TTSError)> onError)
 {
     QJsonObject body;
     body["model"]    = m_cfg.get("model", "speech-02-hd");
@@ -90,7 +90,7 @@ RequestHandle MiniMaxHttpProvider::synthesize(
         const int status = r->attribute(
             QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (r->error() != QNetworkReply::NoError && status == 0) {
-            inflight.onError({TtsErrorKind::Network, 0, r->errorString()});
+            inflight.onError({TTSErrorKind::Network, 0, r->errorString()});
             return;
         }
         if (status >= 400) {
@@ -101,7 +101,7 @@ RequestHandle MiniMaxHttpProvider::synthesize(
 
         QJsonDocument doc = QJsonDocument::fromJson(r->readAll());
         if (!doc.isObject()) {
-            inflight.onError({TtsErrorKind::Unknown, status,
+            inflight.onError({TTSErrorKind::Unknown, status,
                               QStringLiteral("invalid JSON envelope")});
             return;
         }
@@ -109,7 +109,7 @@ RequestHandle MiniMaxHttpProvider::synthesize(
         const int respCode =
             root.value("base_resp").toObject().value("status_code").toInt();
         if (respCode != 0) {
-            inflight.onError({TtsErrorKind::BadRequest, status,
+            inflight.onError({TTSErrorKind::BadRequest, status,
                               root.value("base_resp").toObject()
                                   .value("status_msg").toString()});
             return;
@@ -123,12 +123,12 @@ RequestHandle MiniMaxHttpProvider::synthesize(
     return handle;
 }
 
-void MiniMaxHttpProvider::cancel(RequestHandle handle)
+void MiniMaxHTTPProvider::cancel(RequestHandle handle)
 {
     auto it = m_inFlight.find(handle);
     if (it == m_inFlight.end()) return;
     QNetworkReply *reply = it.value().reply;
-    // Erase before abort: see StepFunHttpProvider::cancel for rationale (H8).
+    // Erase before abort: see StepFunHTTPProvider::cancel for rationale (H8).
     m_inFlight.erase(it);
     if (reply) {
         reply->abort();

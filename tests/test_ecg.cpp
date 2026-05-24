@@ -8,7 +8,7 @@
 #include <cmath>
 
 #include "ConfigManager.h"
-#include "EcgWidget.h"
+#include "ECGWidget.h"
 
 class TestEcg : public QObject
 {
@@ -143,24 +143,24 @@ void TestEcg::configMigratesFromOldEcgEnabledKey()
 
 void TestEcg::ecgSampleHasRPeakNear030()
 {
-    const double rPeak = EcgWidget::ecgSample(0.30);
+    const double rPeak = ECGWidget::ecgSample(0.30);
     QVERIFY(rPeak > 0.8);
 
     for (double p : {0.05, 0.20, 0.40, 0.60, 0.80, 0.95}) {
-        QVERIFY2(EcgWidget::ecgSample(p) < rPeak - 0.3,
+        QVERIFY2(ECGWidget::ecgSample(p) < rPeak - 0.3,
                  qPrintable(QString("phase %1 should be far below R peak").arg(p)));
     }
 }
 
 void TestEcg::ecgSampleBaselineAwayFromComplex()
 {
-    QVERIFY(std::abs(EcgWidget::ecgSample(0.85)) < 0.05);
-    QVERIFY(std::abs(EcgWidget::ecgSample(0.95)) < 0.05);
+    QVERIFY(std::abs(ECGWidget::ecgSample(0.85)) < 0.05);
+    QVERIFY(std::abs(ECGWidget::ecgSample(0.95)) < 0.05);
 }
 
 void TestEcg::onTickAdvancesPhaseAndShiftsBuffer()
 {
-    EcgWidget w;
+    ECGWidget w;
     const double startPhase = w.phase();
     const int n = w.sampleCount();
     QVERIFY(n > 100);
@@ -178,7 +178,7 @@ void TestEcg::onTickAdvancesPhaseAndShiftsBuffer()
 
 void TestEcg::synthesizeBeepWavHasValidRiffHeader()
 {
-    QByteArray wav = EcgWidget::synthesizeBeepWav();
+    QByteArray wav = ECGWidget::synthesizeBeepWav();
     QVERIFY(wav.size() > 44);
     QCOMPARE(QByteArray(wav.constData(), 4),      QByteArray("RIFF"));
     QCOMPARE(QByteArray(wav.constData() + 8, 4),  QByteArray("WAVE"));
@@ -205,7 +205,7 @@ void TestEcg::synthesizeBeepWavHasValidRiffHeader()
 
 void TestEcg::pwrToggleStopsTimer()
 {
-    EcgWidget w;
+    ECGWidget w;
     // start() makes the widget visible and starts the timer; skip show() to
     // avoid needing a display — use the tick/phase interface instead.
     // Drive a few ticks to confirm phase advances when power is on.
@@ -231,7 +231,7 @@ void TestEcg::pwrToggleStopsTimer()
 
 void TestEcg::almToggleSilencesBeep()
 {
-    EcgWidget w;
+    ECGWidget w;
     QVERIFY(!w.muted()); // default not muted
 
     // Press + release ALM button.
@@ -254,7 +254,7 @@ void TestEcg::almToggleSilencesBeep()
 
 void TestEcg::modeButtonCyclesBpm()
 {
-    EcgWidget w;
+    ECGWidget w;
     // Default hrIndex=1 → 72 BPM.
     QCOMPARE(w.currentBpm(), 72.0);
 
@@ -280,7 +280,7 @@ void TestEcg::sliderPressUpdatesVolume()
 {
     // Slider rect: x = SHADOW_BLUR + PANEL_WIDTH - 8 - SLIDER_W = 162, width = 60.
     // For volume=0.5: rel = 0.5 * (SLIDER_W - SLIDER_THUMB_W) = 25; x = 162+5+25 = 192.
-    EcgWidget w;
+    ECGWidget w;
     w.pressControlAt(QPoint(192, 127));
     QVERIFY(std::abs(w.volume() - 0.5) < 0.05);
     w.releaseControlAt(QPoint(192, 127));
@@ -288,7 +288,7 @@ void TestEcg::sliderPressUpdatesVolume()
 
 void TestEcg::sliderMoveUpdatesVolume()
 {
-    EcgWidget w;
+    ECGWidget w;
     w.pressControlAt(QPoint(192, 127)); // start at midpoint, ~0.5
     QVERIFY(std::abs(w.volume() - 0.5) < 0.05);
 

@@ -10,7 +10,7 @@
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "TipWidget.h"
-#include "EcgWidget.h"
+#include "ECGWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
 #include "UpdateChecker.h"
@@ -415,9 +415,9 @@ int main(int argc, char *argv[])
     QObject::connect(&ipcServer, &IPCServer::eventReceived,
                      &eventRouter, &EventRouter::routeEvent);
 
-    // IPC events → EcgWidget for heart-rate / alarm reactions
+    // IPC events → ECGWidget for heart-rate / alarm reactions
     QObject::connect(&ipcServer, &IPCServer::eventReceived,
-                     w.ecgWidget(), &EcgWidget::onEvent);
+                     w.ecgWidget(), &ECGWidget::onEvent);
 
     // IPC tips → TipWidget directly
     QObject::connect(&ipcServer, &IPCServer::tipReceived,

@@ -1,4 +1,4 @@
-#include "EcgWidget.h"
+#include "ECGWidget.h"
 #include "CanonicalEvents.h"
 #include "MacFocusFix.h"
 
@@ -34,9 +34,9 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
 } // namespace
 
 // Linker definition for constexpr arrays declared in the header.
-constexpr double EcgWidget::HR_BPM_OPTIONS[3];
+constexpr double ECGWidget::HR_BPM_OPTIONS[3];
 
-EcgWidget::EcgWidget(QWidget *parent)
+ECGWidget::ECGWidget(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(
@@ -61,7 +61,7 @@ EcgWidget::EcgWidget(QWidget *parent)
     recomputeLayout();
 
     m_tickTimer.setInterval(TICK_INTERVAL_MS);
-    connect(&m_tickTimer, &QTimer::timeout, this, &EcgWidget::onTick);
+    connect(&m_tickTimer, &QTimer::timeout, this, &ECGWidget::onTick);
 
     m_eventDecayTimer.setSingleShot(true);
     connect(&m_eventDecayTimer, &QTimer::timeout, this, [this]() {
@@ -96,7 +96,7 @@ EcgWidget::EcgWidget(QWidget *parent)
     });
 }
 
-EcgWidget::~EcgWidget()
+ECGWidget::~ECGWidget()
 {
     m_tickTimer.stop();
     // All four audio objects (QSoundEffect and QTemporaryFile) are
@@ -104,7 +104,7 @@ EcgWidget::~EcgWidget()
     // destroys them automatically when ~QObject runs.
 }
 
-void EcgWidget::recomputeLayout()
+void ECGWidget::recomputeLayout()
 {
     // All rects in widget-local coordinates (origin = top-left of the full
     // widget including the SHADOW_BLUR margin).
@@ -125,7 +125,7 @@ void EcgWidget::recomputeLayout()
     m_sliderRect = QRect(sliderX, sliderY, SLIDER_W, SLIDER_H);
 }
 
-void EcgWidget::showEvent(QShowEvent *event)
+void ECGWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     if (!m_nativeHandleFixed) {
@@ -135,7 +135,7 @@ void EcgWidget::showEvent(QShowEvent *event)
     PlatformWindow::applyDwmFramelessAttributes(this);
 }
 
-void EcgWidget::anchorTo(const QWidget *petWidget)
+void ECGWidget::anchorTo(const QWidget *petWidget)
 {
     m_anchoredPet = petWidget;
     if (petWidget && isVisible()) {
@@ -143,7 +143,7 @@ void EcgWidget::anchorTo(const QWidget *petWidget)
     }
 }
 
-void EcgWidget::start()
+void ECGWidget::start()
 {
     initAudio();
     m_prevPhase = m_phase;
@@ -156,7 +156,7 @@ void EcgWidget::start()
     show();
 }
 
-void EcgWidget::stop()
+void ECGWidget::stop()
 {
     m_tickTimer.stop();
     m_idleTimer.stop();
@@ -171,7 +171,7 @@ void EcgWidget::stop()
     hide();
 }
 
-void EcgWidget::paintEvent(QPaintEvent *event)
+void ECGWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
@@ -423,7 +423,7 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     }
 }
 
-void EcgWidget::positionRelativeTo(const QWidget *pet)
+void ECGWidget::positionRelativeTo(const QWidget *pet)
 {
     if (!pet) return;
 
@@ -452,7 +452,7 @@ void EcgWidget::positionRelativeTo(const QWidget *pet)
     move(wx, wy);
 }
 
-void EcgWidget::onTick()
+void ECGWidget::onTick()
 {
     if (!m_powerOn) return;
 
@@ -491,7 +491,7 @@ void EcgWidget::onTick()
     update();
 }
 
-void EcgWidget::applyVolumeFromSliderX(int widgetX)
+void ECGWidget::applyVolumeFromSliderX(int widgetX)
 {
     const int trackW = m_sliderRect.width() - SLIDER_THUMB_W;
     const int rel    = widgetX - m_sliderRect.left() - SLIDER_THUMB_W / 2;
@@ -500,7 +500,7 @@ void EcgWidget::applyVolumeFromSliderX(int widgetX)
     if (m_flatlineBeep) m_flatlineBeep->setVolume(static_cast<float>(m_volume));
 }
 
-void EcgWidget::pressControlAt(QPoint p)
+void ECGWidget::pressControlAt(QPoint p)
 {
     if (m_pwrRect.contains(p))       m_pressed = PressedControl::Pwr;
     else if (m_almRect.contains(p))  m_pressed = PressedControl::Alm;
@@ -514,7 +514,7 @@ void EcgWidget::pressControlAt(QPoint p)
     update();
 }
 
-void EcgWidget::releaseControlAt(QPoint p)
+void ECGWidget::releaseControlAt(QPoint p)
 {
     switch (m_pressed) {
     case PressedControl::Pwr:
@@ -570,7 +570,7 @@ void EcgWidget::releaseControlAt(QPoint p)
     update();
 }
 
-void EcgWidget::mousePressEvent(QMouseEvent *event)
+void ECGWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         const QPoint p = event->pos();
@@ -593,7 +593,7 @@ void EcgWidget::mousePressEvent(QMouseEvent *event)
     event->accept();
 }
 
-void EcgWidget::mouseMoveEvent(QMouseEvent *event)
+void ECGWidget::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_pressed == PressedControl::SliderDrag) {
         applyVolumeFromSliderX(event->pos().x());
@@ -608,7 +608,7 @@ void EcgWidget::mouseMoveEvent(QMouseEvent *event)
     event->accept();
 }
 
-void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
+void ECGWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     if (m_isChassisDragging) {
         m_isChassisDragging = false;
@@ -620,13 +620,13 @@ void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
     event->accept();
 }
 
-void EcgWidget::contextMenuEvent(QContextMenuEvent *event)
+void ECGWidget::contextMenuEvent(QContextMenuEvent *event)
 {
     emit contextMenuRequested(event->globalPos());
     event->accept();
 }
 
-void EcgWidget::onEvent(const QJsonObject &event)
+void ECGWidget::onEvent(const QJsonObject &event)
 {
     // Stay completely silent when not the active display: in Character mode
     // the widget is hidden but the IPC connection is still live, and processing
@@ -684,14 +684,14 @@ void EcgWidget::onEvent(const QJsonObject &event)
     update();
 }
 
-void EcgWidget::initAudio()
+void ECGWidget::initAudio()
 {
     if (m_beep) return;
 
     // Parent the QTemporaryFiles to `this` so Qt cleans them up on
     // widget destruction (and setAutoRemove(true) deletes the actual
     // file on disk). The QSoundEffects below already have `this` as
-    // parent — no manual delete needed in ~EcgWidget.
+    // parent — no manual delete needed in ~ECGWidget.
     m_beepFile = new QTemporaryFile(
         QDir::tempPath() + QStringLiteral("/seelie_ecg_beep_XXXXXX.wav"),
         this);
@@ -703,7 +703,7 @@ void EcgWidget::initAudio()
     }
     m_beepFile->write(synthesizeBeepWav());
     if (!m_beepFile->flush()) {
-        qWarning() << "EcgWidget: failed to flush beep WAV — discarding incomplete audio";
+        qWarning() << "ECGWidget: failed to flush beep WAV — discarding incomplete audio";
         m_beepFile->close();
         m_beepFile->deleteLater();
         m_beepFile = nullptr;
@@ -723,7 +723,7 @@ void EcgWidget::initAudio()
     if (m_flatlineBeepFile->open()) {
         m_flatlineBeepFile->write(synthesizeFlatlineWav());
         if (!m_flatlineBeepFile->flush()) {
-            qWarning() << "EcgWidget: failed to flush flatline WAV — discarding incomplete audio";
+            qWarning() << "ECGWidget: failed to flush flatline WAV — discarding incomplete audio";
             m_flatlineBeepFile->close();
             m_flatlineBeepFile->deleteLater();
             m_flatlineBeepFile = nullptr;
@@ -738,7 +738,7 @@ void EcgWidget::initAudio()
     }
 }
 
-double EcgWidget::ecgSample(double phase)
+double ECGWidget::ecgSample(double phase)
 {
     phase = phase - std::floor(phase);
 
@@ -756,7 +756,7 @@ double EcgWidget::ecgSample(double phase)
     return v;
 }
 
-QByteArray EcgWidget::synthesizeBeepWav()
+QByteArray ECGWidget::synthesizeBeepWav()
 {
     const int    sr   = BEEP_SAMPLE_RATE;
     const int    n    = sr * BEEP_DURATION_MS / 1000;
@@ -806,7 +806,7 @@ QByteArray EcgWidget::synthesizeBeepWav()
     return wav;
 }
 
-QByteArray EcgWidget::synthesizeFlatlineWav()
+QByteArray ECGWidget::synthesizeFlatlineWav()
 {
     const int    sr = BEEP_SAMPLE_RATE;
     const int    n  = sr * FLATLINE_DURATION_MS / 1000;

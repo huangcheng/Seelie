@@ -55,7 +55,7 @@ TTSEngine::~TTSEngine()
     // reach the destructor without stop() having returned the engine to the
     // main thread, fall back to a best-effort stop here. After stop()
     // returns, this object's affinity is the main thread, so ~QObject and
-    // ~unique_ptr<TtsVoiceCache> destroying their children on the main
+    // ~unique_ptr<TTSVoiceCache> destroying their children on the main
     // thread is correct.
     stop();
 }
@@ -131,10 +131,10 @@ void TTSEngine::initOnThread()
         doSynthesize(m_pendingText, m_pendingOptions);
     });
 
-    m_voiceCache = std::make_unique<seelie::tts::TtsVoiceCache>();
+    m_voiceCache = std::make_unique<seelie::tts::TTSVoiceCache>();
     if (m_config) {
         connect(m_config, &ConfigManager::ttsCacheInvalidated,
-                m_voiceCache.get(), &seelie::tts::TtsVoiceCache::wipeAll,
+                m_voiceCache.get(), &seelie::tts::TTSVoiceCache::wipeAll,
                 Qt::QueuedConnection);
     }
 
@@ -157,14 +157,14 @@ void TTSEngine::rebuildProvider()
     // can hold references that briefly outlive the cancel call. Move the
     // unique_ptr into a local — it destructs at scope exit, after all
     // synchronous work is complete. Audit H8.
-    std::unique_ptr<seelie::tts::ITtsProvider> oldProvider = std::move(m_provider);
+    std::unique_ptr<seelie::tts::ITTSProvider> oldProvider = std::move(m_provider);
     (void)oldProvider;  // RAII: destructs at end of this function
 
     m_currentProviderStableId.clear();
 
     const QString stableId = m_config->ttsActiveProvider();
     const ProviderDescriptor* desc =
-        TtsProviderRegistry::findByStableId(stableId);
+        TTSProviderRegistry::findByStableId(stableId);
     if (!desc) {
         emit error(tr("Unknown TTS provider: %1").arg(stableId));
         return;
@@ -276,7 +276,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
     // / 400 several seconds later. Audit L6.
     if (m_config) {
         const QString providerStableId = m_config->ttsActiveProvider();
-        const auto *desc = seelie::tts::TtsProviderRegistry::findByStableId(providerStableId);
+        const auto *desc = seelie::tts::TTSProviderRegistry::findByStableId(providerStableId);
         if (desc) {
             QStringList missing;
             for (const QString &field : desc->requiredFields) {
@@ -298,7 +298,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
         const QString providerId = m_config->ttsActiveProvider();
         const QString voiceId = m_config->ttsProviderField(providerId, QStringLiteral("voice"));
         const QString modelId = m_config->ttsProviderField(providerId, QStringLiteral("model"));
-        m_pendingCacheKey = seelie::tts::TtsVoiceCache::cacheKey(
+        m_pendingCacheKey = seelie::tts::TTSVoiceCache::cacheKey(
             providerId, voiceId, modelId, opts, text);
 
         ++m_stats.sessionRequests;
@@ -329,7 +329,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
     SynthesisRequest req{text, opts};
     m_inFlight = m_provider->synthesize(req,
         [this](SynthesisResult r) { onSynthesisSuccess(std::move(r)); },
-        [this](TtsError e)        { onSynthesisError(std::move(e)); });
+        [this](TTSError e)        { onSynthesisError(std::move(e)); });
 }
 
 void TTSEngine::onSynthesisSuccess(SynthesisResult result)
@@ -353,10 +353,10 @@ void TTSEngine::onSynthesisSuccess(SynthesisResult result)
     emit speakingStarted();
 }
 
-void TTSEngine::onSynthesisError(TtsError err)
+void TTSEngine::onSynthesisError(TTSError err)
 {
     m_inFlight = 0;
-    if (err.kind == TtsErrorKind::Cancelled) {
+    if (err.kind == TTSErrorKind::Cancelled) {
         qCDebug(lcTts) << "synthesis cancelled";
         m_speaking = false;
         return;
@@ -364,13 +364,13 @@ void TTSEngine::onSynthesisError(TtsError err)
     qCWarning(lcTts) << "synthesis error kind=" << int(err.kind)
                      << "http=" << err.httpStatus
                      << "msg=" << redactSensitiveInfo(err.message);
-    if (err.kind == TtsErrorKind::AuthFailed) {
+    if (err.kind == TTSErrorKind::AuthFailed) {
         m_speaking = false;
         emit authFailed(m_currentProviderStableId);
         emit error(tr("TTS authentication failed (HTTP %1)").arg(err.httpStatus));
         return;
     }
-    if ((err.kind == TtsErrorKind::Network || err.kind == TtsErrorKind::RateLimited)
+    if ((err.kind == TTSErrorKind::Network || err.kind == TTSErrorKind::RateLimited)
         && m_retryCount < kMaxRetries) {
         scheduleRetry();
         return;

@@ -14,7 +14,7 @@
 #include "ConfigManager.h"
 #include "TipWidget.h"
 #include "SettingsPanelWidget.h"
-#include "EcgWidget.h"
+#include "ECGWidget.h"
 #include "SystemTray.h"
 #include "EventRouter.h"
 #include "TipsCatalog.h"
@@ -112,17 +112,17 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             m_ttsEngine, &TTSEngine::clearVoiceCache);
 #endif
 
-    m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble
+    m_ecgWidget = new ECGWidget(nullptr); // top-level, like the tip bubble
     m_ecgWidget->setAnchorRect(petRect());
     m_ecgWidget->anchorTo(this);
 
     // Wire ECG chassis drag so MainWindow tracks the same delta
-    connect(m_ecgWidget, &EcgWidget::dragMoved, this, [this](QPoint delta) {
+    connect(m_ecgWidget, &ECGWidget::dragMoved, this, [this](QPoint delta) {
         move(pos() + delta);
         emit positionChanged(pos());
     });
 
-    connect(m_ecgWidget, &EcgWidget::contextMenuRequested,
+    connect(m_ecgWidget, &ECGWidget::contextMenuRequested,
             this, &MainWindow::showContextMenu);
 
     connect(m_config, &ConfigManager::displayModeChanged,

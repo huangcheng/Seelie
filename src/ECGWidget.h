@@ -1,5 +1,5 @@
-#ifndef ECGWIDGET_H
-#define ECGWIDGET_H
+#ifndef ECG_WIDGET_H
+#define ECG_WIDGET_H
 
 #include <QWidget>
 #include <QTimer>
@@ -11,13 +11,13 @@
 class QSoundEffect;
 class QTemporaryFile;
 
-class EcgWidget : public QWidget
+class ECGWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit EcgWidget(QWidget *parent = nullptr);
-    ~EcgWidget() override;
+    explicit ECGWidget(QWidget *parent = nullptr);
+    ~ECGWidget() override;
 
     void anchorTo(const QWidget *petWidget);
     void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
@@ -160,4 +160,4 @@ private:
     static constexpr int FLATLINE_DURATION_MS = 2000;
 };
 
-#endif // ECGWIDGET_H
+#endif // ECG_WIDGET_H

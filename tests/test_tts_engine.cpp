@@ -9,9 +9,9 @@
 #include <QtTest>
 #include <QSignalSpy>
 
-#include "tts/ITtsProvider.h"
+#include "tts/ITTSProvider.h"
 #include "tts/ProviderConfig.h"
-#include "tts/TtsProviderRegistry.h"
+#include "tts/TTSProviderRegistry.h"
 
 using namespace seelie::tts;
 
@@ -26,14 +26,14 @@ struct FakeProviderState {
     NextAction nextAction = ReturnSuccess;
 };
 
-class FakeProvider : public QObject, public ITtsProvider {
+class FakeProvider : public QObject, public ITTSProvider {
 public:
     explicit FakeProvider(FakeProviderState* state) : m_state(state) {}
 
     RequestHandle synthesize(
         const SynthesisRequest&,
         std::function<void(SynthesisResult)> ok,
-        std::function<void(TtsError)> err) override
+        std::function<void(TTSError)> err) override
     {
         const RequestHandle h = ++m_next;
         m_state->synthesizeCalls++;
@@ -55,7 +55,7 @@ public:
                     if (it == m_pending.end()) return;
                     auto cb = it.value();
                     m_pending.erase(it);
-                    cb.second({TtsErrorKind::AuthFailed, 401, "bad"});
+                    cb.second({TTSErrorKind::AuthFailed, 401, "bad"});
                 });
                 break;
             case FakeProviderState::ReturnNetwork:
@@ -64,7 +64,7 @@ public:
                     if (it == m_pending.end()) return;
                     auto cb = it.value();
                     m_pending.erase(it);
-                    cb.second({TtsErrorKind::Network, 0, "down"});
+                    cb.second({TTSErrorKind::Network, 0, "down"});
                 });
                 break;
             case FakeProviderState::Hang:
@@ -83,7 +83,7 @@ private:
     RequestHandle m_next = 0;
     QHash<RequestHandle,
           QPair<std::function<void(SynthesisResult)>,
-                std::function<void(TtsError)>>> m_pending;
+                std::function<void(TTSError)>>> m_pending;
 };
 
 } // namespace
@@ -105,10 +105,10 @@ void TestTtsEngine::cancelOnSupersession()
     FakeProvider provider(&state);
 
     provider.synthesize({QStringLiteral("A"), {}},
-                        [](SynthesisResult){}, [](TtsError){});
+                        [](SynthesisResult){}, [](TTSError){});
     provider.cancel(state.handlesIssued.first());
     provider.synthesize({QStringLiteral("B"), {}},
-                        [](SynthesisResult){}, [](TtsError){});
+                        [](SynthesisResult){}, [](TTSError){});
 
     QCOMPARE(state.synthesizeCalls, 2);
     QCOMPARE(state.cancelCalls, 1);
@@ -123,8 +123,8 @@ void TestTtsEngine::retryOnNetworkError()
     int errCount = 0;
     provider.synthesize({QStringLiteral("X"), {}},
         [](SynthesisResult){},
-        [&errCount](TtsError e){
-            QCOMPARE(e.kind, TtsErrorKind::Network);
+        [&errCount](TTSError e){
+            QCOMPARE(e.kind, TTSErrorKind::Network);
             ++errCount;
         });
     QTRY_COMPARE(errCount, 1);
@@ -139,11 +139,11 @@ void TestTtsEngine::noRetryOnAuthFailure()
     state.nextAction = FakeProviderState::ReturnAuthFail;
     FakeProvider provider(&state);
 
-    TtsErrorKind got = TtsErrorKind::Unknown;
+    TTSErrorKind got = TTSErrorKind::Unknown;
     provider.synthesize({QStringLiteral("X"), {}},
         [](SynthesisResult){},
-        [&got](TtsError e){ got = e.kind; });
-    QTRY_COMPARE(got, TtsErrorKind::AuthFailed);
+        [&got](TTSError e){ got = e.kind; });
+    QTRY_COMPARE(got, TTSErrorKind::AuthFailed);
 }
 
 QTEST_MAIN(TestTtsEngine)

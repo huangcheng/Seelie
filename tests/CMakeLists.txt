@@ -18,8 +18,8 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.h
     ${CMAKE_SOURCE_DIR}/src/TipWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/TipWidget.h
-    ${CMAKE_SOURCE_DIR}/src/EcgWidget.cpp
-    ${CMAKE_SOURCE_DIR}/src/EcgWidget.h
+    ${CMAKE_SOURCE_DIR}/src/ECGWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ECGWidget.h
     ${CMAKE_SOURCE_DIR}/src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:${CMAKE_SOURCE_DIR}/src/MacFocusFix.mm>
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.cpp
@@ -45,20 +45,20 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
     ${CMAKE_SOURCE_DIR}/src/MemoryManager.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
-    ${CMAKE_SOURCE_DIR}/src/tts/ITtsProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/ITTSProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/ProviderConfig.h
-    ${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.h
-    ${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.cpp
-    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.h
-    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp
-    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.h
-    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/TTSProviderRegistry.h
+    ${CMAKE_SOURCE_DIR}/src/tts/TTSProviderRegistry.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHTTPProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHTTPProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHTTPProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHTTPProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.cpp
-    ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.h
-    ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.cpp
-    ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.h
-    ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/OpenAITTSProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/OpenAITTSProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/TTSVoiceCache.h
+    ${CMAKE_SOURCE_DIR}/src/tts/TTSVoiceCache.cpp
     ${CMAKE_SOURCE_DIR}/src/llm/LLMProfile.h
     ${CMAKE_SOURCE_DIR}/src/llm/LLMProvider.h
     ${CMAKE_SOURCE_DIR}/src/llm/LLMProvider.cpp

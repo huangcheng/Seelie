@@ -22,7 +22,7 @@ class TTSEngine;
 #endif
 class TipWidget;
 class SettingsPanelWidget;
-class EcgWidget;
+class ECGWidget;
 class CharacterPackManager;
 class EventRouter;
 class FullscreenWatcher;
@@ -49,7 +49,7 @@ public:
     /// Callers should null-check (most already do via `if (e && e->...)`).
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
     TipWidget *tipWidget() const { return m_tipWidget; }
-    EcgWidget *ecgWidget() const { return m_ecgWidget; }
+    ECGWidget *ecgWidget() const { return m_ecgWidget; }
     SettingsPanelWidget *settingsPanel() const { return m_settingsPanel; }
 
     void setSystemTray(SystemTray *tray);
@@ -130,7 +130,7 @@ private:
     ConfigManager *m_config;
     TipWidget *m_tipWidget;
     SettingsPanelWidget *m_settingsPanel;
-    EcgWidget *m_ecgWidget = nullptr;
+    ECGWidget *m_ecgWidget = nullptr;
     QTranslator *m_translator;
     SystemTray *m_systemTray = nullptr;
     CharacterPackManager *m_packManager = nullptr;

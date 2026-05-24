@@ -1,7 +1,7 @@
-#ifndef SEELIE_TTSVOICECACHE_H
-#define SEELIE_TTSVOICECACHE_H
+#ifndef SEELIE_TTS_VOICE_CACHE_H
+#define SEELIE_TTS_VOICE_CACHE_H
 
-#include "ITtsProvider.h"
+#include "ITTSProvider.h"
 
 #include <QByteArray>
 #include <QObject>
@@ -9,13 +9,13 @@
 
 namespace seelie::tts {
 
-class TtsVoiceCache : public QObject
+class TTSVoiceCache : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit TtsVoiceCache(QObject *parent = nullptr);
-    ~TtsVoiceCache() = default;
+    explicit TTSVoiceCache(QObject *parent = nullptr);
+    ~TTSVoiceCache() = default;
 
     // Compute a cache key from the provider/voice/model fingerprint, the
     // speak options that affect synthesis output, and the (whitespace-
@@ -56,4 +56,4 @@ private:
 
 } // namespace seelie::tts
 
-#endif // SEELIE_TTSVOICECACHE_H
+#endif // SEELIE_TTS_VOICE_CACHE_H

@@ -1,5 +1,5 @@
-#ifndef SEELIE_ITTSPROVIDER_H
-#define SEELIE_ITTSPROVIDER_H
+#ifndef SEELIE_ITTS_PROVIDER_H
+#define SEELIE_ITTS_PROVIDER_H
 
 #include <QByteArray>
 #include <QString>
@@ -35,7 +35,7 @@ struct SynthesisResult {
     int        sampleRate;   // 0 = inferred from container
 };
 
-enum class TtsErrorKind {
+enum class TTSErrorKind {
     Network,        // transport / DNS / TLS / 5xx after retries
     AuthFailed,     // 401 / 403
     BadRequest,     // 400 / 422 — payload rejected
@@ -45,17 +45,17 @@ enum class TtsErrorKind {
     Unknown,
 };
 
-struct TtsError {
-    TtsErrorKind kind = TtsErrorKind::Unknown;
+struct TTSError {
+    TTSErrorKind kind = TTSErrorKind::Unknown;
     int          httpStatus = 0;        // 0 if not HTTP
     QString      message;               // human-readable
 };
 
 using RequestHandle = quint64;          // 0 = invalid; provider-assigned otherwise
 
-class ITtsProvider {
+class ITTSProvider {
 public:
-    virtual ~ITtsProvider() = default;
+    virtual ~ITTSProvider() = default;
 
     // Must be non-blocking. Exactly one of onSuccess/onError must fire on
     // the engine's thread, UNLESS cancel() is called first — after cancel(),
@@ -64,11 +64,11 @@ public:
     virtual RequestHandle synthesize(
         const SynthesisRequest& req,
         std::function<void(SynthesisResult)> onSuccess,
-        std::function<void(TtsError)> onError) = 0;
+        std::function<void(TTSError)> onError) = 0;
 
     virtual void cancel(RequestHandle handle) = 0;
 };
 
 } // namespace seelie::tts
 
-#endif
+#endif // SEELIE_ITTS_PROVIDER_H

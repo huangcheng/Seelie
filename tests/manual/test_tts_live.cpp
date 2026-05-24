@@ -18,10 +18,10 @@
 #include <QSignalSpy>
 #include <cstdlib>
 
-#include "tts/StepFunHttpProvider.h"
-#include "tts/MiniMaxHttpProvider.h"
+#include "tts/StepFunHTTPProvider.h"
+#include "tts/MiniMaxHTTPProvider.h"
 #include "tts/AzureSpeechProvider.h"
-#include "tts/OpenAiTtsProvider.h"
+#include "tts/OpenAITTSProvider.h"
 
 using namespace seelie::tts;
 
@@ -48,7 +48,7 @@ private slots:
             {"token", token},
             {"voice", "cixingnansheng"},
         }};
-        StepFunHttpProvider provider(cfg, m_nam);
+        StepFunHTTPProvider provider(cfg, m_nam);
         runOne(provider);
     }
 
@@ -62,7 +62,7 @@ private slots:
             {"token", token}, {"groupId", group},
             {"voice", "female-shaonv"},
         }};
-        MiniMaxHttpProvider provider(cfg, m_nam);
+        MiniMaxHTTPProvider provider(cfg, m_nam);
         runOne(provider);
     }
 
@@ -86,18 +86,18 @@ private slots:
             {"baseUrl", "https://api.openai.com/v1"},
             {"token", token}, {"voice", "nova"},
         }};
-        OpenAiTtsProvider provider(cfg, m_nam);
+        OpenAITTSProvider provider(cfg, m_nam);
         runOne(provider);
     }
 
 private:
-    void runOne(ITtsProvider& provider) {
+    void runOne(ITTSProvider& provider) {
         QByteArray audio;
         QString err;
         QEventLoop loop;
         provider.synthesize({QStringLiteral("Seelie live test."), {}},
             [&](SynthesisResult r){ audio = r.audio; loop.quit(); },
-            [&](TtsError e){ err = e.message; loop.quit(); });
+            [&](TTSError e){ err = e.message; loop.quit(); });
         QTimer::singleShot(15000, &loop, &QEventLoop::quit);
         loop.exec();
         QVERIFY2(err.isEmpty(), qPrintable(err));

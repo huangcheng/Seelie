@@ -188,13 +188,13 @@ private:
     // track them here so onTtsProviderFieldEdited() can route the edit
     // back to the right provider/field pair, and so retranslateUi() can
     // refresh the row label when the user switches language at runtime.
-    struct TtsFieldEdit {
+    struct TTSFieldEdit {
         QString providerStableId;
         QString fieldName;
         QLineEdit *edit;
         QLabel *rowLabel;  // form-row label, owned by the QFormLayout
     };
-    QList<TtsFieldEdit> m_ttsFieldEdits;
+    QList<TTSFieldEdit> m_ttsFieldEdits;
 #endif
 
     // Layout container

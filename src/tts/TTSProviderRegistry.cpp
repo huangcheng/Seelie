@@ -1,8 +1,8 @@
-#include "TtsProviderRegistry.h"
-#include "StepFunHttpProvider.h"
-#include "MiniMaxHttpProvider.h"
+#include "TTSProviderRegistry.h"
+#include "StepFunHTTPProvider.h"
+#include "MiniMaxHTTPProvider.h"
 #include "AzureSpeechProvider.h"
-#include "OpenAiTtsProvider.h"
+#include "OpenAITTSProvider.h"
 
 #include <QCoreApplication>
 
@@ -14,7 +14,7 @@ const QList<ProviderDescriptor>& builtInDescriptors()
 {
     static const QList<ProviderDescriptor> kDescriptors = {
         ProviderDescriptor{
-            TtsProviderId::StepFun,
+            TTSProviderId::StepFun,
             QStringLiteral("stepfun"),
             QStringLiteral("StepFun"),
             QStringList{QStringLiteral("token"), QStringLiteral("voice")},
@@ -31,12 +31,12 @@ const QList<ProviderDescriptor>& builtInDescriptors()
              Emotion::Angry, Emotion::Calm, Emotion::Whisper},
             // Factory wired in Task 5.
             [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
-                -> std::unique_ptr<ITtsProvider> {
-                return std::make_unique<StepFunHttpProvider>(cfg, nam);
+                -> std::unique_ptr<ITTSProvider> {
+                return std::make_unique<StepFunHTTPProvider>(cfg, nam);
             },
         },
         ProviderDescriptor{
-            TtsProviderId::MiniMax,
+            TTSProviderId::MiniMax,
             QStringLiteral("minimax"),
             QStringLiteral("MiniMax"),
             QStringList{QStringLiteral("token"),
@@ -53,12 +53,12 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             {Emotion::Neutral, Emotion::Happy, Emotion::Sad,
              Emotion::Angry, Emotion::Calm, Emotion::Whisper},
             [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
-                -> std::unique_ptr<ITtsProvider> {
-                return std::make_unique<MiniMaxHttpProvider>(cfg, nam);
+                -> std::unique_ptr<ITTSProvider> {
+                return std::make_unique<MiniMaxHTTPProvider>(cfg, nam);
             },
         },
         ProviderDescriptor{
-            TtsProviderId::Azure,
+            TTSProviderId::Azure,
             QStringLiteral("azure"),
             QStringLiteral("Azure Speech"),
             QStringList{QStringLiteral("key"),
@@ -76,12 +76,12 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             {Emotion::Neutral, Emotion::Happy, Emotion::Sad,
              Emotion::Angry, Emotion::Calm, Emotion::Whisper},
             [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
-                -> std::unique_ptr<ITtsProvider> {
+                -> std::unique_ptr<ITTSProvider> {
                 return std::make_unique<AzureSpeechProvider>(cfg, nam);
             },
         },
         ProviderDescriptor{
-            TtsProviderId::OpenAI,
+            TTSProviderId::OpenAI,
             QStringLiteral("openai"),
             QStringLiteral("OpenAI"),
             QStringList{QStringLiteral("token"), QStringLiteral("voice")},
@@ -94,8 +94,8 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             },
             {Emotion::Neutral},
             [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
-                -> std::unique_ptr<ITtsProvider> {
-                return std::make_unique<OpenAiTtsProvider>(cfg, nam);
+                -> std::unique_ptr<ITTSProvider> {
+                return std::make_unique<OpenAITTSProvider>(cfg, nam);
             },
         },
     };
@@ -104,19 +104,19 @@ const QList<ProviderDescriptor>& builtInDescriptors()
 
 } // namespace
 
-const QList<ProviderDescriptor>& TtsProviderRegistry::descriptors()
+const QList<ProviderDescriptor>& TTSProviderRegistry::descriptors()
 {
     return builtInDescriptors();
 }
 
-const ProviderDescriptor* TtsProviderRegistry::find(TtsProviderId id)
+const ProviderDescriptor* TTSProviderRegistry::find(TTSProviderId id)
 {
     for (const auto& d : descriptors())
         if (d.id == id) return &d;
     return nullptr;
 }
 
-const ProviderDescriptor* TtsProviderRegistry::findByStableId(const QString& stableId)
+const ProviderDescriptor* TTSProviderRegistry::findByStableId(const QString& stableId)
 {
     for (const auto& d : descriptors())
         if (d.stableId == stableId) return &d;

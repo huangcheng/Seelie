@@ -1,9 +1,9 @@
 #ifndef TTSENGINE_H
 #define TTSENGINE_H
 
-#include "tts/ITtsProvider.h"
-#include "tts/TtsProviderRegistry.h"
-#include "tts/TtsVoiceCache.h"
+#include "tts/ITTSProvider.h"
+#include "tts/TTSProviderRegistry.h"
+#include "tts/TTSVoiceCache.h"
 
 #include <QAudioDecoder>
 #include <QAudioFormat>
@@ -22,7 +22,7 @@ class QNetworkAccessManager;
 // TTSEngine runs on a worker thread; calling SQLite from the worker would
 // violate the single-connection thread invariant. Per-session hit rate is
 // sufficient — a TTSEngine restart resets the counters intentionally.
-struct TtsStats {
+struct TTSStats {
     int sessionRequests = 0;
     int sessionHits     = 0;
     qint64 lastMissMs   = 0;
@@ -40,7 +40,7 @@ public:
     void start();
     void stop();
 
-    TtsStats stats() const { return m_stats; }
+    TTSStats stats() const { return m_stats; }
 
 public slots:
     void speak(const QString &text);
@@ -74,7 +74,7 @@ private:
     void doSynthesize(const QString &text, seelie::tts::SpeakOptions opts,
                       bool bypassCacheRead = false);
     void onSynthesisSuccess(seelie::tts::SynthesisResult result);
-    void onSynthesisError(seelie::tts::TtsError err);
+    void onSynthesisError(seelie::tts::TTSError err);
     void scheduleRetry();
     void resetAudio();
     void startDecode(const QByteArray &audio, const QString &mimeType);
@@ -83,8 +83,8 @@ private:
     QThread *m_thread = nullptr;
 
     QNetworkAccessManager *m_nam = nullptr;
-    std::unique_ptr<seelie::tts::ITtsProvider> m_provider;
-    std::unique_ptr<seelie::tts::TtsVoiceCache> m_voiceCache;
+    std::unique_ptr<seelie::tts::ITTSProvider> m_provider;
+    std::unique_ptr<seelie::tts::TTSVoiceCache> m_voiceCache;
     QString m_currentProviderStableId;
 
     // Active request bookkeeping.
@@ -120,7 +120,7 @@ private:
 
     static constexpr int kMaxRetries = 2;
 
-    TtsStats m_stats;
+    TTSStats m_stats;
 };
 
 #endif

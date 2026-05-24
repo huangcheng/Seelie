@@ -1,4 +1,4 @@
-#include "OpenAiTtsProvider.h"
+#include "OpenAITTSProvider.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -16,26 +16,26 @@ QUrl buildUrl(const ProviderConfig& cfg)
     return QUrl(cfg.get("baseUrl", "https://api.openai.com/v1/audio/speech"));
 }
 
-TtsErrorKind classifyHttp(int status)
+TTSErrorKind classifyHttp(int status)
 {
-    if (status == 401 || status == 403) return TtsErrorKind::AuthFailed;
-    if (status == 429)                  return TtsErrorKind::RateLimited;
-    if (status >= 500)                  return TtsErrorKind::Network;
-    if (status >= 400)                  return TtsErrorKind::BadRequest;
-    return TtsErrorKind::Unknown;
+    if (status == 401 || status == 403) return TTSErrorKind::AuthFailed;
+    if (status == 429)                  return TTSErrorKind::RateLimited;
+    if (status >= 500)                  return TTSErrorKind::Network;
+    if (status >= 400)                  return TTSErrorKind::BadRequest;
+    return TTSErrorKind::Unknown;
 }
 
 } // namespace
 
-OpenAiTtsProvider::OpenAiTtsProvider(ProviderConfig cfg,
+OpenAITTSProvider::OpenAITTSProvider(ProviderConfig cfg,
                                      QNetworkAccessManager* nam,
                                      QObject* parent)
     : QObject(parent), m_cfg(std::move(cfg)), m_nam(nam) {}
 
-RequestHandle OpenAiTtsProvider::synthesize(
+RequestHandle OpenAITTSProvider::synthesize(
     const SynthesisRequest& req,
     std::function<void(SynthesisResult)> onSuccess,
-    std::function<void(TtsError)> onError)
+    std::function<void(TTSError)> onError)
 {
     QJsonObject body;
     body["model"]           = m_cfg.get("model", "gpt-4o-mini-tts");
@@ -70,7 +70,7 @@ RequestHandle OpenAiTtsProvider::synthesize(
         const int status = r->attribute(
             QNetworkRequest::HttpStatusCodeAttribute).toInt();
         if (r->error() != QNetworkReply::NoError && status == 0) {
-            inflight.onError({TtsErrorKind::Network, 0, r->errorString()});
+            inflight.onError({TTSErrorKind::Network, 0, r->errorString()});
             return;
         }
         if (status >= 400) {
@@ -84,12 +84,12 @@ RequestHandle OpenAiTtsProvider::synthesize(
     return handle;
 }
 
-void OpenAiTtsProvider::cancel(RequestHandle handle)
+void OpenAITTSProvider::cancel(RequestHandle handle)
 {
     auto it = m_inFlight.find(handle);
     if (it == m_inFlight.end()) return;
     QNetworkReply *reply = it.value().reply;
-    // Erase before abort: see StepFunHttpProvider::cancel for rationale (H8).
+    // Erase before abort: see StepFunHTTPProvider::cancel for rationale (H8).
     m_inFlight.erase(it);
     if (reply) {
         reply->abort();
