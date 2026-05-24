@@ -130,12 +130,12 @@ private:
 
     // Tab buttons (left side)
     QPushButton *m_generalTabBtn = nullptr;
-    QPushButton *m_aiTabBtn = nullptr;
+    QPushButton *m_ttsTabBtn = nullptr;
     QPushButton *m_profileTabBtn = nullptr;
 
     // Tab content containers
     QWidget *m_generalTab = nullptr;
-    QWidget *m_aiTab = nullptr;
+    QWidget *m_ttsTab = nullptr;
     QWidget *m_profileTab = nullptr;
 
     // Profile tab widgets (stored for retranslation)

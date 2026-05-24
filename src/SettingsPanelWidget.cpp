@@ -164,10 +164,10 @@ void SettingsPanelWidget::showEvent(QShowEvent *event)
     // making them appear edge-to-edge until the user clicks one. This
     // re-poke is a no-op visually if styles were already correct, but
     // ensures both tabs render their padding+border on first paint.
-    if (m_generalTabBtn && m_aiTabBtn) {
+    if (m_generalTabBtn && m_ttsTabBtn) {
         int currentTab = 0;
         if (m_profileTab && m_profileTab->isVisible()) currentTab = 2;
-        else if (m_aiTab && m_aiTab->isVisible()) currentTab = 1;
+        else if (m_ttsTab && m_ttsTab->isVisible()) currentTab = 1;
         onTabChanged(currentTab);
     }
 }
@@ -626,12 +626,12 @@ void SettingsPanelWidget::setupUi()
     m_generalTabBtn->setChecked(true);
     m_generalTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
-    m_aiTabBtn = new QPushButton(tr("TTS"), m_contentWidget);
-    m_aiTabBtn->setFont(harmonyFont(10, QFont::Bold));
-    m_aiTabBtn->setFixedWidth(70);
-    m_aiTabBtn->setCursor(Qt::PointingHandCursor);
-    m_aiTabBtn->setCheckable(true);
-    m_aiTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
+    m_ttsTabBtn = new QPushButton(tr("TTS"), m_contentWidget);
+    m_ttsTabBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_ttsTabBtn->setFixedWidth(70);
+    m_ttsTabBtn->setCursor(Qt::PointingHandCursor);
+    m_ttsTabBtn->setCheckable(true);
+    m_ttsTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
     m_profileTabBtn = new QPushButton(tr("Profile"), m_contentWidget);
     m_profileTabBtn->setFont(harmonyFont(10, QFont::Bold));
@@ -643,12 +643,12 @@ void SettingsPanelWidget::setupUi()
     QVBoxLayout *tabBtnLayout = new QVBoxLayout();
     tabBtnLayout->setSpacing(8);
     tabBtnLayout->addWidget(m_generalTabBtn);
-    tabBtnLayout->addWidget(m_aiTabBtn);
+    tabBtnLayout->addWidget(m_ttsTabBtn);
     tabBtnLayout->addWidget(m_profileTabBtn);
     tabBtnLayout->addStretch(1);
 
     connect(m_generalTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(0); });
-    connect(m_aiTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(1); });
+    connect(m_ttsTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(1); });
     connect(m_profileTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(2); });
 
     // General tab content
@@ -660,14 +660,14 @@ void SettingsPanelWidget::setupUi()
     generalLayout->addStretch(1);
 
     // AI tab content
-    m_aiTab = new QWidget(m_contentWidget);
-    m_aiTab->setVisible(false);
+    m_ttsTab = new QWidget(m_contentWidget);
+    m_ttsTab->setVisible(false);
 #ifdef SEELIE_TTS_ENABLED
-    QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
+    QVBoxLayout *aiLayout = new QVBoxLayout(m_ttsTab);
     aiLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
     aiLayout->setSpacing(VERTICAL_SPACING);
 #else
-    QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
+    QVBoxLayout *aiLayout = new QVBoxLayout(m_ttsTab);
     aiLayout->setContentsMargins(0, 0, 0, 0);
     aiLayout->setSpacing(VERTICAL_SPACING);
 #endif
@@ -677,7 +677,7 @@ void SettingsPanelWidget::setupUi()
     // (Enable TTS toggle lives on the General tab — see above.)
     setupTtsTabContents(aiLayout, comboStyleSheet);
 #else
-    QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
+    QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_ttsTab);
     ttsDisabledLabel->setFont(harmonyFont(10));
     ttsDisabledLabel->setStyleSheet("color: #888; background: transparent;");
     ttsDisabledLabel->setAlignment(Qt::AlignCenter);
@@ -694,7 +694,7 @@ void SettingsPanelWidget::setupUi()
     tabContentLayout->setSpacing(8);
     tabContentLayout->addLayout(tabBtnLayout);
     tabContentLayout->addWidget(m_generalTab, 1);
-    tabContentLayout->addWidget(m_aiTab, 1);
+    tabContentLayout->addWidget(m_ttsTab, 1);
     tabContentLayout->addWidget(m_profileTab, 1);
 
     mainLayout->addLayout(titleRow);
@@ -908,7 +908,7 @@ void SettingsPanelWidget::onTipBubblesToggled(bool checked)
 void SettingsPanelWidget::onTabChanged(int tabIndex)
 {
     m_generalTab->setVisible(tabIndex == 0);
-    m_aiTab->setVisible(tabIndex == 1);
+    m_ttsTab->setVisible(tabIndex == 1);
     m_profileTab->setVisible(tabIndex == 2);
 
     const QString activeStyle = R"(
@@ -938,7 +938,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
     )";
 
     m_generalTabBtn->setStyleSheet(tabIndex == 0 ? activeStyle : inactiveStyle);
-    m_aiTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
+    m_ttsTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
     m_profileTabBtn->setStyleSheet(tabIndex == 2 ? activeStyle : inactiveStyle);
 }
 
@@ -1208,7 +1208,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
     if (m_profileTabBtn) m_profileTabBtn->setText(tr("Profile"));
 #ifdef SEELIE_TTS_ENABLED
-    if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
+    if (m_ttsTabBtn) m_ttsTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
     if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
@@ -1243,10 +1243,10 @@ void SettingsPanelWidget::retranslateUi()
 void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
                                                const QString &comboStyleSheet)
 {
-    m_ttsProviderLabel = new QLabel(tr("Provider"), m_aiTab);
+    m_ttsProviderLabel = new QLabel(tr("Provider"), m_ttsTab);
     m_ttsProviderLabel->setFont(harmonyFont(10));
     m_ttsProviderLabel->setStyleSheet("color: black; background: transparent;");
-    m_ttsProviderCombo = new QComboBox(m_aiTab);
+    m_ttsProviderCombo = new QComboBox(m_ttsTab);
     // Install a QListView with the harmony font so the dropdown popup matches
     // the General-tab combos. Without this, the popup falls back to the
     // platform native list view (system fonts, default styling).
@@ -1265,7 +1265,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
         aiLayout->addLayout(row);
     }
 
-    m_ttsProviderStack = new QStackedWidget(m_aiTab);
+    m_ttsProviderStack = new QStackedWidget(m_ttsTab);
     aiLayout->addWidget(m_ttsProviderStack, 1);
 
     // Build one page per descriptor.
@@ -1334,7 +1334,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
     // "Clear voice cache" on the right is compact. Sharing one row keeps the
     // panel tight and visually balanced — stacked full-width buttons looked
     // like an afterthought.
-    m_ttsTestButton = new QPushButton(tr("Test"), m_aiTab);
+    m_ttsTestButton = new QPushButton(tr("Test"), m_ttsTab);
     m_ttsTestButton->setFont(harmonyFont(10, QFont::Bold));
     m_ttsTestButton->setFixedHeight(28);
     m_ttsTestButton->setCursor(Qt::PointingHandCursor);
@@ -1359,7 +1359,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
         emit testTtsRequested(tr("Hello. This is a TTS test from Seelie."));
     });
 
-    m_ttsClearCacheButton = new QPushButton(tr("Clear cache"), m_aiTab);
+    m_ttsClearCacheButton = new QPushButton(tr("Clear cache"), m_ttsTab);
     m_ttsClearCacheButton->setFont(harmonyFont(10));
     m_ttsClearCacheButton->setFixedHeight(28);
     m_ttsClearCacheButton->setCursor(Qt::PointingHandCursor);
