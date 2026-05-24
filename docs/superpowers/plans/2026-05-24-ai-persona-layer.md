@@ -4,7 +4,7 @@
 
 **Goal:** Replace `TipsCatalog` as the primary event tip source with LLM-generated in-character lines, two-tier cached (pool for high-frequency events, on-demand for rare ones), with user-configurable providers, a new AI settings tab, and a Statistics dialog from the tray.
 
-**Architecture:** `PersonaEngine` orchestrates per-event text resolution. Pool-tier events hit `PersonaPool` (SQLite-backed text cache, lazy refill via `LlmProvider`). On-demand events return `TipsCatalog` immediately and emit `tipUpgraded` when the LLM completes — bubble swaps text in place. All new units pinned to main thread; QNAM async on the main event loop, no workers, no cross-thread SQLite. `TipsCatalog` remains the always-available fallback.
+**Architecture:** `PersonaEngine` orchestrates per-event text resolution. Pool-tier events hit `PersonaPool` (SQLite-backed text cache, lazy refill via `LLMProvider`). On-demand events return `TipsCatalog` immediately and emit `tipUpgraded` when the LLM completes — bubble swaps text in place. All new units pinned to main thread; QNAM async on the main event loop, no workers, no cross-thread SQLite. `TipsCatalog` remains the always-available fallback.
 
 **Tech Stack:** C++17, Qt6 (Core, Widgets, Network, Sql, Test). `QNetworkAccessManager` for HTTP. SQLite via existing `MemoryManager` database connection. Three LLM protocols: OpenAI Chat (`/v1/chat/completions`), OpenAI Responses (`/v1/responses`), Anthropic Messages (`/v1/messages`).
 
@@ -18,12 +18,12 @@
 
 | File | Responsibility |
 |------|----------------|
-| `src/llm/LlmProfile.h` | `struct LlmProfile { name, protocol, baseUrl, apiKey, model }` |
-| `src/llm/LlmProvider.h` / `.cpp` | Async HTTP client, three-protocol enum, timeout, failure suppression, batched JSON-array generation |
+| `src/llm/LLMProfile.h` | `struct LLMProfile { name, protocol, baseUrl, apiKey, model }` |
+| `src/llm/LLMProvider.h` / `.cpp` | Async HTTP client, three-protocol enum, timeout, failure suppression, batched JSON-array generation |
 | `src/PersonaPool.h` / `.cpp` | SQLite-backed `(packId, event)` text pool. Pick, refill, hash invalidation, validation, spam guard |
 | `src/PersonaEngine.h` / `.cpp` | Orchestrator. Tier routing, sync return for pool-tier, async `tipUpgraded` for on-demand, rolling event window, memory snapshot gated by privacy toggle |
 | `src/StatisticsDialog.h` / `.cpp` | Modal dialog reading `stats()` from TTSEngine/EventRouter/IpcServer/PersonaEngine/MemoryManager |
-| `tests/test_llm_profile.cpp` | Round-trip `LlmProfile` through ConfigManager |
+| `tests/test_llm_profile.cpp` | Round-trip `LLMProfile` through ConfigManager |
 | `tests/test_llm_provider.cpp` | Mock QNAM via a local `QHttpServer`; cover all three protocols, timeout, batched JSON array, failure suppression |
 | `tests/test_persona_pool.cpp` | Schema, CRUD, validation, spam guard, hash invalidation, in-flight cleanup |
 | `tests/test_persona_engine.cpp` | Tier routing, sync return, async `tipUpgraded`, memory snapshot gating, milestone routing |
@@ -35,7 +35,7 @@
 |------|--------|
 | `src/CharacterPack.h` / `.cpp` | Add `struct Persona { system, language, styleExamples }` + parser; persona hash helper |
 | `src/EventRouter.h` (only) | (no change — existing `eventProcessed` signal already fits) |
-| `src/ConfigManager.h` / `.cpp` | Add `llmProfiles()`, `setLlmProfiles()`, `personaProfile()` / setter, `personaEnabled()`, `shareMemoryWithAi()`; persist via QSettings groups |
+| `src/ConfigManager.h` / `.cpp` | Add `llmProfiles()`, `setLLMProfiles()`, `personaProfile()` / setter, `personaEnabled()`, `shareMemoryWithAi()`; persist via QSettings groups |
 | `src/SettingsPanelWidget.h` / `.cpp` | Internal rename `m_aiTab*` → `m_ttsTab*`; add new `m_llmTab*` with user label "AI" |
 | `src/SystemTray.h` / `.cpp` | Add "Statistics..." menu entry |
 | `src/mainwindow.h` / `.cpp` | Construct PersonaEngine, wire `eventProcessed`/`milestoneReached`/`activePackChanged`/`tipUpgraded`, open StatisticsDialog from tray |
@@ -49,10 +49,10 @@
 ## Task Index
 
 1. CharacterPack persona field + parsing
-2. LlmProfile struct + ConfigManager serialization
-3. LlmProvider scaffold + OpenAI Chat protocol
-4. LlmProvider OpenAI Responses + Anthropic Messages protocols
-5. LlmProvider timeout + failure suppression
+2. LLMProfile struct + ConfigManager serialization
+3. LLMProvider scaffold + OpenAI Chat protocol
+4. LLMProvider OpenAI Responses + Anthropic Messages protocols
+5. LLMProvider timeout + failure suppression
 6. PersonaPool schema + CRUD
 7. PersonaPool refill, validation, spam guard, in-flight cleanup, hash invalidation
 8. PersonaEngine sync pool-tier path
@@ -294,12 +294,12 @@ EOF
 
 ---
 
-## Task 2: LlmProfile struct + ConfigManager serialization
+## Task 2: LLMProfile struct + ConfigManager serialization
 
 **Files:**
-- Create: `src/llm/LlmProfile.h`
+- Create: `src/llm/LLMProfile.h`
 - Modify: `src/ConfigManager.h` / `.cpp` — add LLM profile list, personaProfile string, personaEnabled bool, shareMemoryWithAi bool
-- Modify: `tests/CMakeLists.txt` — add LlmProfile.h to SEELIEPET_LIB_SOURCES, add new test
+- Modify: `tests/CMakeLists.txt` — add LLMProfile.h to SEELIEPET_LIB_SOURCES, add new test
 - Create: `tests/test_llm_profile.cpp`
 
 - [ ] **Step 1: Write failing test**
@@ -307,12 +307,12 @@ EOF
 `tests/test_llm_profile.cpp`:
 ```cpp
 #include "ConfigManager.h"
-#include "llm/LlmProfile.h"
+#include "llm/LLMProfile.h"
 #include <QtTest/QtTest>
 #include <QCoreApplication>
 #include <QSettings>
 
-class TestLlmProfile : public QObject
+class TestLLMProfile : public QObject
 {
     Q_OBJECT
 private slots:
@@ -330,12 +330,12 @@ private slots:
         ConfigManager cfg;
         cfg.load();
 
-        QVector<LlmProfile> profiles;
-        profiles.append({ "fast", LlmProfile::Protocol::OpenAIChat,
+        QVector<LLMProfile> profiles;
+        profiles.append({ "fast", LLMProfile::Protocol::OpenAIChat,
                           "https://api.openai.com/v1", "sk-test", "gpt-4o-mini" });
-        profiles.append({ "smart", LlmProfile::Protocol::AnthropicMessages,
+        profiles.append({ "smart", LLMProfile::Protocol::AnthropicMessages,
                           "https://api.anthropic.com", "sk-ant-test", "claude-haiku" });
-        cfg.setLlmProfiles(profiles);
+        cfg.setLLMProfiles(profiles);
         cfg.setPersonaProfile("fast");
         cfg.setPersonaEnabled(true);
         cfg.setShareMemoryWithAi(false);
@@ -347,11 +347,11 @@ private slots:
         const auto got = cfg2.llmProfiles();
         QCOMPARE(got.size(), 2);
         QCOMPARE(got[0].name, QString("fast"));
-        QCOMPARE(got[0].protocol, LlmProfile::Protocol::OpenAIChat);
+        QCOMPARE(got[0].protocol, LLMProfile::Protocol::OpenAIChat);
         QCOMPARE(got[0].baseUrl, QString("https://api.openai.com/v1"));
         QCOMPARE(got[0].apiKey, QString("sk-test"));
         QCOMPARE(got[0].model, QString("gpt-4o-mini"));
-        QCOMPARE(got[1].protocol, LlmProfile::Protocol::AnthropicMessages);
+        QCOMPARE(got[1].protocol, LLMProfile::Protocol::AnthropicMessages);
         QCOMPARE(cfg2.personaProfile(), QString("fast"));
         QCOMPARE(cfg2.personaEnabled(), true);
         QCOMPARE(cfg2.shareMemoryWithAi(), false);
@@ -370,17 +370,17 @@ private slots:
     }
 };
 
-QTEST_MAIN(TestLlmProfile)
+QTEST_MAIN(TestLLMProfile)
 #include "test_llm_profile.moc"
 ```
 
-- [ ] **Step 2: Create LlmProfile.h**
+- [ ] **Step 2: Create LLMProfile.h**
 
 ```bash
 mkdir -p src/llm
 ```
 
-`src/llm/LlmProfile.h`:
+`src/llm/LLMProfile.h`:
 ```cpp
 #ifndef LLM_PROFILE_H
 #define LLM_PROFILE_H
@@ -394,7 +394,7 @@ mkdir -p src/llm
  * AI Persona Layer can speak. The same struct represents any of them —
  * baseUrl + model + apiKey are interpreted per protocol.
  */
-struct LlmProfile {
+struct LLMProfile {
     enum class Protocol {
         OpenAIChat = 0,         ///< POST {baseUrl}/chat/completions
         OpenAIResponses = 1,    ///< POST {baseUrl}/responses
@@ -413,14 +413,14 @@ struct LlmProfile {
 
 - [ ] **Step 3: Extend ConfigManager**
 
-Edit `src/ConfigManager.h`. Add `#include "llm/LlmProfile.h"` and `#include <QVector>` near the top. After the TTS section (around line 98), add:
+Edit `src/ConfigManager.h`. Add `#include "llm/LLMProfile.h"` and `#include <QVector>` near the top. After the TTS section (around line 98), add:
 
 ```cpp
 // --- LLM (AI Persona Layer) -------------------------------------------------
 
 /// Stored LLM provider profiles. Empty by default.
-QVector<LlmProfile> llmProfiles() const { return m_llmProfiles; }
-void setLlmProfiles(const QVector<LlmProfile> &profiles);
+QVector<LLMProfile> llmProfiles() const { return m_llmProfiles; }
+void setLLMProfiles(const QVector<LLMProfile> &profiles);
 
 /// Name of the profile assigned to the persona feature. Empty when unassigned.
 QString personaProfile() const { return m_personaProfile; }
@@ -445,7 +445,7 @@ void shareMemoryWithAiChanged(bool enabled);
 
 Private members (add to the existing block):
 ```cpp
-QVector<LlmProfile> m_llmProfiles;
+QVector<LLMProfile> m_llmProfiles;
 QString m_personaProfile;
 bool m_personaEnabled = false;
 bool m_shareMemoryWithAi = false;
@@ -460,9 +460,9 @@ m_llmProfiles.clear();
 const int n = m_settings.beginReadArray(QStringLiteral("llm/profiles"));
 for (int i = 0; i < n; ++i) {
     m_settings.setArrayIndex(i);
-    LlmProfile p;
+    LLMProfile p;
     p.name = m_settings.value(QStringLiteral("name")).toString();
-    p.protocol = static_cast<LlmProfile::Protocol>(
+    p.protocol = static_cast<LLMProfile::Protocol>(
         m_settings.value(QStringLiteral("protocol"), 0).toInt());
     p.baseUrl = m_settings.value(QStringLiteral("baseUrl")).toString();
     p.apiKey = m_settings.value(QStringLiteral("apiKey")).toString();
@@ -477,7 +477,7 @@ m_shareMemoryWithAi = m_settings.value(QStringLiteral("llm/shareMemoryWithAi"), 
 
 Implementations (paste anywhere appropriate):
 ```cpp
-void ConfigManager::setLlmProfiles(const QVector<LlmProfile> &profiles)
+void ConfigManager::setLLMProfiles(const QVector<LLMProfile> &profiles)
 {
     m_llmProfiles = profiles;
 
@@ -529,9 +529,9 @@ void ConfigManager::setShareMemoryWithAi(bool enabled)
 
 - [ ] **Step 5: Register sources + test in CMake**
 
-Edit `tests/CMakeLists.txt`. Add `LlmProfile.h` to `SEELIEPET_LIB_SOURCES`:
+Edit `tests/CMakeLists.txt`. Add `LLMProfile.h` to `SEELIEPET_LIB_SOURCES`:
 ```cmake
-    ${CMAKE_SOURCE_DIR}/src/llm/LlmProfile.h
+    ${CMAKE_SOURCE_DIR}/src/llm/LLMProfile.h
 ```
 
 Add to `TEST_SOURCES`:
@@ -549,11 +549,11 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/llm/LlmProfile.h src/ConfigManager.h src/ConfigManager.cpp tests/test_llm_profile.cpp tests/CMakeLists.txt
+git add src/llm/LLMProfile.h src/ConfigManager.h src/ConfigManager.cpp tests/test_llm_profile.cpp tests/CMakeLists.txt
 git commit -m "$(cat <<'EOF'
-feat(config): persist LlmProfile list + persona settings
+feat(config): persist LLMProfile list + persona settings
 
-Adds LlmProfile struct (three protocols), ConfigManager getters/
+Adds LLMProfile struct (three protocols), ConfigManager getters/
 setters for profile list, personaProfile assignment, personaEnabled
 toggle, and shareMemoryWithAi privacy toggle. Backed by QSettings
 arrays + named keys.
@@ -565,11 +565,11 @@ EOF
 
 ---
 
-## Task 3: LlmProvider scaffold + OpenAI Chat protocol
+## Task 3: LLMProvider scaffold + OpenAI Chat protocol
 
 **Files:**
-- Create: `src/llm/LlmProvider.h` — interface + LlmResult struct
-- Create: `src/llm/LlmProvider.cpp` — main thread, QNAM, OpenAI Chat path
+- Create: `src/llm/LLMProvider.h` — interface + LLMResult struct
+- Create: `src/llm/LLMProvider.cpp` — main thread, QNAM, OpenAI Chat path
 - Modify: `tests/CMakeLists.txt`
 - Create: `tests/test_llm_provider.cpp` — covers OpenAI Chat via local `QHttpServer` mock
 
@@ -577,8 +577,8 @@ EOF
 
 `tests/test_llm_provider.cpp`:
 ```cpp
-#include "llm/LlmProvider.h"
-#include "llm/LlmProfile.h"
+#include "llm/LLMProvider.h"
+#include "llm/LLMProfile.h"
 #include <QtTest/QtTest>
 #include <QSignalSpy>
 
@@ -587,7 +587,7 @@ EOF
 #include <QTcpServer>
 #endif
 
-class TestLlmProvider : public QObject
+class TestLLMProvider : public QObject
 {
     Q_OBJECT
 private slots:
@@ -606,18 +606,18 @@ private slots:
         const quint16 port = tcp->serverPort();
         QVERIFY(server.bind(tcp.release()));
 
-        LlmProfile profile;
-        profile.protocol = LlmProfile::Protocol::OpenAIChat;
+        LLMProfile profile;
+        profile.protocol = LLMProfile::Protocol::OpenAIChat;
         profile.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
         profile.apiKey = "sk-test";
         profile.model = "gpt-4o-mini";
 
-        LlmProvider provider;
+        LLMProvider provider;
         provider.setProfile(profile);
 
         QEventLoop loop;
-        LlmResult got;
-        provider.generate("system prompt", "user prompt", [&](LlmResult r) {
+        LLMResult got;
+        provider.generate("system prompt", "user prompt", [&](LLMResult r) {
             got = std::move(r);
             loop.quit();
         });
@@ -641,17 +641,17 @@ private slots:
         const quint16 port = tcp->serverPort();
         QVERIFY(server.bind(tcp.release()));
 
-        LlmProfile profile;
-        profile.protocol = LlmProfile::Protocol::OpenAIChat;
+        LLMProfile profile;
+        profile.protocol = LLMProfile::Protocol::OpenAIChat;
         profile.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
         profile.apiKey = "bad";
         profile.model = "x";
 
-        LlmProvider provider;
+        LLMProvider provider;
         provider.setProfile(profile);
         QEventLoop loop;
-        LlmResult got;
-        provider.generate("s", "u", [&](LlmResult r) { got = std::move(r); loop.quit(); });
+        LLMResult got;
+        provider.generate("s", "u", [&](LLMResult r) { got = std::move(r); loop.quit(); });
         QTimer::singleShot(3000, &loop, &QEventLoop::quit);
         loop.exec();
 
@@ -661,12 +661,12 @@ private slots:
 #else
     void skipNoHttpServer()
     {
-        QSKIP("Qt6::HttpServer not found; LlmProvider tests skipped at compile time.");
+        QSKIP("Qt6::HttpServer not found; LLMProvider tests skipped at compile time.");
     }
 #endif
 };
 
-QTEST_MAIN(TestLlmProvider)
+QTEST_MAIN(TestLLMProvider)
 #include "test_llm_provider.moc"
 ```
 
@@ -676,8 +676,8 @@ QTEST_MAIN(TestLlmProvider)
 
 Add `test_llm_provider.cpp` to `TEST_SOURCES` in `tests/CMakeLists.txt`. Add to `SEELIEPET_LIB_SOURCES`:
 ```cmake
-    ${CMAKE_SOURCE_DIR}/src/llm/LlmProvider.h
-    ${CMAKE_SOURCE_DIR}/src/llm/LlmProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/llm/LLMProvider.h
+    ${CMAKE_SOURCE_DIR}/src/llm/LLMProvider.cpp
 ```
 
 - [ ] **Step 3: Build, verify failure**
@@ -685,16 +685,16 @@ Add `test_llm_provider.cpp` to `TEST_SOURCES` in `tests/CMakeLists.txt`. Add to 
 ```bash
 cd build && cmake --build . --target test_llm_provider 2>&1 | tail -10
 ```
-Expected: compile error (LlmProvider.h not found).
+Expected: compile error (LLMProvider.h not found).
 
-- [ ] **Step 4: Create LlmProvider header**
+- [ ] **Step 4: Create LLMProvider header**
 
-`src/llm/LlmProvider.h`:
+`src/llm/LLMProvider.h`:
 ```cpp
 #ifndef LLM_PROVIDER_H
 #define LLM_PROVIDER_H
 
-#include "LlmProfile.h"
+#include "LLMProfile.h"
 #include <QObject>
 #include <QString>
 #include <QVector>
@@ -710,7 +710,7 @@ class QNetworkReply;
  * and its `finished` signal fires on the main thread, so user callbacks are
  * always invoked on the main thread.
  */
-struct LlmResult {
+struct LLMResult {
     bool ok = false;
     QString text;
     QString error;
@@ -718,20 +718,20 @@ struct LlmResult {
     int tokensOut = 0;
 };
 
-class LlmProvider : public QObject
+class LLMProvider : public QObject
 {
     Q_OBJECT
 public:
-    explicit LlmProvider(QObject *parent = nullptr);
-    ~LlmProvider() override;
+    explicit LLMProvider(QObject *parent = nullptr);
+    ~LLMProvider() override;
 
-    void setProfile(const LlmProfile &profile);
-    LlmProfile profile() const { return m_profile; }
+    void setProfile(const LLMProfile &profile);
+    LLMProfile profile() const { return m_profile; }
 
     /// True iff baseUrl, apiKey, and model are all non-empty.
     bool isConfigured() const;
 
-    using ResultCallback = std::function<void(LlmResult)>;
+    using ResultCallback = std::function<void(LLMResult)>;
     using BatchCallback = std::function<void(QVector<QString>)>;
 
     /// On-demand single completion. Callback fires exactly once on the main thread.
@@ -749,13 +749,13 @@ private:
     QNetworkReply *sendOpenAiResponses(const QString &system, const QString &user);
     QNetworkReply *sendAnthropicMessages(const QString &system, const QString &user);
 
-    static LlmResult parseOpenAiChat(const QByteArray &body);
-    static LlmResult parseOpenAiResponses(const QByteArray &body);
-    static LlmResult parseAnthropicMessages(const QByteArray &body);
+    static LLMResult parseOpenAiChat(const QByteArray &body);
+    static LLMResult parseOpenAiResponses(const QByteArray &body);
+    static LLMResult parseAnthropicMessages(const QByteArray &body);
 
     void wireReply(QNetworkReply *reply, ResultCallback callback);
 
-    LlmProfile m_profile;
+    LLMProfile m_profile;
     QNetworkAccessManager *m_nam = nullptr;
     int m_timeoutMs = 5000;
 };
@@ -765,9 +765,9 @@ private:
 
 - [ ] **Step 5: Implement OpenAI Chat path**
 
-`src/llm/LlmProvider.cpp`:
+`src/llm/LLMProvider.cpp`:
 ```cpp
-#include "LlmProvider.h"
+#include "LLMProvider.h"
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -777,27 +777,27 @@ private:
 #include <QTimer>
 #include <QUrl>
 
-LlmProvider::LlmProvider(QObject *parent)
+LLMProvider::LLMProvider(QObject *parent)
     : QObject(parent)
     , m_nam(new QNetworkAccessManager(this))
 {
 }
 
-LlmProvider::~LlmProvider() = default;
+LLMProvider::~LLMProvider() = default;
 
-void LlmProvider::setProfile(const LlmProfile &profile)
+void LLMProvider::setProfile(const LLMProfile &profile)
 {
     m_profile = profile;
 }
 
-bool LlmProvider::isConfigured() const
+bool LLMProvider::isConfigured() const
 {
     return !m_profile.baseUrl.isEmpty()
         && !m_profile.apiKey.isEmpty()
         && !m_profile.model.isEmpty();
 }
 
-void LlmProvider::generate(const QString &system, const QString &user, ResultCallback cb)
+void LLMProvider::generate(const QString &system, const QString &user, ResultCallback cb)
 {
     if (!isConfigured()) {
         cb({ false, {}, QStringLiteral("provider not configured"), 0, 0 });
@@ -806,11 +806,11 @@ void LlmProvider::generate(const QString &system, const QString &user, ResultCal
 
     QNetworkReply *reply = nullptr;
     switch (m_profile.protocol) {
-    case LlmProfile::Protocol::OpenAIChat:
+    case LLMProfile::Protocol::OpenAIChat:
         reply = sendOpenAiChat(system, user); break;
-    case LlmProfile::Protocol::OpenAIResponses:
+    case LLMProfile::Protocol::OpenAIResponses:
         reply = sendOpenAiResponses(system, user); break;
-    case LlmProfile::Protocol::AnthropicMessages:
+    case LLMProfile::Protocol::AnthropicMessages:
         reply = sendAnthropicMessages(system, user); break;
     }
     if (!reply) {
@@ -820,14 +820,14 @@ void LlmProvider::generate(const QString &system, const QString &user, ResultCal
     wireReply(reply, std::move(cb));
 }
 
-void LlmProvider::generateBatch(const QString &system, const QString &user, int n, BatchCallback cb)
+void LLMProvider::generateBatch(const QString &system, const QString &user, int n, BatchCallback cb)
 {
     const QString batchUser = user
         + QStringLiteral("\n\nRespond ONLY with a JSON array of exactly %1 strings. "
                          "No surrounding prose, no markdown code fences, no keys — "
                          "just the JSON array. Example: [\"line one\", \"line two\"]").arg(n);
 
-    generate(system, batchUser, [cb = std::move(cb), n](LlmResult r) {
+    generate(system, batchUser, [cb = std::move(cb), n](LLMResult r) {
         QVector<QString> out;
         if (!r.ok) { cb(out); return; }
 
@@ -844,7 +844,7 @@ void LlmProvider::generateBatch(const QString &system, const QString &user, int 
         QJsonParseError err;
         QJsonDocument doc = QJsonDocument::fromJson(text.toUtf8(), &err);
         if (err.error != QJsonParseError::NoError || !doc.isArray()) {
-            qWarning() << "LlmProvider::generateBatch: JSON parse failed:" << err.errorString()
+            qWarning() << "LLMProvider::generateBatch: JSON parse failed:" << err.errorString()
                        << "head:" << text.left(200);
             cb(out);
             return;
@@ -860,7 +860,7 @@ void LlmProvider::generateBatch(const QString &system, const QString &user, int 
 
 // --- OpenAI Chat -----------------------------------------------------------
 
-QNetworkReply *LlmProvider::sendOpenAiChat(const QString &system, const QString &user)
+QNetworkReply *LLMProvider::sendOpenAiChat(const QString &system, const QString &user)
 {
     QUrl url(m_profile.baseUrl + QStringLiteral("/chat/completions"));
     QNetworkRequest req(url);
@@ -877,9 +877,9 @@ QNetworkReply *LlmProvider::sendOpenAiChat(const QString &system, const QString 
     return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }
 
-LlmResult LlmProvider::parseOpenAiChat(const QByteArray &body)
+LLMResult LLMProvider::parseOpenAiChat(const QByteArray &body)
 {
-    LlmResult r;
+    LLMResult r;
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     if (!doc.isObject()) {
         r.error = "non-JSON response"; return r;
@@ -901,14 +901,14 @@ LlmResult LlmProvider::parseOpenAiChat(const QByteArray &body)
 
 // --- Stubs for the other two protocols (filled in Task 4) -----------------
 
-QNetworkReply *LlmProvider::sendOpenAiResponses(const QString &, const QString &) { return nullptr; }
-QNetworkReply *LlmProvider::sendAnthropicMessages(const QString &, const QString &) { return nullptr; }
-LlmResult LlmProvider::parseOpenAiResponses(const QByteArray &) { return {}; }
-LlmResult LlmProvider::parseAnthropicMessages(const QByteArray &) { return {}; }
+QNetworkReply *LLMProvider::sendOpenAiResponses(const QString &, const QString &) { return nullptr; }
+QNetworkReply *LLMProvider::sendAnthropicMessages(const QString &, const QString &) { return nullptr; }
+LLMResult LLMProvider::parseOpenAiResponses(const QByteArray &) { return {}; }
+LLMResult LLMProvider::parseAnthropicMessages(const QByteArray &) { return {}; }
 
 // --- Common reply wiring ---------------------------------------------------
 
-void LlmProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
+void LLMProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
 {
     auto *timeout = new QTimer(reply);
     timeout->setSingleShot(true);
@@ -934,11 +934,11 @@ void LlmProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
             return;
         }
         const QByteArray body = reply->readAll();
-        LlmResult r;
+        LLMResult r;
         switch (protocol) {
-        case LlmProfile::Protocol::OpenAIChat:        r = parseOpenAiChat(body); break;
-        case LlmProfile::Protocol::OpenAIResponses:   r = parseOpenAiResponses(body); break;
-        case LlmProfile::Protocol::AnthropicMessages: r = parseAnthropicMessages(body); break;
+        case LLMProfile::Protocol::OpenAIChat:        r = parseOpenAiChat(body); break;
+        case LLMProfile::Protocol::OpenAIResponses:   r = parseOpenAiResponses(body); break;
+        case LLMProfile::Protocol::AnthropicMessages: r = parseAnthropicMessages(body); break;
         }
         cb(std::move(r));
         reply->deleteLater();
@@ -958,9 +958,9 @@ Expected: both subtests PASS (or `skipNoHttpServer` SKIP if Qt6::HttpServer not 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/llm/LlmProvider.h src/llm/LlmProvider.cpp tests/test_llm_provider.cpp tests/CMakeLists.txt
+git add src/llm/LLMProvider.h src/llm/LLMProvider.cpp tests/test_llm_provider.cpp tests/CMakeLists.txt
 git commit -m "$(cat <<'EOF'
-feat(llm): LlmProvider scaffold + OpenAI Chat protocol
+feat(llm): LLMProvider scaffold + OpenAI Chat protocol
 
 Adds async HTTP client with three-protocol enum; this commit ships
 the OpenAI Chat path (POST /chat/completions). Reply wiring covers
@@ -975,10 +975,10 @@ EOF
 
 ---
 
-## Task 4: LlmProvider — OpenAI Responses + Anthropic Messages
+## Task 4: LLMProvider — OpenAI Responses + Anthropic Messages
 
 **Files:**
-- Modify: `src/llm/LlmProvider.cpp` — replace the two stubs with real implementations
+- Modify: `src/llm/LLMProvider.cpp` — replace the two stubs with real implementations
 - Modify: `tests/test_llm_provider.cpp` — add two more subtests
 
 - [ ] **Step 1: Write failing tests**
@@ -999,16 +999,16 @@ void testOpenAiResponses()
     const quint16 port = tcp->serverPort();
     QVERIFY(server.bind(tcp.release()));
 
-    LlmProfile p;
-    p.protocol = LlmProfile::Protocol::OpenAIResponses;
+    LLMProfile p;
+    p.protocol = LLMProfile::Protocol::OpenAIResponses;
     p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
     p.apiKey = "sk-test"; p.model = "gpt-4o-mini";
-    LlmProvider provider;
+    LLMProvider provider;
     provider.setProfile(p);
 
     QEventLoop loop;
-    LlmResult got;
-    provider.generate("s", "u", [&](LlmResult r) { got = std::move(r); loop.quit(); });
+    LLMResult got;
+    provider.generate("s", "u", [&](LLMResult r) { got = std::move(r); loop.quit(); });
     QTimer::singleShot(3000, &loop, &QEventLoop::quit);
     loop.exec();
     QVERIFY(got.ok);
@@ -1031,16 +1031,16 @@ void testAnthropicMessages()
     const quint16 port = tcp->serverPort();
     QVERIFY(server.bind(tcp.release()));
 
-    LlmProfile p;
-    p.protocol = LlmProfile::Protocol::AnthropicMessages;
+    LLMProfile p;
+    p.protocol = LLMProfile::Protocol::AnthropicMessages;
     p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
     p.apiKey = "sk-ant-test"; p.model = "claude-haiku";
-    LlmProvider provider;
+    LLMProvider provider;
     provider.setProfile(p);
 
     QEventLoop loop;
-    LlmResult got;
-    provider.generate("s", "u", [&](LlmResult r) { got = std::move(r); loop.quit(); });
+    LLMResult got;
+    provider.generate("s", "u", [&](LLMResult r) { got = std::move(r); loop.quit(); });
     QTimer::singleShot(3000, &loop, &QEventLoop::quit);
     loop.exec();
     QVERIFY(got.ok);
@@ -1057,10 +1057,10 @@ cd build && cmake --build . --target test_llm_provider && ctest -R test_llm_prov
 ```
 Expected: the two new subtests FAIL (stubs return nullptr / empty).
 
-- [ ] **Step 3: Replace stubs in LlmProvider.cpp**
+- [ ] **Step 3: Replace stubs in LLMProvider.cpp**
 
 ```cpp
-QNetworkReply *LlmProvider::sendOpenAiResponses(const QString &system, const QString &user)
+QNetworkReply *LLMProvider::sendOpenAiResponses(const QString &system, const QString &user)
 {
     QUrl url(m_profile.baseUrl + QStringLiteral("/responses"));
     QNetworkRequest req(url);
@@ -1074,9 +1074,9 @@ QNetworkReply *LlmProvider::sendOpenAiResponses(const QString &system, const QSt
     return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }
 
-LlmResult LlmProvider::parseOpenAiResponses(const QByteArray &body)
+LLMResult LLMProvider::parseOpenAiResponses(const QByteArray &body)
 {
-    LlmResult r;
+    LLMResult r;
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     if (!doc.isObject()) { r.error = "non-JSON response"; return r; }
     const QJsonObject obj = doc.object();
@@ -1100,7 +1100,7 @@ LlmResult LlmProvider::parseOpenAiResponses(const QByteArray &body)
     return r;
 }
 
-QNetworkReply *LlmProvider::sendAnthropicMessages(const QString &system, const QString &user)
+QNetworkReply *LLMProvider::sendAnthropicMessages(const QString &system, const QString &user)
 {
     QUrl url(m_profile.baseUrl + QStringLiteral("/messages"));
     QNetworkRequest req(url);
@@ -1118,9 +1118,9 @@ QNetworkReply *LlmProvider::sendAnthropicMessages(const QString &system, const Q
     return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }
 
-LlmResult LlmProvider::parseAnthropicMessages(const QByteArray &body)
+LLMResult LLMProvider::parseAnthropicMessages(const QByteArray &body)
 {
-    LlmResult r;
+    LLMResult r;
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     if (!doc.isObject()) { r.error = "non-JSON response"; return r; }
     const QJsonObject obj = doc.object();
@@ -1153,7 +1153,7 @@ Expected: all four subtests PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/llm/LlmProvider.cpp tests/test_llm_provider.cpp
+git add src/llm/LLMProvider.cpp tests/test_llm_provider.cpp
 git commit -m "$(cat <<'EOF'
 feat(llm): OpenAI Responses + Anthropic Messages protocols
 
@@ -1169,10 +1169,10 @@ EOF
 
 ---
 
-## Task 5: LlmProvider — timeout + failure suppression
+## Task 5: LLMProvider — timeout + failure suppression
 
 **Files:**
-- Modify: `src/llm/LlmProvider.h` / `.cpp` — add 3-strike cooldown
+- Modify: `src/llm/LLMProvider.h` / `.cpp` — add 3-strike cooldown
 - Modify: `tests/test_llm_provider.cpp` — add stress subtest
 
 - [ ] **Step 1: Write failing test**
@@ -1191,19 +1191,19 @@ void testFailureSuppression()
     const quint16 port = tcp->serverPort();
     QVERIFY(server.bind(tcp.release()));
 
-    LlmProfile p;
-    p.protocol = LlmProfile::Protocol::OpenAIChat;
+    LLMProfile p;
+    p.protocol = LLMProfile::Protocol::OpenAIChat;
     p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
     p.apiKey = "k"; p.model = "m";
 
-    LlmProvider provider;
+    LLMProvider provider;
     provider.setProfile(p);
     provider.setCooldownMs(50);  // shrink for test
 
     auto fire = [&]() {
         QEventLoop loop;
-        LlmResult got;
-        provider.generate("s","u",[&](LlmResult r){ got = std::move(r); loop.quit(); });
+        LLMResult got;
+        provider.generate("s","u",[&](LLMResult r){ got = std::move(r); loop.quit(); });
         QTimer::singleShot(3000,&loop,&QEventLoop::quit);
         loop.exec();
         return got;
@@ -1215,7 +1215,7 @@ void testFailureSuppression()
     QVERIFY(!fire().ok);
     // Fourth call should be suppressed synchronously without network.
     QElapsedTimer t; t.start();
-    LlmResult fourth = fire();
+    LLMResult fourth = fire();
     QVERIFY(!fourth.ok);
     QCOMPARE(fourth.error, QString("suppressed (cooldown)"));
     QVERIFY(t.elapsed() < 30);  // returned without a network round-trip
@@ -1229,7 +1229,7 @@ void testFailureSuppression()
 
 - [ ] **Step 2: Add API + members**
 
-`src/llm/LlmProvider.h` additions:
+`src/llm/LLMProvider.h` additions:
 ```cpp
 public:
     /// Cooldown window after 3 consecutive failures. Default 60000 ms.
@@ -1249,7 +1249,7 @@ Add `#include <QElapsedTimer>` if not present.
 
 - [ ] **Step 3: Add suppression check + counters in generate()**
 
-Top of `LlmProvider::generate()` (before the protocol switch):
+Top of `LLMProvider::generate()` (before the protocol switch):
 ```cpp
 const qint64 now = QDateTime::currentMSecsSinceEpoch();
 if (m_cooldownUntilMs > 0 && now < m_cooldownUntilMs) {
@@ -1261,7 +1261,7 @@ if (m_cooldownUntilMs > 0 && now < m_cooldownUntilMs) {
 In `wireReply`, after computing `r`, wrap the callback to update counters before delegating:
 ```cpp
 auto userCb = std::move(cb);
-ResultCallback wrapped = [this, userCb = std::move(userCb)](LlmResult r) mutable {
+ResultCallback wrapped = [this, userCb = std::move(userCb)](LLMResult r) mutable {
     if (r.ok) {
         m_consecutiveFailures = 0;
         m_cooldownUntilMs = 0;
@@ -1289,7 +1289,7 @@ Expected: PASS including the new subtest.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/llm/LlmProvider.h src/llm/LlmProvider.cpp tests/test_llm_provider.cpp
+git add src/llm/LLMProvider.h src/llm/LLMProvider.cpp tests/test_llm_provider.cpp
 git commit -m "$(cat <<'EOF'
 feat(llm): three-strike failure suppression + lastError surface
 
@@ -1823,7 +1823,7 @@ private slots:
         ConfigManager cfg;
         cfg.setPersonaEnabled(true);
         cfg.setPersonaProfile("fake");
-        cfg.setLlmProfiles({ { "fake", LlmProfile::Protocol::OpenAIChat,
+        cfg.setLLMProfiles({ { "fake", LLMProfile::Protocol::OpenAIChat,
                                "http://nope", "k", "m" } });
         PersonaEngine engine(&mm, &cfg);
         engine.setActivePackId("p");
@@ -1862,7 +1862,7 @@ QTEST_MAIN(TestPersonaEngine)
 #define PERSONA_ENGINE_H
 
 #include "PersonaPool.h"
-#include "llm/LlmProvider.h"
+#include "llm/LLMProvider.h"
 #include <QObject>
 #include <QQueue>
 #include <QJsonObject>
@@ -1922,7 +1922,7 @@ private:
     QString m_personaHash;
 
     PersonaPool m_pool;
-    LlmProvider m_provider;
+    LLMProvider m_provider;
 
     QQueue<QString> m_eventWindow;
     static constexpr int EVENT_WINDOW_SIZE = 5;
@@ -2048,7 +2048,7 @@ EOF
 ## Task 9: PersonaEngine — async on-demand path + tipUpgraded + refill scheduling
 
 **Files:**
-- Modify: `src/PersonaEngine.h` / `.cpp` — wire LlmProvider for on-demand + refill
+- Modify: `src/PersonaEngine.h` / `.cpp` — wire LLMProvider for on-demand + refill
 - Modify: `tests/test_persona_engine.cpp` — add async + refill subtests using QHttpServer mock
 
 - [ ] **Step 1: Write failing tests**
@@ -2076,7 +2076,7 @@ void testOnDemandUpgrade()
     MemoryManager mm(":memory:");
     ConfigManager cfg;
     cfg.setPersonaEnabled(true);
-    cfg.setLlmProfiles({ { "p", LlmProfile::Protocol::OpenAIChat,
+    cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
                             QStringLiteral("http://127.0.0.1:%1").arg(port),
                             "k", "m" } });
     cfg.setPersonaProfile("p");
@@ -2094,7 +2094,7 @@ void testOnDemandUpgrade()
     QCOMPARE(spy.first()[1].toString(), QString("Live line."));
 }
 
-void testPoolRefillFromBatchedLlm()
+void testPoolRefillFromBatchedLLM()
 {
     QHttpServer server;
     server.route("/chat/completions", [](const QHttpServerRequest &) {
@@ -2111,7 +2111,7 @@ void testPoolRefillFromBatchedLlm()
     MemoryManager mm(":memory:");
     ConfigManager cfg;
     cfg.setPersonaEnabled(true);
-    cfg.setLlmProfiles({ { "p", LlmProfile::Protocol::OpenAIChat,
+    cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
                             QStringLiteral("http://127.0.0.1:%1").arg(port),
                             "k","m" } });
     cfg.setPersonaProfile("p");
@@ -2170,7 +2170,7 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
     }
 
     m_provider.generate(systemPrompt, userPrompt,
-        [this, requestId, eventName](LlmResult r) {
+        [this, requestId, eventName](LLMResult r) {
             if (!r.ok || r.text.trimmed().isEmpty()) return;
             QString t = r.text.trimmed();
             if (t.length() > PersonaPool::MAX_TIP_CHARS) t.truncate(PersonaPool::MAX_TIP_CHARS);
@@ -2235,7 +2235,7 @@ git add src/PersonaEngine.h src/PersonaEngine.cpp tests/test_persona_engine.cpp
 git commit -m "$(cat <<'EOF'
 feat: PersonaEngine async on-demand + pool refill scheduling
 
-On-demand events fire LlmProvider::generate, return fallback
+On-demand events fire LLMProvider::generate, return fallback
 immediately with a requestId, and emit tipUpgraded when the LLM
 responds (truncated to MAX_TIP_CHARS). Cold pool-tier events
 schedule a background generateBatch refill, gated by isRefillInFlight
@@ -2470,7 +2470,7 @@ struct PersonaStats {
 PersonaStats stats() const { return m_stats; }
 ```
 
-Increment in the respective callbacks in `resolvePool` (refill batch result) and `resolveOnDemand` (single result). Capture `r.tokensIn` / `r.tokensOut` from `LlmResult`. `lastError` mirrors `m_provider.lastError()`.
+Increment in the respective callbacks in `resolvePool` (refill batch result) and `resolveOnDemand` (single result). Capture `r.tokensIn` / `r.tokensOut` from `LLMResult`. `lastError` mirrors `m_provider.lastError()`.
 
 - [ ] **Step 5: Persist lifetime counters**
 
@@ -2599,8 +2599,8 @@ QLabel     *m_llmLastErrorLabel = nullptr;
 Add slot:
 ```cpp
 private slots:
-    void onTabChangedLlm();
-    void refreshLlmProfilesUi();
+    void onTabChangedLLM();
+    void refreshLLMProfilesUi();
     void onAddProfileClicked();
     void onEditProfileClicked();
     void onDeleteProfileClicked();
@@ -2684,9 +2684,9 @@ connect(m_personaProfileCombo, QOverload<const QString &>::of(&QComboBox::curren
         m_config, &ConfigManager::setPersonaProfile);
 ```
 
-`refreshLlmProfilesUi()`:
+`refreshLLMProfilesUi()`:
 ```cpp
-void SettingsPanelWidget::refreshLlmProfilesUi()
+void SettingsPanelWidget::refreshLLMProfilesUi()
 {
     m_llmProfilesList->clear();
     m_personaProfileCombo->blockSignals(true);
@@ -2694,9 +2694,9 @@ void SettingsPanelWidget::refreshLlmProfilesUi()
     for (const auto &p : m_config->llmProfiles()) {
         const QString protoName = [&]() {
             switch (p.protocol) {
-            case LlmProfile::Protocol::OpenAIChat:        return tr("OpenAI Chat");
-            case LlmProfile::Protocol::OpenAIResponses:   return tr("OpenAI Responses");
-            case LlmProfile::Protocol::AnthropicMessages: return tr("Anthropic");
+            case LLMProfile::Protocol::OpenAIChat:        return tr("OpenAI Chat");
+            case LLMProfile::Protocol::OpenAIResponses:   return tr("OpenAI Responses");
+            case LLMProfile::Protocol::AnthropicMessages: return tr("Anthropic");
             }
             return QString();
         }();
@@ -2724,9 +2724,9 @@ void SettingsPanelWidget::onDeleteProfileClicked()
     const QString name = item->text().split(' ').first().trimmed();
     auto profiles = m_config->llmProfiles();
     profiles.erase(std::remove_if(profiles.begin(), profiles.end(),
-        [&](const LlmProfile &p){ return p.name == name; }), profiles.end());
-    m_config->setLlmProfiles(profiles);
-    refreshLlmProfilesUi();
+        [&](const LLMProfile &p){ return p.name == name; }), profiles.end());
+    m_config->setLLMProfiles(profiles);
+    refreshLLMProfilesUi();
 }
 
 void SettingsPanelWidget::onRegenPoolClicked()
@@ -2775,27 +2775,27 @@ EOF
 ## Task 14: Settings — edit-profile dialog + test connection
 
 **Files:**
-- Create: `src/EditLlmProfileDialog.h` / `.cpp` — modal dialog
-- Modify: `src/SettingsPanelWidget.cpp` — wire Add/Edit/Test to the dialog + LlmProvider
+- Create: `src/EditLLMProfileDialog.h` / `.cpp` — modal dialog
+- Modify: `src/SettingsPanelWidget.cpp` — wire Add/Edit/Test to the dialog + LLMProvider
 
 - [ ] **Step 1: Create dialog**
 
-`src/EditLlmProfileDialog.h`:
+`src/EditLLMProfileDialog.h`:
 ```cpp
 #ifndef EDIT_LLM_PROFILE_DIALOG_H
 #define EDIT_LLM_PROFILE_DIALOG_H
 
-#include "llm/LlmProfile.h"
+#include "llm/LLMProfile.h"
 #include <QDialog>
 class QLineEdit;
 class QComboBox;
 
-class EditLlmProfileDialog : public QDialog
+class EditLLMProfileDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit EditLlmProfileDialog(const LlmProfile &initial, QWidget *parent = nullptr);
-    LlmProfile profile() const;
+    explicit EditLLMProfileDialog(const LLMProfile &initial, QWidget *parent = nullptr);
+    LLMProfile profile() const;
 private:
     QLineEdit *m_name;
     QComboBox *m_protocol;
@@ -2807,16 +2807,16 @@ private:
 #endif
 ```
 
-`src/EditLlmProfileDialog.cpp`:
+`src/EditLLMProfileDialog.cpp`:
 ```cpp
-#include "EditLlmProfileDialog.h"
+#include "EditLLMProfileDialog.h"
 #include <QLineEdit>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QDialogButtonBox>
 #include <QPushButton>
 
-EditLlmProfileDialog::EditLlmProfileDialog(const LlmProfile &initial, QWidget *parent)
+EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("LLM Profile"));
@@ -2824,9 +2824,9 @@ EditLlmProfileDialog::EditLlmProfileDialog(const LlmProfile &initial, QWidget *p
 
     m_name = new QLineEdit(initial.name, this);
     m_protocol = new QComboBox(this);
-    m_protocol->addItem(tr("OpenAI Chat"),         int(LlmProfile::Protocol::OpenAIChat));
-    m_protocol->addItem(tr("OpenAI Responses"),    int(LlmProfile::Protocol::OpenAIResponses));
-    m_protocol->addItem(tr("Anthropic Messages"),  int(LlmProfile::Protocol::AnthropicMessages));
+    m_protocol->addItem(tr("OpenAI Chat"),         int(LLMProfile::Protocol::OpenAIChat));
+    m_protocol->addItem(tr("OpenAI Responses"),    int(LLMProfile::Protocol::OpenAIResponses));
+    m_protocol->addItem(tr("Anthropic Messages"),  int(LLMProfile::Protocol::AnthropicMessages));
     m_protocol->setCurrentIndex(int(initial.protocol));
     m_baseUrl = new QLineEdit(initial.baseUrl, this);
     m_apiKey = new QLineEdit(initial.apiKey, this);
@@ -2845,11 +2845,11 @@ EditLlmProfileDialog::EditLlmProfileDialog(const LlmProfile &initial, QWidget *p
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
 }
 
-LlmProfile EditLlmProfileDialog::profile() const
+LLMProfile EditLLMProfileDialog::profile() const
 {
-    LlmProfile p;
+    LLMProfile p;
     p.name = m_name->text().trimmed();
-    p.protocol = static_cast<LlmProfile::Protocol>(m_protocol->currentData().toInt());
+    p.protocol = static_cast<LLMProfile::Protocol>(m_protocol->currentData().toInt());
     p.baseUrl = m_baseUrl->text().trimmed();
     p.apiKey = m_apiKey->text();
     p.model = m_model->text().trimmed();
@@ -2862,12 +2862,12 @@ LlmProfile EditLlmProfileDialog::profile() const
 ```cpp
 void SettingsPanelWidget::onAddProfileClicked()
 {
-    EditLlmProfileDialog dlg({}, this);
+    EditLLMProfileDialog dlg({}, this);
     if (dlg.exec() != QDialog::Accepted) return;
     auto profiles = m_config->llmProfiles();
     profiles.append(dlg.profile());
-    m_config->setLlmProfiles(profiles);
-    refreshLlmProfilesUi();
+    m_config->setLLMProfiles(profiles);
+    refreshLLMProfilesUi();
 }
 
 void SettingsPanelWidget::onEditProfileClicked()
@@ -2877,11 +2877,11 @@ void SettingsPanelWidget::onEditProfileClicked()
     const int row = m_llmProfilesList->currentRow();
     auto profiles = m_config->llmProfiles();
     if (row < 0 || row >= profiles.size()) return;
-    EditLlmProfileDialog dlg(profiles[row], this);
+    EditLLMProfileDialog dlg(profiles[row], this);
     if (dlg.exec() != QDialog::Accepted) return;
     profiles[row] = dlg.profile();
-    m_config->setLlmProfiles(profiles);
-    refreshLlmProfilesUi();
+    m_config->setLLMProfiles(profiles);
+    refreshLLMProfilesUi();
 }
 ```
 
@@ -2894,7 +2894,7 @@ void SettingsPanelWidget::onTestConnectionClicked()
     if (row < 0) return;
     const auto profile = m_config->llmProfiles().value(row);
 
-    LlmProvider provider;
+    LLMProvider provider;
     provider.setProfile(profile);
     provider.setTimeoutMs(5000);
 
@@ -2903,7 +2903,7 @@ void SettingsPanelWidget::onTestConnectionClicked()
     provider.generate(
         QStringLiteral("Reply with the single word OK."),
         QStringLiteral("ping"),
-        [this, elapsed = t](LlmResult r) mutable {
+        [this, elapsed = t](LLMResult r) mutable {
             const qint64 ms = elapsed.elapsed();
             if (r.ok) {
                 m_llmLastErrorLabel->setText(tr("✓ %1 ms").arg(ms));
@@ -2914,21 +2914,21 @@ void SettingsPanelWidget::onTestConnectionClicked()
 }
 ```
 
-Note: `LlmProvider` here is a stack local. Since `generate()` returns immediately and the callback fires later, the local is destroyed first → reply is dangling. Fix by making the provider a member:
+Note: `LLMProvider` here is a stack local. Since `generate()` returns immediately and the callback fires later, the local is destroyed first → reply is dangling. Fix by making the provider a member:
 ```cpp
 // In header
-QScopedPointer<LlmProvider> m_testProvider;
+QScopedPointer<LLMProvider> m_testProvider;
 // In ctor
-m_testProvider.reset(new LlmProvider(this));
+m_testProvider.reset(new LLMProvider(this));
 // In onTestConnectionClicked: use m_testProvider.data() instead
 ```
 
 - [ ] **Step 4: CMake**
 
-Add EditLlmProfileDialog to `SEELIEPET_LIB_SOURCES` (if shared with tests) or to the main app target's sources. For now, add to the app target only by appending to the main `add_executable(Seelie ...)` in the top-level `CMakeLists.txt`:
+Add EditLLMProfileDialog to `SEELIEPET_LIB_SOURCES` (if shared with tests) or to the main app target's sources. For now, add to the app target only by appending to the main `add_executable(Seelie ...)` in the top-level `CMakeLists.txt`:
 ```cmake
-src/EditLlmProfileDialog.h
-src/EditLlmProfileDialog.cpp
+src/EditLLMProfileDialog.h
+src/EditLLMProfileDialog.cpp
 ```
 
 - [ ] **Step 5: Build + manual smoke**
@@ -2942,11 +2942,11 @@ Launch app, open Settings → AI → Add. Fill an OpenAI profile with a real key
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/EditLlmProfileDialog.h src/EditLlmProfileDialog.cpp src/SettingsPanelWidget.h src/SettingsPanelWidget.cpp CMakeLists.txt
+git add src/EditLLMProfileDialog.h src/EditLLMProfileDialog.cpp src/SettingsPanelWidget.h src/SettingsPanelWidget.cpp CMakeLists.txt
 git commit -m "$(cat <<'EOF'
 feat(settings): edit-profile dialog + Test connection
 
-Modal QDialog for editing an LlmProfile (name, protocol dropdown,
+Modal QDialog for editing an LLMProfile (name, protocol dropdown,
 base URL, API key as password field, model). Add/Edit buttons in
 the AI tab now open it. Test connection fires a 1-token request and
 shows either "✓ <ms>" or "✗ <error>" in the status label.
@@ -3339,7 +3339,7 @@ No code commit unless issues are found. If any issue is found, file a follow-up 
 - §1 Tier policy → Task 8 (`tierFor`)
 - §2 Data flow (sync pool, async on-demand, tipUpgraded) → Tasks 8, 9, 10
 - §3 PersonaPool (schema, refill, validation, spam guard, in-flight, hash invalidation) → Tasks 6, 7
-- §4 LlmProvider (three protocols, timeout, suppression) → Tasks 3, 4, 5
+- §4 LLMProvider (three protocols, timeout, suppression) → Tasks 3, 4, 5
 - §5 Pack manifest persona → Task 1
 - §6 Settings AI tab → Tasks 12, 13, 14
 - §7 Privacy "Share memory with AI" → Task 9 (gating), Task 13 (UI)
@@ -3357,6 +3357,6 @@ No code commit unless issues are found. If any issue is found, file a follow-up 
 
 **Placeholder scan:** none of the tasks contain TBD/TODO. All steps have concrete code or commands.
 
-**Type consistency:** PersonaEngine APIs (`resolve()`, `Resolved`, `tipUpgraded`) match across Tasks 8, 9, 10. `LlmProfile::Protocol` enum values match across 2, 3, 4. PersonaPool method names (`insert`, `insertMany`, `pick`, `wipePack`, `markRefillStarted/Finished`, `isRefillInFlight`, `isSpamSuppressed`, `recordEmptyRefill`, `clearSpamSuppression`) match across Tasks 6, 7, 9.
+**Type consistency:** PersonaEngine APIs (`resolve()`, `Resolved`, `tipUpgraded`) match across Tasks 8, 9, 10. `LLMProfile::Protocol` enum values match across 2, 3, 4. PersonaPool method names (`insert`, `insertMany`, `pick`, `wipePack`, `markRefillStarted/Finished`, `isRefillInFlight`, `isSpamSuppressed`, `recordEmptyRefill`, `clearSpamSuppression`) match across Tasks 6, 7, 9.
 
 Plan ready.

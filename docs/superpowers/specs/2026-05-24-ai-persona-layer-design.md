@@ -25,7 +25,7 @@ Replace the static `TipsCatalog` as the primary text source for canonical events
 
 Three new units sit beside existing ones. Public APIs of existing subsystems (`MemoryManager`, `TipsCatalog`, `TTSEngine`, `ConfigManager`) are not modified; the integration is additive (new signal connections, new `stats.*` keys written via the existing `MemoryManager::increment()`).
 
-**Thread model:** All three new units (`PersonaEngine`, `PersonaPool`, `LlmProvider`) live on the **main thread**. `QNetworkAccessManager` handles async HTTP via the main event loop — no worker thread needed. This deliberately *does not* follow the `TTSEngine` `moveToThread()` pattern (TTS uses a worker because audio decoding is CPU-heavy; LLM is pure I/O). Keeping everything on main thread eliminates cross-thread SQLite access entirely.
+**Thread model:** All three new units (`PersonaEngine`, `PersonaPool`, `LLMProvider`) live on the **main thread**. `QNetworkAccessManager` handles async HTTP via the main event loop — no worker thread needed. This deliberately *does not* follow the `TTSEngine` `moveToThread()` pattern (TTS uses a worker because audio decoding is CPU-heavy; LLM is pure I/O). Keeping everything on main thread eliminates cross-thread SQLite access entirely.
 
 ```
 ┌────────────┐    ┌──────────────┐
@@ -34,7 +34,7 @@ Three new units sit beside existing ones. Public APIs of existing subsystems (`M
        │                            ▼
        │          ┌───────────────────────────────┐
        │          │ PersonaPool (high-freq tier)  │  ◀── SQLite (existing memory DB)
-       │          │ LlmProvider (low-freq tier)   │
+       │          │ LLMProvider (low-freq tier)   │
        │          └───────────────────────────────┘
        ▼                            │
    TipsCatalog ◀──── fallback ──────┘
@@ -45,7 +45,7 @@ Three new units sit beside existing ones. Public APIs of existing subsystems (`M
 
 - **`PersonaEngine`** — orchestrator. Tier-routes events, owns provider selection, owns the fallback chain. Single instance owned by `MainWindow`.
 - **`PersonaPool`** — per-`(pack_id, event_name)` cache of pre-generated text. Backed by a new table in the existing memory SQLite DB. Lazy refill.
-- **`LlmProvider`** — abstract interface mirroring the shape of `TtsProvider`. Three concrete protocols (OpenAI Chat, OpenAI Responses, Anthropic Messages) under one class with a `Protocol` enum.
+- **`LLMProvider`** — abstract interface mirroring the shape of `TtsProvider`. Three concrete protocols (OpenAI Chat, OpenAI Responses, Anthropic Messages) under one class with a `Protocol` enum.
 
 If `PersonaEngine` is yanked out, the pet works exactly like today — the feature is additive.
 
@@ -107,7 +107,7 @@ signals:
    - **On-demand tier (IPC or milestone):**
      - Allocate `requestId = ++m_nextRequestId`.
      - Build prompt `{persona, last 5 event names, memory snapshot if opted-in}`.
-     - Kick off `LlmProvider::generate(prompt, callback)` (callback captured with `requestId`).
+     - Kick off `LLMProvider::generate(prompt, callback)` (callback captured with `requestId`).
      - Return `{TipsCatalog::eventTip(name), requestId}` immediately.
      - When the callback fires later on the main thread, emit `tipUpgraded(requestId, newText)`.
 4. The bubble owner (`MainWindow`) stores `requestId` with the active bubble for that event. On `tipUpgraded`, if the stored id matches and the bubble is still visible, swap the text (and re-trigger TTS for the new text). Otherwise drop silently.
@@ -124,7 +124,7 @@ signals:
                               └─▶ on-demand: TipsCatalog text   ◀── return
                                    │                    requestId=42
                                    ▼
-                          LlmProvider::generate(cb)
+                          LLMProvider::generate(cb)
                                    │
                           (QNAM async, main event loop)
                                    │
@@ -194,11 +194,11 @@ CREATE INDEX IF NOT EXISTS idx_persona_pool_lookup
 
 ---
 
-## 4. LlmProvider — Three Protocols, User Profiles
+## 4. LLMProvider — Three Protocols, User Profiles
 
 ### Protocols
 
-`LlmProvider` is a single class with a `Protocol` enum:
+`LLMProvider` is a single class with a `Protocol` enum:
 
 | Protocol | Endpoint | Covers |
 |---|---|---|
@@ -206,10 +206,10 @@ CREATE INDEX IF NOT EXISTS idx_persona_pool_lookup
 | `OpenAIResponses` | `POST {baseUrl}/responses` | OpenAI's Responses API + compatible proxies |
 | `AnthropicMessages` | `POST {baseUrl}/messages` (+ `anthropic-version` header) | Anthropic + Anthropic-compatible proxies |
 
-### LlmProfile
+### LLMProfile
 
 ```cpp
-struct LlmProfile {
+struct LLMProfile {
     QString name;       // user-set, e.g. "fast", "smart"
     Protocol protocol;
     QString baseUrl;    // e.g. https://api.openai.com/v1
@@ -236,12 +236,12 @@ When the next LLM feature ships (Narrator, Conversational), this widens to a sma
 ### API (async only — no synchronous variants)
 
 ```cpp
-class LlmProvider {
+class LLMProvider {
 public:
     // On-demand single completion. Callback fires exactly once, on the main thread.
     void generate(const QString &system,
                   const QString &user,
-                  std::function<void(LlmResult)> callback);
+                  std::function<void(LLMResult)> callback);
 
     // Batched completion for pool refill — requests N lines, JSON array output.
     void generateBatch(const QString &system,
@@ -250,7 +250,7 @@ public:
                        std::function<void(QVector<QString>)> callback);
 };
 
-struct LlmResult {
+struct LLMResult {
     bool ok = false;
     QString text;
     QString error;          // empty when ok; populated for HTTP/JSON/timeout failures
@@ -263,7 +263,7 @@ struct LlmResult {
 
 ### Threading
 
-`LlmProvider` lives on the main thread. `QNetworkAccessManager` is created on the main thread; its `finished` signal fires on the main thread; the std::function callback is invoked from that slot. There are no worker threads, no `moveToThread`, and no cross-thread DB writes anywhere in the call chain.
+`LLMProvider` lives on the main thread. `QNetworkAccessManager` is created on the main thread; its `finished` signal fires on the main thread; the std::function callback is invoked from that slot. There are no worker threads, no `moveToThread`, and no cross-thread DB writes anywhere in the call chain.
 
 ### Timeouts and errors
 
@@ -381,7 +381,7 @@ main.cpp
         ├─ TipBubble         (existing)
         ├─ PersonaEngine     ★ new, main thread
         │     ├─ PersonaPool (owned, main thread, uses MemoryManager's DB connection)
-        │     └─ LlmProvider (owned, main thread)
+        │     └─ LLMProvider (owned, main thread)
         └─ StatisticsDialog  ★ new, lazy-created on tray click
 ```
 
@@ -419,7 +419,7 @@ Owned by `PersonaEngine` as a `QQueue<QString>` of the last 5 event names (size 
 |---|---|---|---|
 | `PersonaEngine` | main | yes (via owned `PersonaPool`) | no |
 | `PersonaPool` | main | yes | no |
-| `LlmProvider` | main | no | yes (`QNetworkAccessManager` on main event loop) |
+| `LLMProvider` | main | no | yes (`QNetworkAccessManager` on main event loop) |
 | `MemoryManager` | main | yes (owns connection) | no |
 | `TTSEngine` (existing) | worker | no | no (HTTP providers create their own QNAM on worker thread) |
 
@@ -547,9 +547,9 @@ Effectively free at any individual-user scale. Multi-pack households (user switc
 | Layer | What | How |
 |---|---|---|
 | Unit | Tier classification | Table-driven test: each canonical event → expected tier |
-| Unit | Fallback chain | Mock `LlmProvider` that fails / times out / returns garbage → assert `TipsCatalog` value returned |
+| Unit | Fallback chain | Mock `LLMProvider` that fails / times out / returns garbage → assert `TipsCatalog` value returned |
 | Unit | Pool refill semantics | Inject mock provider; trigger refill; assert no duplicate in-flight, partial-result acceptance |
-| Unit | Profile serialization | Round-trip `LlmProfile` through ConfigManager JSON |
+| Unit | Profile serialization | Round-trip `LLMProfile` through ConfigManager JSON |
 | Unit | `stats()` accessors | Push counter increments through MemoryManager, assert struct values match |
 | Unit | Persona hash invalidation | Change pack persona → assert old rows wiped on next pool access |
 | Unit | Async upgrade flow | Fire on-demand event with mock provider that delays callback; assert immediate fallback, then `tipUpgraded` signal with new text |
@@ -603,6 +603,6 @@ Effectively free at any individual-user scale. Multi-pack households (user switc
 - Multi-language pool variants per pack.
 - Pool warm-up at app start (lazy only).
 - Time-based pool expiration.
-- `extraHeaders` / `systemPrefix` on `LlmProfile` — deferred until users request niche-proxy or persona-override use cases.
+- `extraHeaders` / `systemPrefix` on `LLMProfile` — deferred until users request niche-proxy or persona-override use cases.
 - Multi-feature LLM `featureAssignments` map — v1 uses a single `personaProfile` string; widens to a map when the second LLM feature ships.
 - Semantic deduplication of pool entries (exact-text PK only).
