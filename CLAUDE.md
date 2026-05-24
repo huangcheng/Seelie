@@ -39,7 +39,7 @@ seelie-gateway --ping                                        # health check
 
 The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips → UI**
 
-- **IpcServer / UdpWorker** — UDP server on `127.0.0.1:52847` (runs UdpWorker on a separate QThread). Accepts newline-delimited JSON messages (`event`, `tip`, `ping`/`pong`).
+- **IPCServer / UDPWorker** — UDP server on `127.0.0.1:52847` (runs UDPWorker on a separate QThread). Accepts newline-delimited JSON messages (`event`, `tip`, `ping`/`pong`).
 - **EventRouter** — Maps 17 canonical event names (e.g. `session.start`, `tool.before`, `file.edited`) to `EventAction` structs containing animation name, effect name, tip title/body. The event set is fixed — gateways normalize tool-specific events into these.
 - **LottieAnimationEngine** — Primary animation engine using rlottie to play Lottie JSON character animations from sprite packs.
 - **SpriteAnimationEngine** — Legacy fallback: plays frame-based animations from sprite sheets using definitions in `animations.json`.
@@ -76,6 +76,7 @@ Transport: **UDP**, newline-delimited JSON. Fire-and-forget for events (no respo
 - C++17 with Qt6 (Core, Gui, Widgets, Network, LinguistTools, Test). Qt signals/slots throughout.
 - rlottie v0.2 fetched via CMake FetchContent (patched for Apple Silicon NEON and GCC 13+ `<limits>` include).
 - Animation names: PascalCase in C++ (`SpriteAnimationEngine`), snake_case over IPC. The engine handles mapping.
+- **Acronyms in identifiers stay UPPERCASE** — `TTSEngine`, `IPCServer`, `UDPWorker`, `LLMProfile`, `ECGWidget`, `HTTPProvider`. Do NOT PascalCase them (`TtsEngine`, `IpcServer`, …). Methods follow the same rule mid-name: `setLLMProfiles`, `setIPCServer`. Variables and members stay camelCase with lowercase acronyms (`m_ttsEngine`, `m_ipcServer`, `httpServer`). Filenames match the class: `IPCServer.h`, `TTSProviderRegistry.cpp`, `OpenAITTSProvider.cpp`. Header guards split the acronym with an underscore: `IPC_SERVER_H`, `ITTS_PROVIDER_H`.
 - i18n: Chinese translation in `Seelie_zh_CN.ts`. All user-visible strings use `tr()`.
 - Tests use Qt Test framework on a separate UDP port (52848) to avoid conflicts with running app.
 - App version set in `CMakeLists.txt` (`project(Seelie VERSION x.y.z)`), passed to C++ via `PROJECT_VERSION` compile definition.
