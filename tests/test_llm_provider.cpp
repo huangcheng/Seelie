@@ -1,6 +1,8 @@
 #include "llm/LLMProvider.h"
 #include "llm/LLMProfile.h"
 #include <QtTest/QtTest>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSignalSpy>
 
 #ifdef SEELIE_HAS_QHTTPSERVER
@@ -85,6 +87,70 @@ private slots:
 
         QVERIFY(!got.ok);
         QVERIFY(!got.error.isEmpty());
+    }
+
+    void testOpenAiResponses()
+    {
+        QHttpServer server;
+        server.route("/responses", [](const QHttpServerRequest &) {
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                R"({"output":[{"content":[{"type":"output_text","text":"Tch."}]}],
+                    "usage":{"input_tokens":15,"output_tokens":2}})"
+            ).object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        LLMProfile p;
+        p.protocol = LLMProfile::Protocol::OpenAIResponses;
+        p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
+        p.apiKey = "sk-test"; p.model = "gpt-4o-mini";
+        LLMProvider provider;
+        provider.setProfile(p);
+
+        QEventLoop loop;
+        LLMResult got;
+        provider.generate("s", "u", [&](LLMResult r) { got = std::move(r); loop.quit(); });
+        QTimer::singleShot(3000, &loop, &QEventLoop::quit);
+        loop.exec();
+        QVERIFY(got.ok);
+        QCOMPARE(got.text, QString("Tch."));
+        QCOMPARE(got.tokensIn, 15);
+        QCOMPARE(got.tokensOut, 2);
+    }
+
+    void testAnthropicMessages()
+    {
+        QHttpServer server;
+        server.route("/messages", [](const QHttpServerRequest &) {
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                R"({"content":[{"type":"text","text":"Senpai."}],
+                    "usage":{"input_tokens":20,"output_tokens":1}})"
+            ).object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        LLMProfile p;
+        p.protocol = LLMProfile::Protocol::AnthropicMessages;
+        p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
+        p.apiKey = "sk-ant-test"; p.model = "claude-haiku";
+        LLMProvider provider;
+        provider.setProfile(p);
+
+        QEventLoop loop;
+        LLMResult got;
+        provider.generate("s", "u", [&](LLMResult r) { got = std::move(r); loop.quit(); });
+        QTimer::singleShot(3000, &loop, &QEventLoop::quit);
+        loop.exec();
+        QVERIFY(got.ok);
+        QCOMPARE(got.text, QString("Senpai."));
+        QCOMPARE(got.tokensIn, 20);
+        QCOMPARE(got.tokensOut, 1);
     }
 #else
     void skipNoHttpServer()

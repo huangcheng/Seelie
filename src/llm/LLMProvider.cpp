@@ -134,12 +134,91 @@ LLMResult LLMProvider::parseOpenAiChat(const QByteArray &body)
     return r;
 }
 
-// --- Stubs for the other two protocols (filled in Task 4) -----------------
+// --- OpenAI Responses ------------------------------------------------------
 
-QNetworkReply *LLMProvider::sendOpenAiResponses(const QString &, const QString &) { return nullptr; }
-QNetworkReply *LLMProvider::sendAnthropicMessages(const QString &, const QString &) { return nullptr; }
-LLMResult LLMProvider::parseOpenAiResponses(const QByteArray &) { return {}; }
-LLMResult LLMProvider::parseAnthropicMessages(const QByteArray &) { return {}; }
+QNetworkReply *LLMProvider::sendOpenAiResponses(const QString &system, const QString &user)
+{
+    QUrl url(m_profile.baseUrl + QStringLiteral("/responses"));
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("Authorization", ("Bearer " + m_profile.apiKey).toUtf8());
+
+    QJsonObject body;
+    body["model"] = m_profile.model;
+    body["instructions"] = system;
+    body["input"] = user;
+    return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+}
+
+LLMResult LLMProvider::parseOpenAiResponses(const QByteArray &body)
+{
+    LLMResult r;
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    if (!doc.isObject()) { r.error = "non-JSON response"; return r; }
+    const QJsonObject obj = doc.object();
+
+    const QJsonArray output = obj.value("output").toArray();
+    if (output.isEmpty()) { r.error = "no output in response"; return r; }
+    const QJsonArray content = output.first().toObject().value("content").toArray();
+    for (const QJsonValue &v : content) {
+        const QJsonObject c = v.toObject();
+        if (c.value("type").toString() == "output_text") {
+            r.text = c.value("text").toString();
+            break;
+        }
+    }
+    if (r.text.isEmpty()) { r.error = "no output_text in content"; return r; }
+
+    const QJsonObject usage = obj.value("usage").toObject();
+    r.tokensIn = usage.value("input_tokens").toInt();
+    r.tokensOut = usage.value("output_tokens").toInt();
+    r.ok = true;
+    return r;
+}
+
+// --- Anthropic Messages ----------------------------------------------------
+
+QNetworkReply *LLMProvider::sendAnthropicMessages(const QString &system, const QString &user)
+{
+    QUrl url(m_profile.baseUrl + QStringLiteral("/messages"));
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("x-api-key", m_profile.apiKey.toUtf8());
+    req.setRawHeader("anthropic-version", "2023-06-01");
+
+    QJsonObject body;
+    body["model"] = m_profile.model;
+    body["max_tokens"] = 512;
+    body["system"] = system;
+    QJsonArray msgs;
+    msgs.append(QJsonObject{ {"role","user"}, {"content", user} });
+    body["messages"] = msgs;
+    return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+}
+
+LLMResult LLMProvider::parseAnthropicMessages(const QByteArray &body)
+{
+    LLMResult r;
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    if (!doc.isObject()) { r.error = "non-JSON response"; return r; }
+    const QJsonObject obj = doc.object();
+
+    const QJsonArray content = obj.value("content").toArray();
+    for (const QJsonValue &v : content) {
+        const QJsonObject c = v.toObject();
+        if (c.value("type").toString() == "text") {
+            r.text = c.value("text").toString();
+            break;
+        }
+    }
+    if (r.text.isEmpty()) { r.error = "no text in content"; return r; }
+
+    const QJsonObject usage = obj.value("usage").toObject();
+    r.tokensIn = usage.value("input_tokens").toInt();
+    r.tokensOut = usage.value("output_tokens").toInt();
+    r.ok = true;
+    return r;
+}
 
 // --- Common reply wiring ---------------------------------------------------
 
