@@ -14,11 +14,12 @@ private slots:
         QVERIFY(tmp.isValid());
 
         const QString manifest = R"({
-            "format_version": "1.0",
+            "formatVersion": "1.0.0",
             "id": "test_pack",
             "name": "Test",
-            "character": { "engine": "lottie", "anim_directory": "anims",
-                           "frame_width": 100, "frame_height": 100 },
+            "author": "test",
+            "version": "1.0.0",
+            "character": { "type": "lottie", "directory": "anims" },
             "animations": {},
             "persona": {
                 "system": "You are Test. Reply with one sentence.",
@@ -46,11 +47,12 @@ private slots:
         QTemporaryDir tmp;
         QVERIFY(tmp.isValid());
         const QString manifest = R"({
-            "format_version": "1.0",
+            "formatVersion": "1.0.0",
             "id": "no_persona",
             "name": "NoPersona",
-            "character": { "engine": "lottie", "anim_directory": "anims",
-                           "frame_width": 100, "frame_height": 100 },
+            "author": "test",
+            "version": "1.0.0",
+            "character": { "type": "lottie", "directory": "anims" },
             "animations": {}
         })";
         QFile f(tmp.path() + "/manifest.json");

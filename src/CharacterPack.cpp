@@ -473,15 +473,9 @@ QStringList CharacterPack::availableSounds() const
 
 bool CharacterPack::parseManifest(const QJsonObject &manifest)
 {
-    // Parse format version — accept both camelCase "formatVersion"/"1.0.0"
-    // (existing packs) and snake_case "format_version"/"1.0" (AI persona layer
-    // test manifests and future schema).
-    m_metadata.formatVersion = manifest.value(QStringLiteral("formatVersion")).toString();
-    if (m_metadata.formatVersion.isEmpty()) {
-        m_metadata.formatVersion = manifest.value(QStringLiteral("format_version")).toString();
-    }
-    if (m_metadata.formatVersion != QLatin1String("1.0.0") &&
-        m_metadata.formatVersion != QLatin1String("1.0")) {
+    // Parse format version
+    m_metadata.formatVersion = manifest.value("formatVersion").toString();
+    if (m_metadata.formatVersion != "1.0.0") {
         qWarning() << "CharacterPack: Unsupported format version:" << m_metadata.formatVersion;
         return false;
     }
@@ -501,11 +495,6 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
             m_metadata.nameLocalized.insert(locale, value);
         }
     }
-
-    // For the v1.0 format (AI persona layer manifests), author and version are
-    // optional — default them so the non-empty check below doesn't reject them.
-    if (m_metadata.author.isEmpty()) m_metadata.author = QStringLiteral("unknown");
-    if (m_metadata.version.isEmpty()) m_metadata.version = QStringLiteral("1.0");
 
     if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty() ||
         m_metadata.author.isEmpty() || m_metadata.version.isEmpty()) {
@@ -582,17 +571,13 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
 
 bool CharacterPack::parseCharacter(const QJsonObject &character)
 {
-    // Parse engine type — accept both "type" (existing packs) and "engine"
-    // (AI persona layer test manifests and future schema).
-    QString typeStr = character.value(QStringLiteral("type")).toString();
-    if (typeStr.isEmpty()) {
-        typeStr = character.value(QStringLiteral("engine")).toString();
-    }
-    if (typeStr == QLatin1String("lottie")) {
+    // Parse engine type
+    const QString typeStr = character.value("type").toString();
+    if (typeStr == "lottie") {
         m_characterConfig.engineType = EngineType::Lottie;
-    } else if (typeStr == QLatin1String("spriteSheet")) {
+    } else if (typeStr == "spriteSheet") {
         m_characterConfig.engineType = EngineType::SpriteSheet;
-    } else if (typeStr == QLatin1String("live2d")) {
+    } else if (typeStr == "live2d") {
         m_characterConfig.engineType = EngineType::Live2D;
     } else {
         qWarning() << "CharacterPack: Unknown character type:" << typeStr;
@@ -601,11 +586,7 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
 
     // Parse type-specific configuration
     if (m_characterConfig.engineType == EngineType::Lottie) {
-        // Accept "directory" (existing) or "anim_directory" (new schema)
-        m_characterConfig.animDirectory = character.value(QStringLiteral("directory")).toString();
-        if (m_characterConfig.animDirectory.isEmpty()) {
-            m_characterConfig.animDirectory = character.value(QStringLiteral("anim_directory")).toString(QStringLiteral("character"));
-        }
+        m_characterConfig.animDirectory = character.value("directory").toString("character");
     } else if (m_characterConfig.engineType == EngineType::Live2D) {
         m_characterConfig.modelJson = character.value("model").toString();
         m_characterConfig.frameWidth = character.value("frameWidth").toInt(200);
