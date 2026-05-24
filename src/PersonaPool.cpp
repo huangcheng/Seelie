@@ -94,3 +94,72 @@ int PersonaPool::wipePack(const QString &packId)
     if (!q.exec()) return 0;
     return q.numRowsAffected();
 }
+
+int PersonaPool::insertMany(const QString &packId, const QString &eventName,
+                            const QString &personaHash, const QStringList &texts)
+{
+    if (!m_valid) return 0;
+    int n = 0;
+    for (const QString &raw : texts) {
+        const QString trimmed = raw.trimmed();
+        if (trimmed.isEmpty()) {
+            qWarning() << "PersonaPool: skipping empty/whitespace entry for"
+                       << packId << eventName;
+            continue;
+        }
+        QString clean = trimmed;
+        if (clean.length() > MAX_TIP_CHARS) {
+            qWarning() << "PersonaPool: truncating oversized entry ("
+                       << clean.length() << "chars) for" << packId << eventName;
+            clean.truncate(MAX_TIP_CHARS);
+        }
+        // Use the existing single-insert path so PRIMARY KEY conflict is handled
+        // (INSERT OR IGNORE). Probe rows-affected via SQLite changes() to know
+        // whether this row was actually a new insertion or a silent duplicate-ignore.
+        if (!insert(packId, eventName, personaHash, clean)) continue;
+        QSqlQuery c(m_db);
+        c.prepare(QStringLiteral("SELECT changes()"));
+        if (c.exec() && c.next() && c.value(0).toInt() > 0) ++n;
+    }
+    return n;
+}
+
+bool PersonaPool::isRefillInFlight(const QString &packId, const QString &eventName) const
+{
+    auto *self = const_cast<PersonaPool*>(this);
+    const QString k = makeKey(packId, eventName);
+    auto it = self->m_inflight.find(k);
+    if (it == self->m_inflight.end()) return false;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - it.value() > m_inflightTimeoutMs) {
+        self->m_inflight.erase(it);  // sweep on access
+        return false;
+    }
+    return true;
+}
+
+void PersonaPool::markRefillStarted(const QString &packId, const QString &eventName)
+{
+    m_inflight.insert(makeKey(packId, eventName), QDateTime::currentMSecsSinceEpoch());
+}
+
+void PersonaPool::markRefillFinished(const QString &packId, const QString &eventName)
+{
+    m_inflight.remove(makeKey(packId, eventName));
+}
+
+bool PersonaPool::isSpamSuppressed(const QString &packId, const QString &eventName) const
+{
+    return m_emptyCounters.value(makeKey(packId, eventName), 0) >= 3;
+}
+
+void PersonaPool::recordEmptyRefill(const QString &packId, const QString &eventName)
+{
+    const QString k = makeKey(packId, eventName);
+    m_emptyCounters[k] = m_emptyCounters.value(k, 0) + 1;
+}
+
+void PersonaPool::clearSpamSuppression(const QString &packId, const QString &eventName)
+{
+    m_emptyCounters.remove(makeKey(packId, eventName));
+}
