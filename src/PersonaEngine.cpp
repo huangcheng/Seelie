@@ -3,6 +3,7 @@
 #include "ConfigManager.h"
 #include "TipsCatalog.h"
 #include <QSet>
+#include <QStringList>
 
 namespace {
 const QSet<QString> &poolTierEvents()
@@ -24,6 +25,16 @@ PersonaEngine::PersonaEngine(MemoryManager *memory, ConfigManager *config, QObje
     , m_config(config)
     , m_pool(memory ? memory->database() : QSqlDatabase{})
 {
+    // Pick the profile assigned to the persona feature.
+    if (m_config) {
+        const auto profiles = m_config->llmProfiles();
+        for (const auto &p : profiles) {
+            if (p.name == m_config->personaProfile()) {
+                m_provider.setProfile(p);
+                break;
+            }
+        }
+    }
 }
 
 PersonaEngine::Tier PersonaEngine::tierFor(const QString &eventName)
@@ -54,16 +65,74 @@ PersonaEngine::Resolved PersonaEngine::resolve(const QString &eventName,
 PersonaEngine::Resolved PersonaEngine::resolvePool(const QString &eventName)
 {
     const QString text = m_pool.pick(m_activePackId, eventName, m_personaHash);
-    if (!text.isEmpty()) return { text, 0 };
-    // Cold pool — return fallback. Refill scheduling lives in Task 9 once we
-    // wire LLMProvider into PersonaEngine; for now return fallback so the
-    // engine stays useful even with persona enabled.
-    return { fallbackTip(eventName), 0 };
+
+    // Schedule a background refill when pool runs low.
+    if (m_pool.size(m_activePackId, eventName) < PersonaPool::MIN_POOL_SIZE
+        && !m_pool.isRefillInFlight(m_activePackId, eventName)
+        && !m_pool.isSpamSuppressed(m_activePackId, eventName)
+        && m_provider.isConfigured())
+    {
+        m_pool.markRefillStarted(m_activePackId, eventName);
+
+        const QString system = QStringLiteral(
+            "You write short in-character reactions for a desktop pet. "
+            "Each line: one short sentence, under 200 characters. "
+            "Stay in character.");
+        const QString user = QStringLiteral(
+            "Generate %1 distinct one-sentence reactions to the event '%2'.")
+            .arg(PersonaPool::TARGET_POOL_SIZE).arg(eventName);
+
+        const QString pack = m_activePackId;
+        const QString ev = eventName;
+        const QString hash = m_personaHash;
+
+        m_provider.generateBatch(system, user, PersonaPool::TARGET_POOL_SIZE,
+            [this, pack, ev, hash](QVector<QString> lines) {
+                m_pool.markRefillFinished(pack, ev);
+                if (lines.isEmpty()) {
+                    m_pool.recordEmptyRefill(pack, ev);
+                    return;
+                }
+                QStringList qsList;
+                for (const auto &l : lines) qsList << l;
+                m_pool.insertMany(pack, ev, hash, qsList);
+            });
+    }
+
+    return { text.isEmpty() ? fallbackTip(eventName) : text, 0 };
 }
 
 PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
-                                                       const QJsonObject &)
+                                                       const QJsonObject &payload)
 {
-    // On-demand async path lands in Task 9. For now this also returns fallback.
-    return { fallbackTip(eventName), 0 };
+    Q_UNUSED(payload);
+    if (!m_provider.isConfigured()) return { fallbackTip(eventName), 0 };
+
+    const quint64 requestId = m_nextRequestId++;
+
+    // Build context for the prompt
+    QStringList recent;
+    for (const QString &e : m_eventWindow) recent << e;
+
+    QString systemPrompt = QStringLiteral(
+        "You are a desktop pet companion to a software developer. "
+        "Reply with ONE short sentence in the user's language.");
+    QString userPrompt = QStringLiteral("Event: %1\nRecent events: %2\nReact in-character.")
+                          .arg(eventName, recent.join(QStringLiteral(", ")));
+
+    // Privacy: only attach memory snapshot if user opted in.
+    if (m_config && m_config->shareMemoryWithAi() && m_memory) {
+        const QString name = m_memory->effectiveName();
+        if (!name.isEmpty()) userPrompt += QStringLiteral("\nUser name: %1").arg(name);
+    }
+
+    m_provider.generate(systemPrompt, userPrompt,
+        [this, requestId](LLMResult r) {
+            if (!r.ok || r.text.trimmed().isEmpty()) return;
+            QString t = r.text.trimmed();
+            if (t.length() > PersonaPool::MAX_TIP_CHARS) t.truncate(PersonaPool::MAX_TIP_CHARS);
+            emit tipUpgraded(requestId, t);
+        });
+
+    return { fallbackTip(eventName), requestId };
 }

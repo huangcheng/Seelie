@@ -7,6 +7,13 @@
 #include <QtTest/QtTest>
 #include <QCoreApplication>
 #include <QSettings>
+#include <QSignalSpy>
+
+#ifdef SEELIE_HAS_QHTTPSERVER
+#include <QHttpServer>
+#include <QTcpServer>
+#include <QJsonDocument>
+#endif
 
 class TestPersonaEngine : public QObject
 {
@@ -69,6 +76,75 @@ private slots:
         // Unknown event defaults to OnDemand (forward compat).
         QVERIFY(PersonaEngine::tierFor("future.unknown") == PersonaEngine::Tier::OnDemand);
     }
+
+#ifdef SEELIE_HAS_QHTTPSERVER
+    void testOnDemandUpgrade()
+    {
+        QHttpServer server;
+        server.route("/chat/completions", [](const QHttpServerRequest &) {
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                R"({"choices":[{"message":{"content":"Live line."}}],
+                    "usage":{"prompt_tokens":1,"completion_tokens":1}})"
+            ).object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        MemoryManager mm(":memory:");
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(true);
+        cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
+                               QStringLiteral("http://127.0.0.1:%1").arg(port),
+                               "k", "m" } });
+        cfg.setPersonaProfile("p");
+        PersonaEngine engine(&mm, &cfg);
+        engine.setActivePackId("pack");
+        engine.setPersonaHash("h");
+
+        QSignalSpy spy(&engine, &PersonaEngine::tipUpgraded);
+        auto r = engine.resolve("session.start", {});
+        QVERIFY(r.requestId != 0);  // upgrade will arrive
+        // Note: fallback text may be empty in tests (TipsCatalog has no qrc in test binary)
+
+        QVERIFY(spy.wait(3000));
+        QCOMPARE(spy.first()[0].value<quint64>(), r.requestId);
+        QCOMPARE(spy.first()[1].toString(), QString("Live line."));
+    }
+
+    void testPoolRefillFromBatchedLLM()
+    {
+        QHttpServer server;
+        server.route("/chat/completions", [](const QHttpServerRequest &) {
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                "{\"choices\":[{\"message\":{\"content\":\"[\\\"line one\\\",\\\"line two\\\",\\\"line three\\\"]\"}}]}"
+            ).object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        MemoryManager mm(":memory:");
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(true);
+        cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
+                               QStringLiteral("http://127.0.0.1:%1").arg(port),
+                               "k","m" } });
+        cfg.setPersonaProfile("p");
+        PersonaEngine engine(&mm, &cfg);
+        engine.setActivePackId("pack");
+        engine.setPersonaHash("h");
+
+        QCOMPARE(engine.pool().size("pack", "tool.before"), 0);
+        engine.resolve("tool.before", {});  // triggers async refill
+
+        QTRY_VERIFY_WITH_TIMEOUT(engine.pool().size("pack","tool.before") >= 3, 3000);
+    }
+#endif
 };
 
 QTEST_MAIN(TestPersonaEngine)
