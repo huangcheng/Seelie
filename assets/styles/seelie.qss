@@ -123,16 +123,27 @@ QPushButton {
     min-height: 18px;
 }
 
+/* Restate all visual properties on :hover/:pressed. On Windows, if a
+ * pseudo-state rule only sets background+color, Qt's QStyleSheetStyle
+ * falls back to the native renderer (which ignores the QSS background)
+ * because it considers the rule "partial". Restating border, padding,
+ * border-radius keeps the QSS renderer fully in charge. */
 QPushButton:hover {
-    background: #F36F1A;
-    border: 2px solid black;    /* restate border so QSS renderer wins over native */
+    background-color: #F36F1A;
+    border: 2px solid black;
+    border-radius: 3px;
     color: white;
+    padding: 4px 12px;
+    min-height: 18px;
 }
 
 QPushButton:pressed {
-    background: #C85A12;
+    background-color: #C85A12;
     border: 2px solid black;
+    border-radius: 3px;
     color: white;
+    padding: 4px 12px;
+    min-height: 18px;
 }
 
 QPushButton:disabled {
