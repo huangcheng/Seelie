@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QTimer>
 #include <QUrl>
+#include <QDateTime>
 #include <memory>
 
 LLMProvider::LLMProvider(QObject *parent)
@@ -33,6 +34,18 @@ void LLMProvider::generate(const QString &system, const QString &user, ResultCal
 {
     if (!isConfigured()) {
         cb({ false, {}, QStringLiteral("provider not configured"), 0, 0 });
+        return;
+    }
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_cooldownUntilMs > 0 && now < m_cooldownUntilMs) {
+        // Fire the callback on the next event-loop tick so callers that
+        // construct a QEventLoop, call generate(), and then call exec()
+        // still receive the callback after exec() has started.
+        auto suppressedCb = std::make_shared<ResultCallback>(std::move(cb));
+        QTimer::singleShot(0, this, [suppressedCb]() {
+            (*suppressedCb)({ false, {}, QStringLiteral("suppressed (cooldown)"), 0, 0 });
+        });
         return;
     }
 
@@ -231,19 +244,36 @@ void LLMProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
     auto protocol = m_profile.protocol;
     auto fired = std::make_shared<bool>(false);
 
-    connect(timeout, &QTimer::timeout, reply, [reply, cb, fired]() {
+    // Wrap user callback so success/failure counters update before delegation.
+    auto userCb = std::move(cb);
+    ResultCallback wrapped = [this, userCb](LLMResult r) {
+        if (r.ok) {
+            m_consecutiveFailures = 0;
+            m_cooldownUntilMs = 0;
+            m_lastError.clear();
+        } else {
+            ++m_consecutiveFailures;
+            m_lastError = r.error;
+            if (m_consecutiveFailures >= 3) {
+                m_cooldownUntilMs = QDateTime::currentMSecsSinceEpoch() + m_cooldownMs;
+            }
+        }
+        userCb(std::move(r));
+    };
+
+    connect(timeout, &QTimer::timeout, reply, [reply, wrapped, fired]() {
         if (*fired) return;
         *fired = true;
         reply->abort();
-        cb({ false, {}, QStringLiteral("timeout"), 0, 0 });
+        wrapped({ false, {}, QStringLiteral("timeout"), 0, 0 });
         reply->deleteLater();
     });
 
-    connect(reply, &QNetworkReply::finished, this, [reply, cb, fired, protocol]() {
+    connect(reply, &QNetworkReply::finished, this, [reply, wrapped, fired, protocol]() {
         if (*fired) return;
         *fired = true;
         if (reply->error() != QNetworkReply::NoError) {
-            cb({ false, {}, reply->errorString(), 0, 0 });
+            wrapped({ false, {}, reply->errorString(), 0, 0 });
             reply->deleteLater();
             return;
         }
@@ -254,7 +284,7 @@ void LLMProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
         case LLMProfile::Protocol::OpenAIResponses:   r = parseOpenAiResponses(body); break;
         case LLMProfile::Protocol::AnthropicMessages: r = parseAnthropicMessages(body); break;
         }
-        cb(std::move(r));
+        wrapped(std::move(r));
         reply->deleteLater();
     });
 

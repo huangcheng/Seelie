@@ -4,6 +4,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QElapsedTimer>
+#include <QDateTime>
 
 #ifdef SEELIE_HAS_QHTTPSERVER
 #include <QHttpServer>
@@ -151,6 +153,59 @@ private slots:
         QCOMPARE(got.text, QString("Senpai."));
         QCOMPARE(got.tokensIn, 20);
         QCOMPARE(got.tokensOut, 1);
+    }
+
+    void testFailureSuppression()
+    {
+        // Server that always returns 500.
+        QHttpServer server;
+        server.route("/chat/completions", [](const QHttpServerRequest &) {
+            return QHttpServerResponse("err", QHttpServerResponder::StatusCode::InternalServerError);
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        LLMProfile p;
+        p.protocol = LLMProfile::Protocol::OpenAIChat;
+        p.baseUrl = QStringLiteral("http://127.0.0.1:%1").arg(port);
+        p.apiKey = "k"; p.model = "m";
+
+        LLMProvider provider;
+        provider.setProfile(p);
+        provider.setCooldownMs(150);  // shrink for test
+
+        auto fire = [&]() {
+            QEventLoop loop;
+            LLMResult got;
+            provider.generate("s","u",[&](LLMResult r){ got = std::move(r); loop.quit(); });
+            QTimer::singleShot(3000, &loop, &QEventLoop::quit);
+            loop.exec();
+            return got;
+        };
+
+        // Three failed calls — failures observed, suppression not yet armed during them.
+        QVERIFY(!fire().ok);
+        QVERIFY(!fire().ok);
+        QVERIFY(!fire().ok);
+
+        // Fourth call should be suppressed synchronously without network.
+        QElapsedTimer t; t.start();
+        LLMResult fourth = fire();
+        QVERIFY(!fourth.ok);
+        QCOMPARE(fourth.error, QString("suppressed (cooldown)"));
+        QVERIFY(t.elapsed() < 50);  // returned without a network round-trip
+
+        // lastError surface reflects the most recent real error (not the cooldown sentinel).
+        QVERIFY(provider.lastError() != QString("suppressed (cooldown)"));
+        QVERIFY(!provider.lastError().isEmpty());
+
+        // After cooldown, calls are allowed again.
+        QTest::qWait(200);
+        LLMResult after = fire();  // server still errors but we got past suppression
+        QVERIFY(!after.ok);
+        QVERIFY(after.error != QString("suppressed (cooldown)"));
     }
 #else
     void skipNoHttpServer()

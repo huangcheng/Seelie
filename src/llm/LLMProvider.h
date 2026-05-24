@@ -51,6 +51,12 @@ public:
     /// Test seam: change the per-request timeout. Default 5000 ms.
     void setTimeoutMs(int ms) { m_timeoutMs = ms; }
 
+    /// Cooldown window after 3 consecutive failures. Default 60000 ms.
+    void setCooldownMs(int ms) { m_cooldownMs = ms; }
+
+    /// Last error string from the most recent failed call. For Settings UI.
+    QString lastError() const { return m_lastError; }
+
 private:
     QNetworkReply *sendOpenAiChat(const QString &system, const QString &user);
     QNetworkReply *sendOpenAiResponses(const QString &system, const QString &user);
@@ -65,6 +71,10 @@ private:
     LLMProfile m_profile;
     QNetworkAccessManager *m_nam = nullptr;
     int m_timeoutMs = 5000;
+    int m_consecutiveFailures = 0;
+    qint64 m_cooldownUntilMs = 0;     // 0 = no cooldown active
+    int m_cooldownMs = 60000;
+    QString m_lastError;
 };
 
 #endif // LLM_PROVIDER_H
