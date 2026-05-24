@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ConfigManager.h"
-#include "IpcServer.h"
+#include "IPCServer.h"
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
@@ -409,18 +409,18 @@ int main(int argc, char *argv[])
                      });
 
     // --- IPC server ----------------------------------------------------------
-    IpcServer ipcServer;
+    IPCServer ipcServer;
 
     // IPC events → EventRouter
-    QObject::connect(&ipcServer, &IpcServer::eventReceived,
+    QObject::connect(&ipcServer, &IPCServer::eventReceived,
                      &eventRouter, &EventRouter::routeEvent);
 
     // IPC events → EcgWidget for heart-rate / alarm reactions
-    QObject::connect(&ipcServer, &IpcServer::eventReceived,
+    QObject::connect(&ipcServer, &IPCServer::eventReceived,
                      w.ecgWidget(), &EcgWidget::onEvent);
 
     // IPC tips → TipWidget directly
-    QObject::connect(&ipcServer, &IpcServer::tipReceived,
+    QObject::connect(&ipcServer, &IPCServer::tipReceived,
                      &w, [&w](const QJsonObject &tip) {
         const QString title = tip.value("title").toString("Tip");
         const QString body = tip.value("body").toString();
@@ -431,7 +431,7 @@ int main(int argc, char *argv[])
     });
 
     ipcServer.start(config.ipcEndpoint());
-    w.setIpcServer(&ipcServer);
+    w.setIPCServer(&ipcServer);
 
     // Milestone achievements → tip bubble
     QObject::connect(&memory, &MemoryManager::milestoneReached,

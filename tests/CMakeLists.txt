@@ -1,9 +1,9 @@
 # Source files shared between the app and tests (excluding main.cpp)
 set(SEELIEPET_LIB_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/IpcServer.cpp
-    ${CMAKE_SOURCE_DIR}/src/IpcServer.h
-    ${CMAKE_SOURCE_DIR}/src/UdpWorker.cpp
-    ${CMAKE_SOURCE_DIR}/src/UdpWorker.h
+    ${CMAKE_SOURCE_DIR}/src/IPCServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/IPCServer.h
+    ${CMAKE_SOURCE_DIR}/src/UDPWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/UDPWorker.h
     ${CMAKE_SOURCE_DIR}/src/EventRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/EventRouter.h
     ${CMAKE_SOURCE_DIR}/src/SpriteAnimationEngine.cpp

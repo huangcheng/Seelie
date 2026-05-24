@@ -1,24 +1,24 @@
-#include "UdpWorker.h"
+#include "UDPWorker.h"
 
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QDebug>
 
-UdpWorker::UdpWorker(QObject *parent)
+UDPWorker::UDPWorker(QObject *parent)
     : QObject(parent)
 {
 }
 
-UdpWorker::~UdpWorker()
+UDPWorker::~UDPWorker()
 {
     m_shuttingDown = true; // L1: prevent stop() from emitting stopped() during destruction
     stop();
 }
 
-void UdpWorker::start(const QString &endpoint)
+void UDPWorker::start(const QString &endpoint)
 {
     if (m_socket) {
-        emit errorOccurred("UdpWorker already started");
+        emit errorOccurred("UDPWorker already started");
         return;
     }
 
@@ -43,7 +43,7 @@ void UdpWorker::start(const QString &endpoint)
     }
 
     m_socket = new QUdpSocket(this);
-    connect(m_socket, &QUdpSocket::readyRead, this, &UdpWorker::onReadyRead);
+    connect(m_socket, &QUdpSocket::readyRead, this, &UDPWorker::onReadyRead);
 
     // H1: pass ReuseAddressHint so a restarted process can rebind even if
     // a previous wedged thread hasn't fully released the port yet.
@@ -58,7 +58,7 @@ void UdpWorker::start(const QString &endpoint)
     emit started();
 }
 
-void UdpWorker::stop()
+void UDPWorker::stop()
 {
     if (m_socket) {
         m_socket->close();
@@ -72,7 +72,7 @@ void UdpWorker::stop()
     }
 }
 
-void UdpWorker::sendDatagram(const QByteArray &data, const QHostAddress &host, quint16 port)
+void UDPWorker::sendDatagram(const QByteArray &data, const QHostAddress &host, quint16 port)
 {
     if (m_socket) {
         // M1: check writeDatagram return value and emit error on failure
@@ -83,7 +83,7 @@ void UdpWorker::sendDatagram(const QByteArray &data, const QHostAddress &host, q
     }
 }
 
-void UdpWorker::onReadyRead()
+void UDPWorker::onReadyRead()
 {
     if (!m_socket) return;
 
@@ -99,7 +99,7 @@ void UdpWorker::onReadyRead()
     while (m_socket->hasPendingDatagrams() && ++processed <= kMaxDatagramsPerRead) {
         const qint64 pending = m_socket->pendingDatagramSize();
         if (pending < 0 || pending > kMaxDatagramBytes) {
-            qWarning() << "UdpWorker: dropping oversized/invalid datagram, size ="
+            qWarning() << "UDPWorker: dropping oversized/invalid datagram, size ="
                        << pending;
             // C1: drain with a real-sized buffer — readDatagram(sink, 0) is
             // undefined and may not advance the read pointer, causing infinite loop.

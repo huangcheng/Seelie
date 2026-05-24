@@ -3,7 +3,7 @@
  *
  * End-to-end UDP IPC tests for Seelie.
  *
- * Spins up the real IpcServer, EventRouter, SpriteAnimationEngine,
+ * Spins up the real IPCServer, EventRouter, SpriteAnimationEngine,
  * and TipWidget, then drives them via
  * raw UDP datagrams (same protocol as the Node.js gateways).
  */
@@ -17,7 +17,7 @@
 #include <QFile>
 #include <QElapsedTimer>
 
-#include "IpcServer.h"
+#include "IPCServer.h"
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "TipWidget.h"
@@ -49,7 +49,7 @@ private:
     void sendJson(QUdpSocket *socket, const QJsonObject &obj);
     QByteArray waitForResponse(QUdpSocket *socket, int timeoutMs = 1000);
 
-    IpcServer *m_ipc = nullptr;
+    IPCServer *m_ipc = nullptr;
     EventRouter *m_router = nullptr;
     SpriteAnimationEngine *m_engine = nullptr;
     TipWidget *m_bubble = nullptr;
@@ -113,9 +113,9 @@ void TestIpcAnimations::initTestCase()
         }
     });
 
-    m_ipc = new IpcServer(this);
-    connect(m_ipc, &IpcServer::eventReceived, m_router, &EventRouter::routeEvent);
-    connect(m_ipc, &IpcServer::tipReceived, m_bubble, [this](const QJsonObject &tip) {
+    m_ipc = new IPCServer(this);
+    connect(m_ipc, &IPCServer::eventReceived, m_router, &EventRouter::routeEvent);
+    connect(m_ipc, &IPCServer::tipReceived, m_bubble, [this](const QJsonObject &tip) {
         const QString title = tip.value("title").toString("Tip");
         const QString body = tip.value("body").toString();
         const QString anim = tip.value("animation").toString();

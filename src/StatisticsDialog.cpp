@@ -3,7 +3,7 @@
 #include "MemoryManager.h"
 #include "TTSEngine.h"
 #include "EventRouter.h"
-#include "IpcServer.h"
+#include "IPCServer.h"
 #include "PersonaEngine.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -26,7 +26,7 @@ QLabel *mkVal(const QString &objectName, QWidget *parent)
 }  // namespace
 
 StatisticsDialog::StatisticsDialog(MemoryManager *m, TTSEngine *t,
-                                   EventRouter *e, IpcServer *i,
+                                   EventRouter *e, IPCServer *i,
                                    PersonaEngine *p, QWidget *parent)
     : PersonaDialog(tr("Statistics"), 480, 660, parent),
       m_memory(m), m_tts(t), m_events(e), m_ipc(i), m_persona(p),
@@ -140,7 +140,7 @@ void StatisticsDialog::refresh()
         l->setText(last.isEmpty() ? QStringLiteral("—") : last);
     }
 
-    // IPC — live from IpcServer
+    // IPC — live from IPCServer
     if (auto *l = findChild<QLabel*>(QStringLiteral("ipcPacketsLabel"))) {
         l->setText(m_ipc ? QString::number(m_ipc->stats().packets)
                          : QStringLiteral("0"));

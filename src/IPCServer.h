@@ -1,15 +1,15 @@
-#ifndef IPCSERVER_H
-#define IPCSERVER_H
+#ifndef IPC_SERVER_H
+#define IPC_SERVER_H
 
 #include <QObject>
 #include <QJsonDocument>
 #include <QHostAddress>
 
 class QThread;
-class UdpWorker;
+class UDPWorker;
 
 // NOTE: IPC packet counters are in-memory only (no MemoryManager persistence).
-// UdpWorker lives on a worker thread; marshalling SQLite writes from there
+// UDPWorker lives on a worker thread; marshalling SQLite writes from there
 // would violate the single-connection thread invariant. Per-session packet
 // counts are sufficient for the StatisticsDialog.
 struct IpcStats {
@@ -18,13 +18,13 @@ struct IpcStats {
     qint64 startedAtMs  = 0;
 };
 
-class IpcServer : public QObject
+class IPCServer : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit IpcServer(QObject *parent = nullptr);
-    ~IpcServer() override;
+    explicit IPCServer(QObject *parent = nullptr);
+    ~IPCServer() override;
 
     bool start(const QString &endpoint);
     void stop();
@@ -46,8 +46,8 @@ private:
     void parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
     QThread *m_thread = nullptr;
-    UdpWorker *m_worker = nullptr;
+    UDPWorker *m_worker = nullptr;
     IpcStats m_stats;
 };
 
-#endif // IPCSERVER_H
+#endif // IPC_SERVER_H

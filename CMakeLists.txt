@@ -352,10 +352,10 @@ qt_add_executable(Seelie
     src/PetStateMachine.h
     src/UpdateChecker.cpp
     src/UpdateChecker.h
-    src/IpcServer.cpp
-    src/IpcServer.h
-    src/UdpWorker.cpp
-    src/UdpWorker.h
+    src/IPCServer.cpp
+    src/IPCServer.h
+    src/UDPWorker.cpp
+    src/UDPWorker.h
     src/EventRouter.cpp
     src/EventRouter.h
     src/TipsEngine.cpp

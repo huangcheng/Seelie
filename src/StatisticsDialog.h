@@ -6,7 +6,7 @@
 class MemoryManager;
 class TTSEngine;
 class EventRouter;
-class IpcServer;
+class IPCServer;
 class PersonaEngine;
 class QTimer;
 
@@ -17,7 +17,7 @@ public:
     StatisticsDialog(MemoryManager *memory,
                      TTSEngine *tts,
                      EventRouter *events,
-                     IpcServer *ipc,
+                     IPCServer *ipc,
                      PersonaEngine *persona,
                      QWidget *parent = nullptr);
 
@@ -29,7 +29,7 @@ private:
     MemoryManager *m_memory;
     TTSEngine *m_tts;
     EventRouter *m_events;
-    IpcServer *m_ipc;
+    IPCServer *m_ipc;
     PersonaEngine *m_persona;
     QTimer *m_refreshTimer;
 };

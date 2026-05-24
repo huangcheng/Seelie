@@ -1,5 +1,5 @@
-#include "IpcServer.h"
-#include "UdpWorker.h"
+#include "IPCServer.h"
+#include "UDPWorker.h"
 
 #include <QDateTime>
 #include <QThread>
@@ -7,18 +7,18 @@
 #include <QJsonObject>
 #include <QDebug>
 
-IpcServer::IpcServer(QObject *parent)
+IPCServer::IPCServer(QObject *parent)
     : QObject(parent)
 {
     m_stats.startedAtMs = QDateTime::currentMSecsSinceEpoch();
 }
 
-IpcServer::~IpcServer()
+IPCServer::~IPCServer()
 {
     stop();
 }
 
-bool IpcServer::start(const QString &endpoint)
+bool IPCServer::start(const QString &endpoint)
 {
     if (m_thread) {
         qWarning() << "IPC: Server already running";
@@ -26,32 +26,32 @@ bool IpcServer::start(const QString &endpoint)
     }
 
     m_thread = new QThread(this);
-    m_worker = new UdpWorker();
+    m_worker = new UDPWorker();
     m_worker->moveToThread(m_thread);
 
     // M2: capture m_worker by value (copy of pointer) instead of [this]
     // to avoid cross-thread read of a member that the main thread may mutate.
-    UdpWorker *worker = m_worker;
+    UDPWorker *worker = m_worker;
     connect(m_thread, &QThread::started, m_worker, [worker, endpoint]() {
         worker->start(endpoint);
     });
 
-    connect(m_worker, &UdpWorker::started, this, [endpoint]() {
+    connect(m_worker, &UDPWorker::started, this, [endpoint]() {
         qDebug() << "IPC: UDP server listening on:" << endpoint;
     });
 
-    connect(m_worker, &UdpWorker::stopped, this, []() {
+    connect(m_worker, &UDPWorker::stopped, this, []() {
         qDebug() << "IPC: UDP worker stopped";
     });
 
-    connect(m_worker, &UdpWorker::errorOccurred, this, &IpcServer::onWorkerError);
+    connect(m_worker, &UDPWorker::errorOccurred, this, &IPCServer::onWorkerError);
 
-    connect(m_worker, &UdpWorker::datagramReceived, this, &IpcServer::onDatagramReceived);
+    connect(m_worker, &UDPWorker::datagramReceived, this, &IPCServer::onDatagramReceived);
 
     // Stats: worker-thread signals → main-thread slots via queued connection.
     // Qt picks QueuedConnection automatically (different threads), so we don't
     // need to specify it explicitly, but being explicit documents the intent.
-    connect(m_worker, &UdpWorker::packetReceived, this, &IpcServer::onPacketReceived,
+    connect(m_worker, &UDPWorker::packetReceived, this, &IPCServer::onPacketReceived,
             Qt::QueuedConnection);
 
     // H2: avoid deleteLater on finished thread — the worker thread's event
@@ -63,7 +63,7 @@ bool IpcServer::start(const QString &endpoint)
     return true;
 }
 
-void IpcServer::stop()
+void IPCServer::stop()
 {
     if (m_thread) {
         // Queue stop() on the worker's thread (the socket is thread-affine —
@@ -86,7 +86,7 @@ void IpcServer::stop()
             delete m_thread;
             m_thread = nullptr;
         } else {
-            // Do NOT terminate(). UdpWorker has worker-thread affinity and
+            // Do NOT terminate(). UDPWorker has worker-thread affinity and
             // owns a QUdpSocket / QSocketNotifier; killing the thread mid-
             // syscall leaks the OS file descriptor and can leave the port
             // bound until the process exits. Cross-thread delete from the
@@ -106,23 +106,23 @@ void IpcServer::stop()
     }
 }
 
-bool IpcServer::restart(const QString &endpoint)
+bool IPCServer::restart(const QString &endpoint)
 {
     stop();
     return start(endpoint);
 }
 
-void IpcServer::onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port)
+void IPCServer::onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
     parseMessage(data, sender, port);
 }
 
-void IpcServer::onWorkerError(const QString &message)
+void IPCServer::onWorkerError(const QString &message)
 {
     qWarning() << "IPC:" << message;
 }
 
-void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port)
+void IPCServer::parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
@@ -177,7 +177,7 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
     }
 }
 
-void IpcServer::onPacketReceived()
+void IPCServer::onPacketReceived()
 {
     ++m_stats.packets;
 }

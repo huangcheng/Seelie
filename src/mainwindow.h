@@ -26,7 +26,7 @@ class EcgWidget;
 class CharacterPackManager;
 class EventRouter;
 class FullscreenWatcher;
-class IpcServer;
+class IPCServer;
 class PetStateMachine;
 class GlobalShortcutManager;
 class PersonaEngine;
@@ -56,7 +56,7 @@ public:
     void setCharacterPackManager(CharacterPackManager *manager);
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
-    void setIpcServer(IpcServer *ipc) { m_ipcServer = ipc; }
+    void setIPCServer(IPCServer *ipc) { m_ipcServer = ipc; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
     void setMemoryManager(MemoryManager *memory);
     void setPersonaEngine(PersonaEngine *engine);
@@ -135,7 +135,7 @@ private:
     SystemTray *m_systemTray = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     EventRouter *m_eventRouter = nullptr;
-    IpcServer *m_ipcServer = nullptr;
+    IPCServer *m_ipcServer = nullptr;
     PetStateMachine *m_stateMachine = nullptr;
     GlobalShortcutManager *m_shortcutManager = nullptr;
     MemoryManager *m_memory = nullptr;
