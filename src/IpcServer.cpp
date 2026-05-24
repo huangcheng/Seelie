@@ -53,8 +53,6 @@ bool IpcServer::start(const QString &endpoint)
     // need to specify it explicitly, but being explicit documents the intent.
     connect(m_worker, &UdpWorker::packetReceived, this, &IpcServer::onPacketReceived,
             Qt::QueuedConnection);
-    connect(m_worker, &UdpWorker::decodeError, this, &IpcServer::onDecodeError,
-            Qt::QueuedConnection);
 
     // H2: avoid deleteLater on finished thread — the worker thread's event
     // loop has already stopped, so deleteLater can never be dispatched and
@@ -182,9 +180,4 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
 void IpcServer::onPacketReceived()
 {
     ++m_stats.packets;
-}
-
-void IpcServer::onDecodeError()
-{
-    ++m_stats.decodeErrors;
 }

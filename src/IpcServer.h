@@ -41,7 +41,6 @@ private slots:
     void onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port);
     void onWorkerError(const QString &message);
     void onPacketReceived();
-    void onDecodeError();
 
 private:
     void parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port);
