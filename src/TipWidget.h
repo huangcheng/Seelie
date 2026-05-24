@@ -31,6 +31,11 @@ public:
     // Hide with exit animation
     void hideBubble();
 
+    // Update message text in-place while the bubble is visible.
+    // Recalculates layout and repaints; does not restart the dismiss timer
+    // or trigger the enter animation. No-op if the new text equals the current.
+    void updateMessage(const QString &message);
+
     // Suppression has two independent channels OR'd together: mode (ECG /
     // gaming auto-hide) and user preference (settings toggle). Either one
     // turning on hides the bubble; both must be off for it to show again.

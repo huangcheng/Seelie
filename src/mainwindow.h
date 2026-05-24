@@ -27,6 +27,7 @@ class EventRouter;
 class FullscreenWatcher;
 class PetStateMachine;
 class GlobalShortcutManager;
+class PersonaEngine;
 
 class QTranslator;
 class SystemTray;
@@ -53,6 +54,7 @@ public:
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
     void setMemoryManager(MemoryManager *memory);
+    void setPersonaEngine(PersonaEngine *engine);
 
     /// Fan out a named animation through Live2D > Lottie > Sprite engines.
     void dispatchAnimation(const QString &anim,
@@ -102,6 +104,7 @@ private slots:
     void onDisplayModeChanged(ConfigManager::DisplayMode mode);
     void onFullscreenStarted();
     void onFullscreenStopped();
+    void onTipUpgraded(quint64 requestId, const QString &newText);
 
 private:
     void setupWindowFlags();
@@ -129,6 +132,8 @@ private:
     PetStateMachine *m_stateMachine = nullptr;
     GlobalShortcutManager *m_shortcutManager = nullptr;
     MemoryManager *m_memory = nullptr;
+    PersonaEngine *m_personaEngine = nullptr;
+    quint64 m_activeBubbleRequestId = 0;
 
     // Gaming Mode
     FullscreenWatcher *m_fullscreenWatcher = nullptr;

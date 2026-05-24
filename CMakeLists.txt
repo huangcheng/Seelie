@@ -398,6 +398,13 @@ qt_add_executable(Seelie
     src/GlobalShortcutManager.h
     src/FullscreenWatcher.cpp
     src/FullscreenWatcher.h
+    src/llm/LLMProfile.h
+    src/llm/LLMProvider.h
+    src/llm/LLMProvider.cpp
+    src/PersonaPool.h
+    src/PersonaPool.cpp
+    src/PersonaEngine.h
+    src/PersonaEngine.cpp
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.h>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITtsProvider.h>

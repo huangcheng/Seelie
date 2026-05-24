@@ -38,6 +38,7 @@
 
 #include "TipsCatalog.h"
 #include "MemoryManager.h"
+#include "PersonaEngine.h"
 
 static QString configDir() {
     // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
@@ -296,6 +297,9 @@ int main(int argc, char *argv[])
         qWarning() << "MemoryManager: database could not be opened — pet memory features disabled";
     }
 
+    // --- Persona engine ------------------------------------------------------
+    PersonaEngine personaEngine(&memory, &config);
+
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
     w.setMemoryManager(&memory);
@@ -391,6 +395,7 @@ int main(int argc, char *argv[])
     // MainWindow uses the FSM (via setStateMachine) for mouse-driven synthetic
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
+    w.setPersonaEngine(&personaEngine);
 
     // Tip-bubble user toggle: apply current value, then track changes live.
     w.tipWidget()->setSuppressedByUser(!config.tipBubblesEnabled());

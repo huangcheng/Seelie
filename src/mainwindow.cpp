@@ -21,6 +21,7 @@
 #include "FullscreenWatcher.h"
 #include "PetStateMachine.h"
 #include "MemoryManager.h"
+#include "PersonaEngine.h"
 
 #include <QPainter>
 #include <QRegularExpression>
@@ -712,6 +713,71 @@ void MainWindow::setMemoryManager(MemoryManager *memory)
             }
         });
     }
+}
+
+void MainWindow::setPersonaEngine(PersonaEngine *engine)
+{
+    m_personaEngine = engine;
+    if (!m_personaEngine) return;
+
+    // (a) EventRouter → PersonaEngine: resolve event → potentially upgrade bubble text.
+    // The existing EventRouter path already shows the TipsCatalog text; this
+    // runs in parallel and overwrites with the persona-resolved text (same value
+    // when persona is off/no LLM configured, upgraded value when LLM responds).
+    if (m_eventRouter) {
+        connect(m_eventRouter, &EventRouter::eventProcessed,
+                this, [this](const QString &name, const QJsonObject &payload) {
+            if (!m_personaEngine) return;
+            PersonaEngine::Resolved r = m_personaEngine->resolve(name, payload);
+            if (!r.text.isEmpty() && m_tipWidget) {
+                m_activeBubbleRequestId = r.requestId;
+                m_tipWidget->updateMessage(r.text);
+            }
+        });
+    }
+
+    // (b) MemoryManager::milestoneReached → PersonaEngine
+    if (m_memory) {
+        connect(m_memory, &MemoryManager::milestoneReached,
+                this, [this](const QString &title, const QString &body) {
+            Q_UNUSED(body)
+            if (!m_personaEngine) return;
+            PersonaEngine::Resolved r = m_personaEngine->resolve(
+                QStringLiteral("milestone.") + title, QJsonObject{});
+            if (!r.text.isEmpty() && m_tipWidget) {
+                m_activeBubbleRequestId = r.requestId;
+                m_tipWidget->updateMessage(r.text);
+            }
+        });
+    }
+
+    // (c) CharacterPackManager::activePackChanged → refresh pack id + persona hash
+    if (m_packManager) {
+        connect(m_packManager, &CharacterPackManager::activePackChanged,
+                this, [this](CharacterPack *pack) {
+            if (!m_personaEngine) return;
+            m_personaEngine->setActivePackId(pack ? pack->metadata().id : QString());
+            m_personaEngine->setPersonaHash(pack ? pack->personaHash() : QString());
+        });
+        // Apply current pack immediately
+        if (CharacterPack *pack = m_packManager->activePack()) {
+            m_personaEngine->setActivePackId(pack->metadata().id);
+            m_personaEngine->setPersonaHash(pack->personaHash());
+        }
+    }
+
+    // (d) PersonaEngine::tipUpgraded → slot
+    connect(m_personaEngine, &PersonaEngine::tipUpgraded,
+            this, &MainWindow::onTipUpgraded);
+}
+
+void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)
+{
+    // Only apply if this upgrade belongs to the currently active bubble request
+    // and the bubble is still visible.
+    if (requestId != m_activeBubbleRequestId) return;
+    if (!m_tipWidget || !m_tipWidget->isVisible()) return;
+    m_tipWidget->updateMessage(newText);
 }
 
 void MainWindow::onActivePackChanged()

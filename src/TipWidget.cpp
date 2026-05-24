@@ -157,6 +157,17 @@ void TipWidget::hideBubble()
     startExitAnimation();
 }
 
+void TipWidget::updateMessage(const QString &message)
+{
+    if (m_message == message) return;
+    m_message = message;
+    calculateTextLayout();
+    int totalWidth  = m_bubbleRect.width()  + SHADOW_BLUR * 2;
+    int totalHeight = m_bubbleRect.height() + TAIL_HEIGHT + SHADOW_BLUR * 2;
+    setFixedSize(totalWidth, totalHeight);
+    update();
+}
+
 void TipWidget::setOpacity(qreal o)
 {
     m_opacity = o;
