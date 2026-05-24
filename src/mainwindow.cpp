@@ -729,11 +729,11 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
                 this, [this](const QString &name, const QJsonObject &payload) {
             if (!m_personaEngine) return;
             PersonaEngine::Resolved r = m_personaEngine->resolve(name, payload);
-            if (!r.text.isEmpty() && m_tipWidget) {
-                m_activeBubbleRequestId = r.requestId;
-                m_tipWidget->updateMessage(r.text);
-            }
-        });
+            if (r.text.isEmpty()) return;
+            if (!m_tipWidget || !m_tipWidget->isVisible()) return;
+            m_activeBubbleRequestId = r.requestId;
+            m_tipWidget->updateMessage(r.text);
+        }, Qt::QueuedConnection);
     }
 
     // (b) MemoryManager::milestoneReached → PersonaEngine
@@ -744,10 +744,10 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
             if (!m_personaEngine) return;
             PersonaEngine::Resolved r = m_personaEngine->resolve(
                 QStringLiteral("milestone.") + title, QJsonObject{});
-            if (!r.text.isEmpty() && m_tipWidget) {
-                m_activeBubbleRequestId = r.requestId;
-                m_tipWidget->updateMessage(r.text);
-            }
+            if (r.text.isEmpty()) return;
+            if (!m_tipWidget || !m_tipWidget->isVisible()) return;
+            m_activeBubbleRequestId = r.requestId;
+            m_tipWidget->updateMessage(r.text);
         });
     }
 
