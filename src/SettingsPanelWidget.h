@@ -138,6 +138,13 @@ private:
     QWidget *m_aiTab = nullptr;
     QWidget *m_profileTab = nullptr;
 
+    // Profile tab widgets (stored for retranslation)
+    QLabel *m_nameLabel = nullptr;
+    QLineEdit *m_nameEdit = nullptr;
+    QLabel *m_displayLabel = nullptr;
+    QLineEdit *m_displayEdit = nullptr;
+    QPushButton *m_saveBtn = nullptr;
+
 #ifdef SEELIE_TTS_ENABLED
     QLabel       *m_ttsEnabledLabel = nullptr;
     QCheckBox    *m_ttsEnabledCheck = nullptr;

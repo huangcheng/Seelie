@@ -394,8 +394,8 @@ Path: %2</source>
         <translation>你好。这是 Seelie 的语音合成测试。</translation>
     </message>
     <message>
-        <source>Clear voice cache</source>
-        <translation>清除语音缓存</translation>
+        <source>Clear cache</source>
+        <translation>清除缓存</translation>
     </message>
     <message>
         <source>Delete cached audio so the next utterance is freshly synthesised.</source>

@@ -113,8 +113,7 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     setWindowFlags(
         Qt::FramelessWindowHint |
         Qt::WindowStaysOnTopHint |
-        Qt::Tool |
-        Qt::WindowDoesNotAcceptFocus
+        Qt::Tool
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
@@ -1001,33 +1000,33 @@ void SettingsPanelWidget::setupProfileTab()
     layout->setSpacing(VERTICAL_SPACING);
 
     // Name field
-    auto *nameLabel = new QLabel(tr("Name"), m_profileTab);
-    nameLabel->setFont(harmonyFont(10));
-    nameLabel->setStyleSheet("color: black; background: transparent;");
-    auto *nameEdit  = new QLineEdit(m_profileTab);
-    nameEdit->setFont(harmonyFont(10));
-    nameEdit->setPlaceholderText(tr("Your name"));
-    nameEdit->setText(m_memory->userName());
-    nameEdit->setFixedHeight(24);
-    nameEdit->setStyleSheet(m_portInput->styleSheet());
+    m_nameLabel = new QLabel(tr("Name"), m_profileTab);
+    m_nameLabel->setFont(harmonyFont(10));
+    m_nameLabel->setStyleSheet("color: black; background: transparent;");
+    m_nameEdit  = new QLineEdit(m_profileTab);
+    m_nameEdit->setFont(harmonyFont(10));
+    m_nameEdit->setPlaceholderText(tr("Your name"));
+    m_nameEdit->setText(m_memory->userName());
+    m_nameEdit->setFixedHeight(24);
+    m_nameEdit->setStyleSheet(m_portInput->styleSheet());
 
     // Display name field
-    auto *displayLabel = new QLabel(tr("Display name"), m_profileTab);
-    displayLabel->setFont(harmonyFont(10));
-    displayLabel->setStyleSheet("color: black; background: transparent;");
-    auto *displayEdit  = new QLineEdit(m_profileTab);
-    displayEdit->setFont(harmonyFont(10));
-    displayEdit->setPlaceholderText(tr("Shown in greetings"));
-    displayEdit->setText(m_memory->displayName());
-    displayEdit->setFixedHeight(24);
-    displayEdit->setStyleSheet(m_portInput->styleSheet());
+    m_displayLabel = new QLabel(tr("Display name"), m_profileTab);
+    m_displayLabel->setFont(harmonyFont(10));
+    m_displayLabel->setStyleSheet("color: black; background: transparent;");
+    m_displayEdit  = new QLineEdit(m_profileTab);
+    m_displayEdit->setFont(harmonyFont(10));
+    m_displayEdit->setPlaceholderText(tr("Shown in greetings"));
+    m_displayEdit->setText(m_memory->displayName());
+    m_displayEdit->setFixedHeight(24);
+    m_displayEdit->setStyleSheet(m_portInput->styleSheet());
 
     // Save button
-    auto *saveBtn = new QPushButton(tr("Save"), m_profileTab);
-    saveBtn->setFont(harmonyFont(10, QFont::Bold));
-    saveBtn->setFixedHeight(28);
-    saveBtn->setCursor(Qt::PointingHandCursor);
-    saveBtn->setStyleSheet(QStringLiteral(R"(
+    m_saveBtn = new QPushButton(tr("Save"), m_profileTab);
+    m_saveBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_saveBtn->setFixedHeight(28);
+    m_saveBtn->setCursor(Qt::PointingHandCursor);
+    m_saveBtn->setStyleSheet(QStringLiteral(R"(
         QPushButton {
             background: white;
             border: 2px solid black;
@@ -1044,16 +1043,16 @@ void SettingsPanelWidget::setupProfileTab()
             color: white;
         }
     )"));
-    connect(saveBtn, &QPushButton::clicked, this, [=]() {
-        m_memory->setUserName(nameEdit->text().trimmed());
-        m_memory->setDisplayName(displayEdit->text().trimmed());
+    connect(m_saveBtn, &QPushButton::clicked, this, [=]() {
+        m_memory->setUserName(m_nameEdit->text().trimmed());
+        m_memory->setDisplayName(m_displayEdit->text().trimmed());
     });
 
-    layout->addWidget(nameLabel);
-    layout->addWidget(nameEdit);
-    layout->addWidget(displayLabel);
-    layout->addWidget(displayEdit);
-    layout->addWidget(saveBtn);
+    layout->addWidget(m_nameLabel);
+    layout->addWidget(m_nameEdit);
+    layout->addWidget(m_displayLabel);
+    layout->addWidget(m_displayEdit);
+    layout->addWidget(m_saveBtn);
     layout->addStretch(1);
 }
 
@@ -1214,7 +1213,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
     if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
     if (m_ttsClearCacheButton) {
-        m_ttsClearCacheButton->setText(tr("Clear voice cache"));
+        m_ttsClearCacheButton->setText(tr("Clear cache"));
         m_ttsClearCacheButton->setToolTip(tr("Delete cached audio so the next utterance is freshly synthesised."));
     }
     // Refresh provider-field labels and the voice placeholder. These are
@@ -1226,6 +1225,14 @@ void SettingsPanelWidget::retranslateUi()
             f.edit->setPlaceholderText(tr("Enter voice ID"));
     }
 #endif
+    // Pack labels can switch between English/Chinese on locale change.
+    // Profile tab labels
+    if (m_nameLabel) m_nameLabel->setText(tr("Name"));
+    if (m_nameEdit) m_nameEdit->setPlaceholderText(tr("Your name"));
+    if (m_displayLabel) m_displayLabel->setText(tr("Display name"));
+    if (m_displayEdit) m_displayEdit->setPlaceholderText(tr("Shown in greetings"));
+    if (m_saveBtn) m_saveBtn->setText(tr("Save"));
+
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
         refreshPackList();
@@ -1352,7 +1359,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
         emit testTtsRequested(tr("Hello. This is a TTS test from Seelie."));
     });
 
-    m_ttsClearCacheButton = new QPushButton(tr("Clear voice cache"), m_aiTab);
+    m_ttsClearCacheButton = new QPushButton(tr("Clear cache"), m_aiTab);
     m_ttsClearCacheButton->setFont(harmonyFont(10));
     m_ttsClearCacheButton->setFixedHeight(28);
     m_ttsClearCacheButton->setCursor(Qt::PointingHandCursor);
