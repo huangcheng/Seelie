@@ -745,6 +745,7 @@ void SettingsPanelWidget::setupUi()
         m_personaProfileCombo = new QComboBox(personaGroup);
         m_personaProfileCombo->setFont(harmonyFont(9));
         m_personaProfileCombo->setMaximumWidth(140);
+        m_personaProfileCombo->setStyleSheet(StyleUtils::personaComboQss());
         m_personaEnabledCheck = new CheckMarkBox(tr("Enabled"), personaGroup);
         m_personaEnabledCheck->setFixedSize(16, 16);
         m_personaEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());

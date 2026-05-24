@@ -14,6 +14,7 @@ EditLLMProfileDialog::EditLLMProfileDialog(const LLMProfile &initial, QWidget *p
 
     m_name = new QLineEdit(initial.name, contentWidget());
     m_protocol = new QComboBox(contentWidget());
+    m_protocol->setStyleSheet(StyleUtils::personaComboQss());
     m_protocol->addItem(tr("OpenAI Chat"),         int(LLMProfile::Protocol::OpenAIChat));
     m_protocol->addItem(tr("OpenAI Responses"),    int(LLMProfile::Protocol::OpenAIResponses));
     m_protocol->addItem(tr("Anthropic Messages"),  int(LLMProfile::Protocol::AnthropicMessages));

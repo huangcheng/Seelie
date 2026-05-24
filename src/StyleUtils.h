@@ -45,6 +45,12 @@ QString personaDialogQss();
 /// when the stylesheet is inherited rather than direct.
 QString personaButtonQss();
 
+/// Returns the QSS string for a Persona 5 Royal styled QComboBox: white
+/// background, 2px black border, custom down-arrow image, orange selection
+/// in the popup list. Apply directly to each combo (the same direct-not-
+/// cascaded constraint as personaButtonQss).
+QString personaComboQss();
+
 } // namespace StyleUtils
 
 #endif // SEELIE_STYLEUTILS_H

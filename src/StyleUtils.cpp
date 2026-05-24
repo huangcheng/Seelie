@@ -192,4 +192,51 @@ QString personaButtonQss()
     )");
 }
 
+QString personaComboQss()
+{
+    // Lifted verbatim from SettingsPanelWidget's working comboStyleSheet
+    // (used by the language + display-mode combos in the General tab).
+    const QString arrowPath = QString(comboArrowPath()).replace(QLatin1Char('\\'), QLatin1Char('/'));
+    return QStringLiteral(R"(
+        QComboBox {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #2C2C2E;
+            min-width: 70px;
+        }
+        QComboBox::drop-down {
+            border-left: 2px solid black;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            width: 18px;
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
+        }
+        QComboBox::down-arrow {
+            image: url(%1);
+            width: 8px;
+            height: 5px;
+        }
+        QComboBox QAbstractItemView {
+            background: white;
+            color: #2C2C2E;
+            border: 2px solid black;
+            border-radius: 4px;
+            selection-background-color: #F36F1A;
+            selection-color: white;
+            outline: none;
+        }
+        QComboBox QAbstractItemView::item {
+            color: #2C2C2E;
+            padding: 3px 6px;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            background: #F36F1A;
+            color: white;
+        }
+    )").arg(arrowPath);
+}
+
 } // namespace StyleUtils
