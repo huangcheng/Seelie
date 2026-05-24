@@ -372,6 +372,8 @@ qt_add_executable(Seelie
     src/SettingsPanelWidget.h
     src/EditLLMProfileDialog.cpp
     src/EditLLMProfileDialog.h
+    src/StatisticsDialog.cpp
+    src/StatisticsDialog.h
     src/MemoryManager.cpp
     src/MemoryManager.h
     src/PackManagerWidget.cpp
