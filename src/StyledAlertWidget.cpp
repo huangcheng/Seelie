@@ -169,16 +169,23 @@ bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
 
 void StyledAlertWidget::fitToContent()
 {
-    // 计算内容所需的最小高度
-    QFontMetrics titleFm(m_titleLabel->font());
-    int titleHeight = titleFm.boundingRect(
-        QRect(0, 0, PANEL_WIDTH - PADDING * 2, INT_MAX),
-        Qt::TextWordWrap, m_titleLabel->text()).height();
+    // Force the content widget to the target width so the layout engine
+    // can compute an accurate height for word-wrapped labels.
+    m_contentWidget->setFixedWidth(PANEL_WIDTH);
 
-    QFontMetrics bodyFm(m_bodyLabel->font());
-    int bodyHeight = bodyFm.boundingRect(
-        QRect(0, 0, PANEL_WIDTH - PADDING * 2, INT_MAX),
-        Qt::TextWordWrap, m_bodyLabel->text()).height();
+    const int labelMaxW = PANEL_WIDTH - PADDING * 2;
+
+    // QLabel::heightForWidth() gives the exact wrapped height for rich
+    // text and plain text alike, unlike sizeHint() which can under-report
+    // before the widget has been shown or laid out.
+    int titleHeight = m_titleLabel->heightForWidth(labelMaxW);
+    int bodyHeight  = m_bodyLabel->heightForWidth(labelMaxW);
+
+    // Guard against zero-height if labels are empty
+    if (titleHeight <= 0)
+        titleHeight = m_titleLabel->fontMetrics().height();
+    if (bodyHeight <= 0)
+        bodyHeight = m_bodyLabel->fontMetrics().height();
 
     int buttonHeight = m_okButton->sizeHint().height();
 
@@ -193,7 +200,7 @@ void StyledAlertWidget::fitToContent()
     int newWindowHeight = newPanelHeight + SHADOW_BLUR * 2;
 
     setFixedSize(PANEL_WIDTH + SHADOW_BLUR * 2, newWindowHeight);
-    m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, newPanelHeight);
+    m_contentWidget->setFixedSize(PANEL_WIDTH, newPanelHeight);
 }
 
 void StyledAlertWidget::showAnimated()

@@ -7,6 +7,7 @@
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
 #include "llm/LLMProfile.h"
+
 #ifdef SEELIE_TTS_ENABLED
 #include "tts/TTSProviderRegistry.h"
 #endif
@@ -691,6 +692,7 @@ void SettingsPanelWidget::setupUi()
     generalLayout->setContentsMargins(0, 0, 0, 0);
     generalLayout->setSpacing(0);
     generalLayout->addLayout(formGrid);
+
     generalLayout->addStretch(1);
 
     // AI tab content
@@ -1718,3 +1720,5 @@ void SettingsPanelWidget::onRegenPoolClicked()
 {
     if (m_personaEngine) m_personaEngine->regenerateActivePackPool();
 }
+
+

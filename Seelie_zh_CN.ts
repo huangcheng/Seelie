@@ -168,6 +168,76 @@
         <source>Seelie will hide when fullscreen apps are detected.</source>
         <translation>检测到全屏应用时 Seelie 会自动隐藏。</translation>
     </message>
+    <message>
+        <source>Export Configuration</source>
+        <translation>导出配置</translation>
+    </message>
+    <message>
+        <source>Export Failed</source>
+        <translation>导出失败</translation>
+    </message>
+    <message>
+        <source>Export Complete</source>
+        <translation>导出完成</translation>
+    </message>
+    <message>
+        <source>Configuration exported to:
+%1</source>
+        <translation>配置已导出到:
+%1</translation>
+    </message>
+    <message>
+        <source>Import Configuration</source>
+        <translation>导入配置</translation>
+    </message>
+    <message>
+        <source>ZIP Archives (*.zip)</source>
+        <translation>ZIP 压缩包 (*.zip)</translation>
+    </message>
+    <message>
+        <source>Invalid Archive</source>
+        <translation>无效的压缩包</translation>
+    </message>
+    <message>
+        <source>Version Mismatch</source>
+        <translation>版本不匹配</translation>
+    </message>
+    <message>
+        <source>This archive was created with Seelie %1, but you are running %2.
+Importing may cause unexpected behavior. Continue?</source>
+        <translation>此压缩包由 Seelie %1 创建，但你正在运行 %2。
+导入可能导致意外行为。是否继续？</translation>
+    </message>
+    <message>
+        <source>Confirm Import</source>
+        <translation>确认导入</translation>
+    </message>
+    <message>
+        <source>This will replace your current configuration with the archive contents.
+A backup of your current config will be created automatically.
+Seelie will need to be restarted for changes to take full effect.
+
+Continue?</source>
+        <translation>这将用压缩包内容替换当前配置。
+当前配置的备份将自动创建。
+Seelie 需要重启才能使更改完全生效。
+
+是否继续？</translation>
+    </message>
+    <message>
+        <source>Import Complete</source>
+        <translation>导入完成</translation>
+    </message>
+    <message>
+        <source>Configuration imported successfully.
+Please restart Seelie for changes to take full effect.</source>
+        <translation>配置导入成功。
+请重启 Seelie 以使更改完全生效。</translation>
+    </message>
+    <message>
+        <source>Import Failed</source>
+        <translation>导入失败</translation>
+    </message>
 </context>
 <context>
     <name>PackCategories</name>
@@ -698,6 +768,18 @@ Path: %2</source>
         <translation>统计…</translation>
     </message>
     <message>
+        <source>Config</source>
+        <translation>配置</translation>
+    </message>
+    <message>
+        <source>Export...</source>
+        <translation>导出…</translation>
+    </message>
+    <message>
+        <source>Import...</source>
+        <translation>导入…</translation>
+    </message>
+    <message>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
@@ -732,6 +814,111 @@ Path: %2</source>
     <message>
         <source>Could not check for updates: %1</source>
         <translation>无法检查更新：%1</translation>
+    </message>
+</context>
+<context>
+    <name>TTSEngine</name>
+</context>
+<context>
+    <name>ConfigExporter</name>
+    <message>
+        <source>No configuration files found to export.</source>
+        <translation>未找到可导出的配置文件。</translation>
+    </message>
+    <message>
+        <source>Failed to create temporary staging directory.</source>
+        <translation>创建临时暂存目录失败。</translation>
+    </message>
+    <message>
+        <source>Failed to copy %1 to staging area.</source>
+        <translation>复制 %1 到暂存区域失败。</translation>
+    </message>
+    <message>
+        <source>Failed to write manifest.json.</source>
+        <translation>写入 manifest.json 失败。</translation>
+    </message>
+    <message>
+        <source>Failed to start ZIP process. Is 'zip' installed?</source>
+        <translation>启动 ZIP 进程失败。是否已安装 'zip'？</translation>
+    </message>
+    <message>
+        <source>ZIP process timed out.</source>
+        <translation>ZIP 进程超时。</translation>
+    </message>
+    <message>
+        <source>ZIP creation failed: %1</source>
+        <translation>ZIP 创建失败: %1</translation>
+    </message>
+</context>
+<context>
+    <name>ConfigImporter</name>
+    <message>
+        <source>Archive file not found.</source>
+        <translation>未找到压缩包文件。</translation>
+    </message>
+    <message>
+        <source>Failed to create temporary directory.</source>
+        <translation>创建临时目录失败。</translation>
+    </message>
+    <message>
+        <source>Failed to start unzip process. Is 'unzip' installed?</source>
+        <translation>启动解压进程失败。是否已安装 'unzip'？</translation>
+    </message>
+    <message>
+        <source>Unzip process timed out.</source>
+        <translation>解压进程超时。</translation>
+    </message>
+    <message>
+        <source>Archive extraction failed: %1</source>
+        <translation>压缩包解压失败: %1</translation>
+    </message>
+    <message>
+        <source>Invalid archive: manifest.json not found.</source>
+        <translation>无效的压缩包: 未找到 manifest.json。</translation>
+    </message>
+    <message>
+        <source>Cannot read manifest.json.</source>
+        <translation>无法读取 manifest.json。</translation>
+    </message>
+    <message>
+        <source>Invalid manifest: missing required fields.</source>
+        <translation>无效的清单: 缺少必填字段。</translation>
+    </message>
+    <message>
+        <source>Archive schema version %1 is not supported. Please update Seelie.</source>
+        <translation>不支持压缩包架构版本 %1。请更新 Seelie。</translation>
+    </message>
+    <message>
+        <source>Invalid archive: config/Seelie.ini not found.</source>
+        <translation>无效的压缩包: 未找到 config/Seelie.ini。</translation>
+    </message>
+    <message>
+        <source>Failed to create temporary extraction directory.</source>
+        <translation>创建临时解压目录失败。</translation>
+    </message>
+    <message>
+        <source>Failed to start unzip process.</source>
+        <translation>启动解压进程失败。</translation>
+    </message>
+    <message>
+        <source>Unzip timed out.</source>
+        <translation>解压超时。</translation>
+    </message>
+    <message>
+        <source>Extraction failed: %1</source>
+        <translation>解压失败: %1</translation>
+    </message>
+    <message>
+        <source>Failed to backup existing config file.</source>
+        <translation>备份现有配置文件失败。</translation>
+    </message>
+    <message>
+        <source>Failed to backup existing memory database.</source>
+        <translation>备份现有记忆数据库失败。</translation>
+    </message>
+    <message>
+        <source>Failed to copy new configuration files.</source>
+        <translation>复制新配置文件失败。</translation>
     </message>
 </context>
 <context>

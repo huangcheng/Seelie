@@ -88,6 +88,7 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
+
     void refreshLlmProfilesUi();
     void onAddProfileClicked();
     void onEditProfileClicked();

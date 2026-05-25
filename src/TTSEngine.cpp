@@ -207,9 +207,10 @@ void TTSEngine::speak(const QString &text)
 
 void TTSEngine::testSpeak(const QString &text)
 {
-    if (!m_config || !m_config->ttsEnabled() || text.isEmpty()) {
-        qCDebug(lcTts) << "testSpeak() ignored — enabled="
-                       << (m_config && m_config->ttsEnabled())
+    // Test bypasses the global ttsEnabled flag so users can verify their
+    // provider configuration before turning the feature on.
+    if (!m_config || text.isEmpty()) {
+        qCDebug(lcTts) << "testSpeak() ignored — config=" << (m_config != nullptr)
                        << "textEmpty=" << text.isEmpty();
         return;
     }

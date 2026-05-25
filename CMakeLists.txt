@@ -394,6 +394,12 @@ qt_add_executable(Seelie
     src/StatisticsPersistence.h
     src/StatisticsManager.cpp
     src/StatisticsManager.h
+    src/ExportManifest.cpp
+    src/ExportManifest.h
+    src/ConfigExporter.cpp
+    src/ConfigExporter.h
+    src/ConfigImporter.cpp
+    src/ConfigImporter.h
     src/AutoStartManager.cpp
     src/AutoStartManager.h
     src/CanonicalEvents.h

@@ -109,6 +109,8 @@ private slots:
     void toggleVisibility();
     void openSettings();
     void onShowStatistics();
+    void onExportConfig();
+    void onImportConfig();
     void onActivePackChanged();
     void onDisplayModeChanged(ConfigManager::DisplayMode mode);
     void onFullscreenStarted();

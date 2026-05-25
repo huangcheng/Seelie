@@ -43,6 +43,8 @@ public:
 
 signals:
     void statisticsTriggered();
+    void exportConfigTriggered();
+    void importConfigTriggered();
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -67,6 +69,9 @@ private:
     QAction *m_checkUpdateAction = nullptr;
     QAction *m_manageModelsAction = nullptr;
     QAction *m_statsAction = nullptr;
+    QMenu   *m_configMenu = nullptr;
+    QAction *m_exportConfigAction = nullptr;
+    QAction *m_importConfigAction = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;

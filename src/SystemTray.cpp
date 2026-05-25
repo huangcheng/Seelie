@@ -141,6 +141,14 @@ void SystemTray::setupMenu()
     m_statsAction = m_trayMenu->addAction(tr("Statistics..."));
     connect(m_statsAction, &QAction::triggered, this, &SystemTray::statisticsTriggered);
 
+    // Config submenu (Export / Import)
+    m_configMenu = m_trayMenu->addMenu(tr("Config"));
+    m_configMenu->setFont(menuFont);
+    m_exportConfigAction = m_configMenu->addAction(tr("Export..."));
+    m_importConfigAction = m_configMenu->addAction(tr("Import..."));
+    connect(m_exportConfigAction, &QAction::triggered, this, &SystemTray::exportConfigTriggered);
+    connect(m_importConfigAction, &QAction::triggered, this, &SystemTray::importConfigTriggered);
+
     m_trayMenu->addSeparator();
 
     // Check for updates
@@ -397,6 +405,15 @@ void SystemTray::retranslateUi()
     }
     if (m_statsAction) {
         m_statsAction->setText(tr("Statistics..."));
+    }
+    if (m_configMenu) {
+        m_configMenu->setTitle(tr("Config"));
+    }
+    if (m_exportConfigAction) {
+        m_exportConfigAction->setText(tr("Export..."));
+    }
+    if (m_importConfigAction) {
+        m_importConfigAction->setText(tr("Import..."));
     }
     refreshPackMenu();
 }

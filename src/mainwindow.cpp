@@ -23,11 +23,16 @@
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
 #include "StatisticsDialog.h"
+#include "ConfigExporter.h"
+#include "ConfigImporter.h"
+#include "ExportManifest.h"
 
 #include <QPainter>
 #include <QRegularExpression>
 #include <QMouseEvent>
 #include <QContextMenuEvent>
+#include <QFileDialog>
+#include <QStandardPaths>
 #include <QMenu>
 #include "StyledAlertWidget.h"
 #include <QAction>
@@ -667,6 +672,10 @@ void MainWindow::setSystemTray(SystemTray *tray)
         }
         connect(m_systemTray, &SystemTray::statisticsTriggered,
                 this, &MainWindow::onShowStatistics);
+        connect(m_systemTray, &SystemTray::exportConfigTriggered,
+                this, &MainWindow::onExportConfig);
+        connect(m_systemTray, &SystemTray::importConfigTriggered,
+                this, &MainWindow::onImportConfig);
     }
 }
 
@@ -687,6 +696,101 @@ void MainWindow::onShowStatistics()
                                          m_personaEngine, this);
     m_statsDialog->setAttribute(Qt::WA_DeleteOnClose);
     m_statsDialog->show();
+}
+
+void MainWindow::onExportConfig()
+{
+    if (!m_config) return;
+
+    const QString defaultName = ConfigExporter::generateFilename();
+    const QString savePath = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Configuration"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+            + "/" + defaultName,
+        tr("ZIP Archives (*.zip)"));
+
+    if (savePath.isEmpty()) return;
+
+    const QString configDir = m_config->configDir();
+    ConfigExporter exporter(configDir);
+
+    QString error;
+    if (!exporter.exportToZip(savePath, &error)) {
+        StyledAlertWidget *alert = new StyledAlertWidget(nullptr);
+        alert->setPetWindow(this);
+        connect(alert, &StyledAlertWidget::dismissed, alert, &QObject::deleteLater);
+        alert->showAlert(tr("Export Failed"), error);
+        return;
+    }
+
+    StyledAlertWidget *alert = new StyledAlertWidget(nullptr);
+    alert->setPetWindow(this);
+    connect(alert, &StyledAlertWidget::dismissed, alert, &QObject::deleteLater);
+    alert->showAlert(
+        tr("Export Complete"),
+        tr("Configuration exported to:\n%1").arg(savePath));
+}
+
+void MainWindow::onImportConfig()
+{
+    if (!m_config) return;
+
+    const QString zipPath = QFileDialog::getOpenFileName(
+        this,
+        tr("Import Configuration"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+        tr("ZIP Archives (*.zip)"));
+
+    if (zipPath.isEmpty()) return;
+
+    ConfigImporter importer(m_config->configDir());
+    QString validateError;
+    ExportManifest manifest;
+    if (!importer.validateZip(zipPath, &manifest, &validateError)) {
+        StyledAlertWidget *alert = new StyledAlertWidget(nullptr);
+        alert->setPetWindow(this);
+        connect(alert, &StyledAlertWidget::dismissed, alert, &QObject::deleteLater);
+        alert->showAlert(tr("Invalid Archive"), validateError);
+        return;
+    }
+
+    if (importer.isVersionMismatch(manifest)) {
+        StyledAlertWidget confirmDialog(nullptr);
+        confirmDialog.setPetWindow(this);
+        bool proceed = confirmDialog.execConfirm(
+            tr("Version Mismatch"),
+            tr("This archive was created with Seelie %1, but you are running %2.\n"
+               "Importing may cause unexpected behavior. Continue?")
+                .arg(manifest.appVersion, QStringLiteral(PROJECT_VERSION)));
+        if (!proceed) return;
+    }
+
+    StyledAlertWidget confirmDialog(nullptr);
+    confirmDialog.setPetWindow(this);
+    bool confirmed = confirmDialog.execConfirm(
+        tr("Confirm Import"),
+        tr("This will replace your current configuration with the archive contents.\n"
+           "A backup of your current config will be created automatically.\n"
+           "Seelie will need to be restarted for changes to take full effect.\n\n"
+           "Continue?"));
+    if (!confirmed) return;
+
+    QString importError;
+    if (importer.importFromZip(zipPath, &importError)) {
+        StyledAlertWidget *alert = new StyledAlertWidget(nullptr);
+        alert->setPetWindow(this);
+        connect(alert, &StyledAlertWidget::dismissed, alert, &QObject::deleteLater);
+        alert->showAlert(
+            tr("Import Complete"),
+            tr("Configuration imported successfully.\n"
+               "Please restart Seelie for changes to take full effect."));
+    } else {
+        StyledAlertWidget *alert = new StyledAlertWidget(nullptr);
+        alert->setPetWindow(this);
+        connect(alert, &StyledAlertWidget::dismissed, alert, &QObject::deleteLater);
+        alert->showAlert(tr("Import Failed"), importError);
+    }
 }
 
 void MainWindow::setGlobalShortcutManager(GlobalShortcutManager *manager)
