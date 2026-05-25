@@ -68,7 +68,10 @@ signals:
     // Fires every time a bubble is requested, BEFORE suppression is checked.
     // Use this for side-effects that should be independent of bubble visibility
     // (e.g. TTS — speaking shouldn't be gated on the visual tip toggle).
-    void bubbleRequested(const QString &title, const QString &message, BubbleType type);
+    // `source` distinguishes event-routed bubbles (non-empty gateway label,
+    // for which a persona upgrade may follow) from local ones (greetings,
+    // drops, tray notices — empty source, no upgrade pending).
+    void bubbleRequested(const QString &title, const QString &message, BubbleType type, const QString &source);
 
     // Fires only when the bubble actually shows (after suppression check).
     void bubbleShown(const QString &title, const QString &message, BubbleType type);

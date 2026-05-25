@@ -96,20 +96,22 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_ttsEngine->start();
 
     connect(m_tipWidget, &TipWidget::bubbleRequested,
-            this, [this](const QString &title, const QString &message, TipWidget::BubbleType type) {
+            this, [this](const QString &title, const QString &message, TipWidget::BubbleType type, const QString &source) {
         Q_UNUSED(title)
         if (type != TipWidget::TipBubble) return;
         if (!m_ttsEngine || !m_config->ttsEnabled()) return;
         // ECG mode hides the pet entirely — speaking would be an out-of-context
         // surprise. Match the visual tip suppression in onDisplayModeChanged().
         if (m_config->displayMode() == ConfigManager::DisplayMode::Ecg) return;
-        // If persona is active, the queued personaEngine path is about to
-        // replace the body. Defer TTS to that path so audio matches the
-        // final visible text instead of speaking stale catalog body.
+        // If persona is active AND this bubble came from an EventRouter route
+        // (non-empty gateway source), defer TTS to the persona upgrade path so
+        // audio matches the final visible text instead of speaking the stale
+        // catalog body. Local bubbles (clicks/greetings, drops, tray notices)
+        // pass an empty source and have no upgrade pending — TTS them here.
         const bool personaActive = m_personaEngine
             && m_config->personaEnabled()
             && !m_config->personaProfile().isEmpty();
-        if (personaActive) return;
+        if (personaActive && !source.isEmpty()) return;
         m_ttsEngine->speak(message);
     });
 
