@@ -1,6 +1,7 @@
 #include "PersonaEngine.h"
 #include "MemoryManager.h"
 #include "ConfigManager.h"
+#include "StatisticsPersistence.h"
 #include "TipsCatalog.h"
 #include <QSet>
 #include <QStringList>
@@ -56,6 +57,7 @@ PersonaEngine::PersonaEngine(MemoryManager *memory, ConfigManager *config, QObje
         connect(m_config, &ConfigManager::llmProfilesChanged,
                 this, [this]() { refreshActiveProfile(); });
     }
+
 }
 
 void PersonaEngine::refreshActiveProfile()
@@ -200,4 +202,32 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
         });
 
     return { fallbackTip(eventName), requestId };
+}
+
+void PersonaEngine::loadStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+    const QJsonObject section = sp.loadSection(QStringLiteral("persona"));
+
+    m_stats.refillsOk    = section.value(QStringLiteral("refillsOk")).toInt(0);
+    m_stats.refillsFail  = section.value(QStringLiteral("refillsFail")).toInt(0);
+    m_stats.ondemandOk   = section.value(QStringLiteral("ondemandOk")).toInt(0);
+    m_stats.ondemandFail = section.value(QStringLiteral("ondemandFail")).toInt(0);
+    m_stats.tokensIn     = section.value(QStringLiteral("tokensIn")).toInteger(0);
+    m_stats.tokensOut    = section.value(QStringLiteral("tokensOut")).toInteger(0);
+    m_stats.lastError    = section.value(QStringLiteral("lastError")).toString();
+}
+
+void PersonaEngine::saveStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+    QJsonObject section;
+    section[QStringLiteral("refillsOk")]    = m_stats.refillsOk;
+    section[QStringLiteral("refillsFail")]  = m_stats.refillsFail;
+    section[QStringLiteral("ondemandOk")]   = m_stats.ondemandOk;
+    section[QStringLiteral("ondemandFail")] = m_stats.ondemandFail;
+    section[QStringLiteral("tokensIn")]     = m_stats.tokensIn;
+    section[QStringLiteral("tokensOut")]    = m_stats.tokensOut;
+    section[QStringLiteral("lastError")]    = m_stats.lastError;
+    sp.saveSection(QStringLiteral("persona"), section);
 }

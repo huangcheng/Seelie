@@ -1,5 +1,6 @@
 #include "IPCServer.h"
 #include "UDPWorker.h"
+#include "StatisticsPersistence.h"
 
 #include <QDateTime>
 #include <QThread>
@@ -61,6 +62,27 @@ bool IPCServer::start(const QString &endpoint)
 
     m_thread->start();
     return true;
+}
+
+void IPCServer::loadStats(const QString &configDir)
+{
+    StatisticsPersistence stats(configDir);
+    QJsonObject section = stats.loadSection("ipc");
+
+    m_stats.packets      = section.value("packets").toVariant().toLongLong();
+    m_stats.decodeErrors = section.value("decodeErrors").toVariant().toLongLong();
+    // Don't restore startedAtMs — it's a per-session timestamp set in the constructor.
+}
+
+void IPCServer::saveStats(const QString &configDir)
+{
+    QJsonObject section;
+    section["packets"]      = m_stats.packets;
+    section["decodeErrors"] = m_stats.decodeErrors;
+    section["startedAtMs"]  = m_stats.startedAtMs;
+
+    StatisticsPersistence stats(configDir);
+    stats.saveSection("ipc", section);
 }
 
 void IPCServer::stop()

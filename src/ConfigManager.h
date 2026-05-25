@@ -129,6 +129,9 @@ public:
     /** Default update-server endpoint (compiled in from SEELIE_DEFAULT_UPDATE_ENDPOINT). */
     static QString defaultUpdateEndpoint();
 
+    /** Directory containing the config INI file (e.g. ~/.config/Seelie). */
+    QString configDir() const;
+
 signals:
     void languageChanged(const QString &lang);
     void ipcEndpointChanged(const QString &endpoint);

@@ -28,6 +28,10 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/TipsCatalog.h
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.h
+    ${CMAKE_SOURCE_DIR}/src/StatisticsPersistence.cpp
+    ${CMAKE_SOURCE_DIR}/src/StatisticsPersistence.h
+    ${CMAKE_SOURCE_DIR}/src/StatisticsManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/StatisticsManager.h
     ${CMAKE_SOURCE_DIR}/src/AutoStartManager.cpp
     ${CMAKE_SOURCE_DIR}/src/AutoStartManager.h
     ${CMAKE_SOURCE_DIR}/src/PlatformWindow.cpp

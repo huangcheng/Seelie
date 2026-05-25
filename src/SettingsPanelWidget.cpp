@@ -733,11 +733,32 @@ void SettingsPanelWidget::setupUi()
 
         // --- Profiles group ---
         auto *profilesGroup = new QGroupBox(tr("Profiles"), m_llmTab);
+        profilesGroup->setStyleSheet(QStringLiteral(R"(
+            QGroupBox {
+                background: transparent;
+                border: none;
+                margin-top: 4px;
+                padding-top: 0px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 0px;
+                padding: 0 4px;
+                color: black;
+                background: transparent;
+                font-weight: bold;
+            }
+        )"));
         auto *pgLayout = new QVBoxLayout(profilesGroup);
+        pgLayout->setContentsMargins(0, 4, 0, 0);
+        pgLayout->setSpacing(8);
         m_llmProfilesList = new QListWidget(profilesGroup);
         m_llmProfilesList->setFont(harmonyFont(9));
+        m_llmProfilesList->setStyleSheet(QStringLiteral("background: white; border: 2px solid black; border-radius: 3px;"));
         pgLayout->addWidget(m_llmProfilesList);
         auto *pgBtnRow = new QHBoxLayout;
+        pgBtnRow->setSpacing(12);
+        pgBtnRow->setContentsMargins(0, 0, 0, 0);
         m_llmAddBtn    = new QPushButton(tr("Add"),    profilesGroup);
         m_llmEditBtn   = new QPushButton(tr("Edit"),   profilesGroup);
         m_llmDeleteBtn = new QPushButton(tr("Delete"), profilesGroup);
@@ -746,7 +767,25 @@ void SettingsPanelWidget::setupUi()
         for (auto *btn : {m_llmAddBtn, m_llmEditBtn, m_llmDeleteBtn, m_llmTestBtn}) {
             btn->setFont(harmonyFont(9));
             btn->setCursor(Qt::PointingHandCursor);
-            btn->setStyleSheet(StyleUtils::personaButtonQss());
+            btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            btn->setStyleSheet(QStringLiteral(R"(
+                QPushButton {
+                    background: white;
+                    border: 2px solid black;
+                    border-radius: 3px;
+                    color: #2C2C2E;
+                    padding: 4px 6px;
+                    min-width: 36px;
+                }
+                QPushButton:hover {
+                    background: #F36F1A;
+                    color: white;
+                }
+                QPushButton:pressed {
+                    background: #C85A12;
+                    color: white;
+                }
+            )"));
         }
         pgBtnRow->addWidget(m_llmAddBtn);
         pgBtnRow->addWidget(m_llmEditBtn);
@@ -764,8 +803,27 @@ void SettingsPanelWidget::setupUi()
                 this, &SettingsPanelWidget::onProfilesListContextMenu);
 
         // --- Privacy group ---
+        llmLayout->addSpacing(16);
         auto *privacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
+        privacyGroup->setStyleSheet(QStringLiteral(R"(
+            QGroupBox {
+                background: transparent;
+                border: none;
+                margin-top: 4px;
+                padding-top: 0px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 0px;
+                padding: 0 4px;
+                color: black;
+                background: transparent;
+                font-weight: bold;
+            }
+        )"));
         auto *privLayout = new QVBoxLayout(privacyGroup);
+        privLayout->setContentsMargins(0, 4, 0, 0);
+        privLayout->setSpacing(8);
         m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI"), privacyGroup);
         m_shareMemoryCheck->setToolTip(tr("Sends your name and milestones to the AI provider with each on-demand event."));
         m_shareMemoryCheck->setStyleSheet(m_autoStartCheck->styleSheet());

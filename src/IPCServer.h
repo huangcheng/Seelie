@@ -32,6 +32,9 @@ public:
 
     IpcStats stats() const { return m_stats; }
 
+    void loadStats(const QString &configDir);
+    void saveStats(const QString &configDir);
+
 signals:
     void eventReceived(const QJsonObject &event);
     void tipReceived(const QJsonObject &tip);

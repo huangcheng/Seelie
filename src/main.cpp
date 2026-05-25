@@ -2,6 +2,10 @@
 #include "ConfigManager.h"
 #include "IPCServer.h"
 #include "EventRouter.h"
+#include "StatisticsManager.h"
+#ifdef SEELIE_TTS_ENABLED
+#include "TTSEngine.h"
+#endif
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
 #ifdef SEELIE_LIVE2D_SUPPORT
@@ -534,6 +538,32 @@ int main(int argc, char *argv[])
     // already started the ECG widget via onDisplayModeChanged().
 
     qDebug() << "Seelie started — window at" << w.pos() << "size" << w.size();
+
+    // --- Statistics persistence -----------------------------------------------
+    const QString statsDir = configDir();
+    StatisticsManager::createInstance(statsDir, &a);
+
+    StatisticsManager::instance()->registerComponent("persona",
+        [&]() { personaEngine.loadStats(statsDir); },
+        [&]() { personaEngine.saveStats(statsDir); });
+    StatisticsManager::instance()->registerComponent("events",
+        [&]() { eventRouter.loadStats(statsDir); },
+        [&]() { eventRouter.saveStats(statsDir); });
+    StatisticsManager::instance()->registerComponent("ipc",
+        [&]() { ipcServer.loadStats(statsDir); },
+        [&]() { ipcServer.saveStats(statsDir); });
+#ifdef SEELIE_TTS_ENABLED
+    StatisticsManager::instance()->registerComponent("tts",
+        [&]() { if (w.ttsEngine()) w.ttsEngine()->loadStats(statsDir); },
+        [&]() { if (w.ttsEngine()) w.ttsEngine()->saveStats(statsDir); });
+#endif
+
+    StatisticsManager::instance()->loadAll();
+    StatisticsManager::instance()->startAutoSave(60000);
+
+    QObject::connect(&a, &QCoreApplication::aboutToQuit, []() {
+        StatisticsManager::instance()->saveAll();
+    });
 
     return a.exec();
 }

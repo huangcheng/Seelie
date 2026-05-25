@@ -9,6 +9,7 @@
 #include <QAudioFormat>
 #include <QAudioSink>
 #include <QBuffer>
+#include <QMutex>
 #include <QObject>
 #include <QPointer>
 #include <QThread>
@@ -40,7 +41,10 @@ public:
     void start();
     void stop();
 
-    TTSStats stats() const { return m_stats; }
+    TTSStats stats() const { QMutexLocker lock(&m_statsMutex); return m_stats; }
+
+    void loadStats(const QString &configDir);
+    void saveStats(const QString &configDir);
 
 public slots:
     void speak(const QString &text);
@@ -120,6 +124,7 @@ private:
 
     static constexpr int kMaxRetries = 2;
 
+    mutable QMutex m_statsMutex;
     TTSStats m_stats;
 };
 

@@ -390,6 +390,10 @@ qt_add_executable(Seelie
     src/PlatformWindow.h
     src/StyleUtils.cpp
     src/StyleUtils.h
+    src/StatisticsPersistence.cpp
+    src/StatisticsPersistence.h
+    src/StatisticsManager.cpp
+    src/StatisticsManager.h
     src/AutoStartManager.cpp
     src/AutoStartManager.h
     src/CanonicalEvents.h

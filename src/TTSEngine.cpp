@@ -1,5 +1,6 @@
 #include "TTSEngine.h"
 #include "ConfigManager.h"
+#include "StatisticsPersistence.h"
 
 #include <QAudioDecoder>
 #include <QBuffer>
@@ -64,6 +65,9 @@ void TTSEngine::start()
 {
     if (m_thread && !m_thread->isRunning())
         m_thread->start();
+
+    if (m_config)
+        loadStats(m_config->configDir());
 }
 
 void TTSEngine::stop()
@@ -301,13 +305,19 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
         m_pendingCacheKey = seelie::tts::TTSVoiceCache::cacheKey(
             providerId, voiceId, modelId, opts, text);
 
-        ++m_stats.sessionRequests;
+        {
+            QMutexLocker lock(&m_statsMutex);
+            ++m_stats.sessionRequests;
+        }
         if (!bypassCacheRead && m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {
             QByteArray cachedAudio = m_voiceCache->getCachedAudio(m_pendingCacheKey);
             if (!cachedAudio.isEmpty()) {
                 qCInfo(lcTts) << "cache hit, returning cached audio for key:"
                               << m_pendingCacheKey;
-                ++m_stats.sessionHits;
+                {
+                    QMutexLocker lock(&m_statsMutex);
+                    ++m_stats.sessionHits;
+                }
                 SynthesisResult result;
                 result.audio = std::move(cachedAudio);
                 QString cachedMime = m_voiceCache->getCachedMimeType(m_pendingCacheKey);
@@ -319,8 +329,11 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
             }
         }
         // Cache miss — record for diagnostics.
-        m_stats.lastMissMs   = QDateTime::currentMSecsSinceEpoch();
-        m_stats.lastMissText = text;
+        {
+            QMutexLocker lock(&m_statsMutex);
+            m_stats.lastMissMs   = QDateTime::currentMSecsSinceEpoch();
+            m_stats.lastMissText = text;
+        }
     } else {
         m_pendingCacheKey.clear();
     }
@@ -523,4 +536,35 @@ void TTSEngine::resetAudio()
     }
     m_pcm.clear();
     m_pcmFormat = QAudioFormat{};
+}
+
+void TTSEngine::loadStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+    QJsonObject section = sp.loadSection(QStringLiteral("tts"));
+
+    if (section.isEmpty()) return;
+
+    QMutexLocker lock(&m_statsMutex);
+    m_stats.sessionRequests = section.value(QStringLiteral("sessionRequests")).toInt(0);
+    m_stats.sessionHits     = section.value(QStringLiteral("sessionHits")).toInt(0);
+    m_stats.lastMissMs      = static_cast<qint64>(
+        section.value(QStringLiteral("lastMissMs")).toVariant().toLongLong());
+    m_stats.lastMissText    = section.value(QStringLiteral("lastMissText")).toString();
+}
+
+void TTSEngine::saveStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+
+    QJsonObject section;
+    {
+        QMutexLocker lock(&m_statsMutex);
+        section[QStringLiteral("sessionRequests")] = m_stats.sessionRequests;
+        section[QStringLiteral("sessionHits")]     = m_stats.sessionHits;
+        section[QStringLiteral("lastMissMs")]      = static_cast<qint64>(m_stats.lastMissMs);
+        section[QStringLiteral("lastMissText")]    = m_stats.lastMissText;
+    }
+
+    sp.saveSection(QStringLiteral("tts"), section);
 }

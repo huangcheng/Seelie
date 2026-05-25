@@ -1,6 +1,7 @@
 #include "EventRouter.h"
 #include "CanonicalEvents.h"
 #include "MemoryManager.h"
+#include "StatisticsPersistence.h"
 #include "TipWidget.h"
 #include "TipsEngine.h"
 #include "TipsCatalog.h"
@@ -81,4 +82,39 @@ bool EventRouter::validateEvent(const QJsonObject &event) const
         return false;
     }
     return true;
+}
+
+void EventRouter::loadStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+    QJsonObject section = sp.loadSection("events");
+
+    if (section.isEmpty()) return;
+
+    m_stats.total = section.value("total").toInt(0);
+    m_stats.lastEventMs = static_cast<qint64>(section.value("lastEventMs").toVariant().toLongLong());
+    m_stats.lastEventName = section.value("lastEventName").toString();
+
+    const QJsonObject perEvent = section.value("perEvent").toObject();
+    for (auto it = perEvent.constBegin(); it != perEvent.constEnd(); ++it) {
+        m_stats.perEvent.insert(it.key(), it.value().toInt(0));
+    }
+}
+
+void EventRouter::saveStats(const QString &configDir)
+{
+    StatisticsPersistence sp(configDir);
+
+    QJsonObject section;
+    section["total"] = m_stats.total;
+    section["lastEventMs"] = QJsonValue(static_cast<qint64>(m_stats.lastEventMs));
+    section["lastEventName"] = m_stats.lastEventName;
+
+    QJsonObject perEvent;
+    for (auto it = m_stats.perEvent.constBegin(); it != m_stats.perEvent.constEnd(); ++it) {
+        perEvent[it.key()] = it.value();
+    }
+    section["perEvent"] = QJsonValue(perEvent);
+
+    sp.saveSection("events", section);
 }

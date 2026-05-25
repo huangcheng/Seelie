@@ -34,6 +34,9 @@ public:
 
     EventStats stats() const { return m_stats; }
 
+    void loadStats(const QString &configDir);
+    void saveStats(const QString &configDir);
+
 public slots:
     void routeEvent(const QJsonObject &event);
     void retranslateUi() {}  // no-op — kept for signal-slot compatibility

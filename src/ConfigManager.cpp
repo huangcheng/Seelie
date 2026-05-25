@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 
 QString ConfigManager::defaultEndpoint()
 {
@@ -262,6 +263,11 @@ ConfigManager::~ConfigManager()
     // Guarantee any pending debounced write lands before the QSettings is
     // destroyed.
     if (m_saveTimer.isActive()) flush();
+}
+
+QString ConfigManager::configDir() const
+{
+    return QFileInfo(m_settings.fileName()).absolutePath();
 }
 
 void ConfigManager::setWindowPosition(const QPoint &pos)

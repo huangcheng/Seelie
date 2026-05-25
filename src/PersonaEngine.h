@@ -57,6 +57,9 @@ public:
 
     PersonaStats stats() const { return m_stats; }
 
+    void loadStats(const QString &configDir);
+    void saveStats(const QString &configDir);
+
     static Tier tierFor(const QString &eventName);
 
 signals:

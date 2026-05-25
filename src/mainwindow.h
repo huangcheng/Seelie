@@ -48,6 +48,9 @@ public:
     /// Returns nullptr when the build is configured without SEELIE_LIVE2D_SUPPORT.
     /// Callers should null-check (most already do via `if (e && e->...)`).
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
+#ifdef SEELIE_TTS_ENABLED
+    TTSEngine *ttsEngine() const { return m_ttsEngine; }
+#endif
     TipWidget *tipWidget() const { return m_tipWidget; }
     ECGWidget *ecgWidget() const { return m_ecgWidget; }
     SettingsPanelWidget *settingsPanel() const { return m_settingsPanel; }
