@@ -24,6 +24,7 @@ struct PersonaStats {
     int refillsFail  = 0;
     int ondemandOk   = 0;
     int ondemandFail = 0;
+    int ondemandStale = 0;
     qint64 tokensIn  = 0;
     qint64 tokensOut = 0;
     QString lastError;
@@ -64,6 +65,12 @@ public:
 
 signals:
     void tipUpgraded(quint64 requestId, const QString &newText);
+    // Fires when an on-demand LLM call fails (network error, auth, empty
+    // response, etc). The listener should fall back to whatever catalog text
+    // it had for this requestId — see MainWindow::onTipUpgradeFailed for the
+    // canonical handling. Does NOT fire for stale callbacks (pack switched
+    // mid-flight) since in that case the bubble is no longer relevant.
+    void tipUpgradeFailed(quint64 requestId);
 
 private:
     Resolved resolvePool(const QString &eventName);

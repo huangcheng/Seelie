@@ -30,6 +30,12 @@ public:
     void setUserName(const QString &name);
     QString displayName() const;
     void setDisplayName(const QString &name);
+    // Free-form "about me" the user fills in on the Profile tab. Optional and
+    // never auto-derived. Sent to the persona LLM only when the user has
+    // explicitly opted in via ConfigManager::shareMemoryWithAi(); see
+    // PersonaEngine::resolveOnDemand for the gated read site.
+    QString userBio() const;
+    void setUserBio(const QString &bio);
 
     bool hasMilestone(const QString &key) const;
     bool setMilestone(const QString &key);

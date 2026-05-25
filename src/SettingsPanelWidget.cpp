@@ -26,6 +26,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QCoreApplication>
@@ -734,16 +735,22 @@ void SettingsPanelWidget::setupUi()
         llmLayout->setSpacing(VERTICAL_SPACING);
 
         // --- Profiles group ---
-        auto *profilesGroup = new QGroupBox(tr("Profiles"), m_llmTab);
+        m_llmProfilesGroup = new QGroupBox(tr("Profiles"), m_llmTab);
+        auto *profilesGroup = m_llmProfilesGroup;
+        // margin-top must accommodate the rendered title height. 4px was enough
+        // for the Chinese "配置" (2 short chars) but English "Profiles" (longer
+        // + descenders) overlapped the content below. 16px clears any of the
+        // languages we ship.
         profilesGroup->setStyleSheet(QStringLiteral(R"(
             QGroupBox {
                 background: transparent;
                 border: none;
-                margin-top: 4px;
+                margin-top: 16px;
                 padding-top: 0px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
+                subcontrol-position: top left;
                 left: 0px;
                 padding: 0 4px;
                 color: black;
@@ -806,16 +813,20 @@ void SettingsPanelWidget::setupUi()
 
         // --- Privacy group ---
         llmLayout->addSpacing(16);
-        auto *privacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
+        m_llmPrivacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
+        auto *privacyGroup = m_llmPrivacyGroup;
+        // Same rationale as profilesGroup: margin-top needs room for the
+        // rendered title in all shipped languages.
         privacyGroup->setStyleSheet(QStringLiteral(R"(
             QGroupBox {
                 background: transparent;
                 border: none;
-                margin-top: 4px;
+                margin-top: 16px;
                 padding-top: 0px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
+                subcontrol-position: top left;
                 left: 0px;
                 padding: 0 4px;
                 color: black;
@@ -841,10 +852,14 @@ void SettingsPanelWidget::setupUi()
         llmLayout->addWidget(m_regenPoolBtn);
 
         // --- Status label ---
-        m_llmLastErrorLabel = new QLabel(tr("Last error: —"), m_llmTab);
+        m_llmLastErrorLabel = new QLabel(m_llmTab);
         m_llmLastErrorLabel->setFont(harmonyFont(9));
         m_llmLastErrorLabel->setStyleSheet("color: #888; background: transparent;");
         m_llmLastErrorLabel->setWordWrap(true);
+        // Initial text comes from renderLlmStatus() (Default kind). Going
+        // through the helper keeps the label in lock-step with whatever
+        // language the app is currently displaying.
+        renderLlmStatus();
         llmLayout->addWidget(m_llmLastErrorLabel);
         llmLayout->addStretch();
 
@@ -1194,16 +1209,47 @@ void SettingsPanelWidget::setupProfileTab()
     m_nameEdit->setFixedHeight(24);
     m_nameEdit->setStyleSheet(m_portInput->styleSheet());
 
-    // Display name field
-    m_displayLabel = new QLabel(tr("Display name"), m_profileTab);
-    m_displayLabel->setFont(harmonyFont(10));
-    m_displayLabel->setStyleSheet("color: black; background: transparent;");
-    m_displayEdit  = new QLineEdit(m_profileTab);
-    m_displayEdit->setFont(harmonyFont(10));
-    m_displayEdit->setPlaceholderText(tr("Shown in greetings"));
-    m_displayEdit->setText(m_memory->displayName());
-    m_displayEdit->setFixedHeight(24);
-    m_displayEdit->setStyleSheet(m_portInput->styleSheet());
+    // Bio field — free-form "about me" sent to the persona LLM when the user
+    // opted into memory sharing. Plain-text widget (not QTextEdit) so users
+    // can write markdown source without auto-rich-text mangling newlines.
+    m_bioLabel = new QLabel(tr("About you"), m_profileTab);
+    m_bioLabel->setFont(harmonyFont(10));
+    m_bioLabel->setStyleSheet("color: black; background: transparent;");
+    m_bioEdit = new QPlainTextEdit(m_profileTab);
+    m_bioEdit->setFont(harmonyFont(10));
+    m_bioEdit->setPlaceholderText(tr("A few sentences — role, working style, anything you'd want a coworker to know. Markdown is fine."));
+    m_bioEdit->setPlainText(m_memory->userBio());
+    m_bioEdit->setFixedHeight(180);
+    // Dedicated stylesheet — the QLineEdit { ... } selector on m_portInput
+    // doesn't apply to QPlainTextEdit, so we'd inherit no border at all if
+    // we reused it. Match the same 2px black border / white / rounded look.
+    m_bioEdit->setStyleSheet(R"(
+        QPlainTextEdit {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 4px 6px;
+            color: #2C2C2E;
+        }
+    )");
+
+    // Character counter. Soft cap — we don't refuse over-cap input, just turn
+    // the counter red so the user can see they're about to bloat every LLM
+    // request. Hard truncation lives on save (below).
+    static constexpr int kBioMaxChars = 4000;
+    m_bioCounterLabel = new QLabel(m_profileTab);
+    m_bioCounterLabel->setFont(harmonyFont(9));
+    m_bioCounterLabel->setAlignment(Qt::AlignRight);
+    m_bioCounterLabel->setStyleSheet("color: #6b6b6b; background: transparent;");
+    auto updateBioCounter = [this]() {
+        const int len = m_bioEdit->toPlainText().length();
+        m_bioCounterLabel->setText(QStringLiteral("%1 / %2").arg(len).arg(kBioMaxChars));
+        m_bioCounterLabel->setStyleSheet(len > kBioMaxChars
+            ? "color: #c0392b; background: transparent;"
+            : "color: #6b6b6b; background: transparent;");
+    };
+    updateBioCounter();
+    connect(m_bioEdit, &QPlainTextEdit::textChanged, this, updateBioCounter);
 
     // Save button
     m_saveBtn = new QPushButton(tr("Save"), m_profileTab);
@@ -1227,15 +1273,22 @@ void SettingsPanelWidget::setupProfileTab()
             color: white;
         }
     )"));
-    connect(m_saveBtn, &QPushButton::clicked, this, [=]() {
+    connect(m_saveBtn, &QPushButton::clicked, this, [this]() {
         m_memory->setUserName(m_nameEdit->text().trimmed());
-        m_memory->setDisplayName(m_displayEdit->text().trimmed());
+        // Hard-truncate bio at the cap before persisting — the counter warns
+        // users but doesn't block typing; this is where we actually enforce.
+        // Trim only outer whitespace; preserve internal newlines so markdown
+        // structure (lists, blank lines between paragraphs) reaches the LLM.
+        QString bio = m_bioEdit->toPlainText().trimmed();
+        if (bio.length() > 4000) bio = bio.left(4000);
+        m_memory->setUserBio(bio);
     });
 
     layout->addWidget(m_nameLabel);
     layout->addWidget(m_nameEdit);
-    layout->addWidget(m_displayLabel);
-    layout->addWidget(m_displayEdit);
+    layout->addWidget(m_bioLabel);
+    layout->addWidget(m_bioEdit);
+    layout->addWidget(m_bioCounterLabel);
     layout->addWidget(m_saveBtn);
     layout->addStretch(1);
 }
@@ -1415,9 +1468,32 @@ void SettingsPanelWidget::retranslateUi()
     // Profile tab labels
     if (m_nameLabel) m_nameLabel->setText(tr("Name"));
     if (m_nameEdit) m_nameEdit->setPlaceholderText(tr("Your name"));
-    if (m_displayLabel) m_displayLabel->setText(tr("Display name"));
-    if (m_displayEdit) m_displayEdit->setPlaceholderText(tr("Shown in greetings"));
+    if (m_bioLabel) m_bioLabel->setText(tr("About you"));
+    if (m_bioEdit) m_bioEdit->setPlaceholderText(tr("A few sentences — role, working style, anything you'd want a coworker to know. Markdown is fine."));
     if (m_saveBtn) m_saveBtn->setText(tr("Save"));
+
+    // AI / LLM tab — all of these were previously frozen in whatever language
+    // the app booted in because nothing re-issued tr() on a language switch.
+    if (m_llmProfilesGroup) m_llmProfilesGroup->setTitle(tr("Profiles"));
+    if (m_llmPrivacyGroup)  m_llmPrivacyGroup->setTitle(tr("Privacy"));
+    if (m_llmAddBtn)    m_llmAddBtn->setText(tr("Add"));
+    if (m_llmEditBtn)   m_llmEditBtn->setText(tr("Edit"));
+    if (m_llmDeleteBtn) m_llmDeleteBtn->setText(tr("Delete"));
+    if (m_llmTestBtn) {
+        m_llmTestBtn->setText(tr("Test"));
+        m_llmTestBtn->setToolTip(tr("Test connection — sends a 1-token request to the selected profile"));
+    }
+    if (m_shareMemoryCheck) {
+        m_shareMemoryCheck->setText(tr("Share memory with AI"));
+        m_shareMemoryCheck->setToolTip(tr("Sends your name and milestones to the AI provider with each on-demand event."));
+    }
+    if (m_regenPoolBtn) {
+        m_regenPoolBtn->setText(tr("Regenerate pool"));
+        m_regenPoolBtn->setToolTip(tr("Wipe cached LLM responses for the active pack so they will be regenerated."));
+    }
+    // Re-render the LLM status label in the new language. Whatever state it
+    // was in (Default / Testing / Ok / Fail) gets re-issued through tr().
+    renderLlmStatus();
 
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
@@ -1671,7 +1747,7 @@ void SettingsPanelWidget::onTestConnectionClicked()
     if (!m_config) return;
     const int row = m_llmProfilesList->currentRow();
     if (row < 0) {
-        m_llmLastErrorLabel->setText(tr("Select a profile first"));
+        setLlmStatus(LlmStatusKind::SelectProfile);
         return;
     }
     const auto profile = m_config->llmProfiles().value(row);
@@ -1682,7 +1758,7 @@ void SettingsPanelWidget::onTestConnectionClicked()
 
     auto elapsed = std::make_shared<QElapsedTimer>();
     elapsed->start();
-    m_llmLastErrorLabel->setText(tr("Testing..."));
+    setLlmStatus(LlmStatusKind::Testing);
     m_testProvider->generate(
         QStringLiteral("Reply with the single word OK."),
         QStringLiteral("ping"),
@@ -1690,11 +1766,44 @@ void SettingsPanelWidget::onTestConnectionClicked()
             const qint64 ms = elapsed->elapsed();
             if (!m_llmLastErrorLabel) return;
             if (r.ok) {
-                m_llmLastErrorLabel->setText(tr("✓ %1 ms").arg(ms));
+                setLlmStatus(LlmStatusKind::Ok, static_cast<int>(ms));
             } else {
-                m_llmLastErrorLabel->setText(tr("✗ %1").arg(r.error));
+                setLlmStatus(LlmStatusKind::Fail, r.error);
             }
         });
+}
+
+void SettingsPanelWidget::setLlmStatus(LlmStatusKind kind, const QVariant &arg)
+{
+    m_llmStatusKind = kind;
+    m_llmStatusArg = arg;
+    renderLlmStatus();
+}
+
+void SettingsPanelWidget::renderLlmStatus()
+{
+    if (!m_llmLastErrorLabel) return;
+    switch (m_llmStatusKind) {
+        case LlmStatusKind::Default:
+            m_llmLastErrorLabel->setText(tr("Last error: —"));
+            break;
+        case LlmStatusKind::SelectProfile:
+            m_llmLastErrorLabel->setText(tr("Select a profile first"));
+            break;
+        case LlmStatusKind::Testing:
+            m_llmLastErrorLabel->setText(tr("Testing..."));
+            break;
+        case LlmStatusKind::Ok:
+            m_llmLastErrorLabel->setText(tr("✓ %1 ms").arg(m_llmStatusArg.toInt()));
+            break;
+        case LlmStatusKind::Fail:
+            // Error strings come from the LLM provider and are typically
+            // language-independent (HTTP codes, API messages) — interpolate
+            // verbatim. The "✗ " prefix and any future static framing run
+            // through tr().
+            m_llmLastErrorLabel->setText(tr("✗ %1").arg(m_llmStatusArg.toString()));
+            break;
+    }
 }
 
 void SettingsPanelWidget::onDeleteProfileClicked()

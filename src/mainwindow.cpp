@@ -870,11 +870,23 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
             if (r.text.isEmpty()) return;
             if (!m_tipWidget || !m_tipWidget->isVisible()) return;
             m_activeBubbleRequestId = r.requestId;
+            // Remember the catalog fallback so onTipUpgradeFailed can TTS it
+            // if the LLM call doesn't come back with usable text.
+            m_activeBubbleFallbackBody = r.text;
             m_tipWidget->updateMessage(r.text);
-            // TTS the final body (catalog-driven speak was suppressed earlier
-            // when persona is active — see TipWidget::bubbleRequested handler).
-            if (m_ttsEngine && m_config && m_config->ttsEnabled()
-                && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
+            // TTS policy when persona is active for an event-routed bubble:
+            // — requestId == 0 means no LLM call was fired (provider not
+            //   configured or pool-tier event). Speak the catalog text now;
+            //   no upgrade is coming.
+            // — requestId != 0 means an LLM upgrade is in flight. Stay
+            //   silent here; onTipUpgraded speaks on success and
+            //   onTipUpgradeFailed speaks the fallback on failure. This
+            //   avoids the previous double-speak where catalog spoke first
+            //   and the upgrade tried to follow but usually got dropped by
+            //   the TTSEngine debounce.
+            const bool ttsReady = m_ttsEngine && m_config && m_config->ttsEnabled()
+                && m_config->displayMode() != ConfigManager::DisplayMode::Ecg;
+            if (ttsReady && r.requestId == 0) {
                 m_ttsEngine->speak(r.text);
             }
         }, Qt::QueuedConnection);
@@ -913,6 +925,12 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
     // (d) PersonaEngine::tipUpgraded → slot
     connect(m_personaEngine, &PersonaEngine::tipUpgraded,
             this, &MainWindow::onTipUpgraded);
+
+    // (e) PersonaEngine::tipUpgradeFailed → speak catalog fallback so the
+    //     user still hears something when the LLM bails. See the listener
+    //     in (a) for why we deferred speaking in the first place.
+    connect(m_personaEngine, &PersonaEngine::tipUpgradeFailed,
+            this, &MainWindow::onTipUpgradeFailed);
 }
 
 void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)
@@ -923,10 +941,29 @@ void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)
     if (!m_tipWidget || !m_tipWidget->isVisible()) return;
     m_tipWidget->updateMessage(newText);
 
-    // Re-fire TTS for the upgraded body.
+    // TTS the upgraded body. The event-route listener deliberately did not
+    // speak the catalog body for this requestId, so this is the first (and
+    // only) speak() call for this bubble — no debounce race.
     if (m_ttsEngine && m_config && m_config->ttsEnabled()
         && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
         m_ttsEngine->speak(newText);
+    }
+}
+
+void MainWindow::onTipUpgradeFailed(quint64 requestId)
+{
+    // Only fire if this failure belongs to the currently active bubble and
+    // we still have its catalog body. Bubble may have already been dismissed
+    // or replaced by a newer event — in either case staying silent is right.
+    if (requestId != m_activeBubbleRequestId) return;
+    if (m_activeBubbleFallbackBody.isEmpty()) return;
+
+    // The catalog text is already visible in the bubble (set by EventRouter
+    // when it called showBubble). We just speak it now since the upgrade
+    // didn't come through.
+    if (m_ttsEngine && m_config && m_config->ttsEnabled()
+        && m_config->displayMode() != ConfigManager::DisplayMode::Ecg) {
+        m_ttsEngine->speak(m_activeBubbleFallbackBody);
     }
 }
 

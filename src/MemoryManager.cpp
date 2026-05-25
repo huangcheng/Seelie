@@ -115,6 +115,16 @@ void MemoryManager::setDisplayName(const QString &name)
     setValue(QStringLiteral("profile.display_name"), name);
 }
 
+QString MemoryManager::userBio() const
+{
+    return value(QStringLiteral("profile.bio"));
+}
+
+void MemoryManager::setUserBio(const QString &bio)
+{
+    setValue(QStringLiteral("profile.bio"), bio);
+}
+
 bool MemoryManager::hasMilestone(const QString &key) const
 {
     return !value(QStringLiteral("milestone.") + key).isEmpty();

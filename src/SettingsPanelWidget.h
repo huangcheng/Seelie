@@ -7,6 +7,7 @@
 #include <QPropertyAnimation>
 #include <QListWidget>
 #include <QScopedPointer>
+#include <QVariant>
 
 class ConfigManager;
 class CharacterPackManager;
@@ -19,11 +20,13 @@ class QFrame;
 class QComboBox;
 class QCheckBox;
 class QLineEdit;
+class QPlainTextEdit;
 class QToolButton;
 class QAction;
 class QKeySequenceEdit;
 class QStackedWidget;
 class QVBoxLayout;
+class QGroupBox;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -103,6 +106,13 @@ private slots:
 #endif
 
 private:
+    // Tracks what the LLM-status label is *meant* to display, separate from
+    // the rendered text. Language switches re-render via renderLlmStatus()
+    // without each call site having to remember to re-translate.
+    enum class LlmStatusKind { Default, SelectProfile, Testing, Ok, Fail };
+    void setLlmStatus(LlmStatusKind kind, const QVariant &arg = {});
+    void renderLlmStatus();
+
     void setupUi();
     void setupProfileTab();
 #ifdef SEELIE_TTS_ENABLED
@@ -157,6 +167,8 @@ private:
     QWidget *m_llmTab = nullptr;
 
     // LLM / AI tab widgets
+    QGroupBox    *m_llmProfilesGroup = nullptr;
+    QGroupBox    *m_llmPrivacyGroup = nullptr;
     QListWidget  *m_llmProfilesList = nullptr;
     QPushButton  *m_llmAddBtn = nullptr;
     QPushButton  *m_llmEditBtn = nullptr;
@@ -166,14 +178,17 @@ private:
     QCheckBox    *m_shareMemoryCheck = nullptr;
     QPushButton  *m_regenPoolBtn = nullptr;
     QLabel       *m_llmLastErrorLabel = nullptr;
+    LlmStatusKind m_llmStatusKind = LlmStatusKind::Default;
+    QVariant      m_llmStatusArg;
     PersonaEngine *m_personaEngine = nullptr;
     QScopedPointer<LLMProvider> m_testProvider;
 
     // Profile tab widgets (stored for retranslation)
     QLabel *m_nameLabel = nullptr;
     QLineEdit *m_nameEdit = nullptr;
-    QLabel *m_displayLabel = nullptr;
-    QLineEdit *m_displayEdit = nullptr;
+    QLabel *m_bioLabel = nullptr;
+    QPlainTextEdit *m_bioEdit = nullptr;
+    QLabel *m_bioCounterLabel = nullptr;
     QPushButton *m_saveBtn = nullptr;
 
 #ifdef SEELIE_TTS_ENABLED

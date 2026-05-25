@@ -116,6 +116,7 @@ private slots:
     void onFullscreenStarted();
     void onFullscreenStopped();
     void onTipUpgraded(quint64 requestId, const QString &newText);
+    void onTipUpgradeFailed(quint64 requestId);
 
 private:
     void setupWindowFlags();
@@ -146,6 +147,11 @@ private:
     MemoryManager *m_memory = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
     quint64 m_activeBubbleRequestId = 0;
+    // Catalog body for the current bubble — used as TTS fallback if the
+    // persona LLM call for this requestId fails. Captured at event-route
+    // time so we don't have to re-derive it from the (possibly already
+    // overwritten) bubble widget.
+    QString m_activeBubbleFallbackBody;
     QPointer<StatisticsDialog> m_statsDialog;
 
     // Gaming Mode

@@ -158,8 +158,14 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
     const quint64 requestId = m_nextRequestId++;
 
     // Build context for the prompt
+    // Privacy: only include recent event history when the user opted in to
+    // sharing memory with the AI.  The rolling window reveals workflow
+    // patterns to a third-party API.
+    const bool shareMemory = m_config && m_config->shareMemoryWithAi();
     QStringList recent;
-    for (const QString &e : m_eventWindow) recent << e;
+    if (shareMemory) {
+        for (const QString &e : m_eventWindow) recent << e;
+    }
 
     // Tell the LLM the user's language explicitly. ConfigManager stores it
     // as a Qt locale code ("en", "zh_CN", ...); map to a human name the
@@ -170,21 +176,46 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
         "You are a desktop pet companion to a software developer. "
         "Reply with ONE short sentence in %1. Do not add quotes, "
         "translation, or commentary — just the sentence itself.").arg(lang);
-    QString userPrompt = QStringLiteral("Event: %1\nRecent events: %2\nReact in-character.")
-                          .arg(eventName, recent.join(QStringLiteral(", ")));
-
-    // Privacy: only attach memory snapshot if user opted in.
-    if (m_config && m_config->shareMemoryWithAi() && m_memory) {
-        const QString name = m_memory->effectiveName();
-        if (!name.isEmpty()) userPrompt += QStringLiteral("\nUser name: %1").arg(name);
+    QString userPrompt;
+    if (shareMemory) {
+        userPrompt = QStringLiteral("Event: %1\nRecent events: %2\nReact in-character.")
+                      .arg(eventName, recent.join(QStringLiteral(", ")));
+    } else {
+        userPrompt = QStringLiteral("Event: %1\nReact in-character.").arg(eventName);
     }
 
+    // Privacy: only attach memory snapshot if user opted in.
+    if (shareMemory && m_memory) {
+        const QString name = m_memory->effectiveName();
+        if (!name.isEmpty()) userPrompt += QStringLiteral("\nUser name: %1").arg(name);
+        // Bio is free-form markdown the user wrote on the Profile tab; pass
+        // it through verbatim. The LLM understands markdown structure (lists,
+        // bold, etc.) and can use it to tune tone and content. Length is
+        // already capped at 4000 chars by the Profile tab save handler.
+        const QString bio = m_memory->userBio().trimmed();
+        if (!bio.isEmpty()) {
+            userPrompt += QStringLiteral("\nUser bio (markdown):\n%1").arg(bio);
+        }
+    }
+
+    // Capture current pack/hash by value so we can detect stale callbacks
+    // if the user switches packs while the LLM request is in flight.
+    const QString capturedPackId = m_activePackId;
+    const QString capturedHash   = m_personaHash;
+
     m_provider.generate(systemPrompt, userPrompt,
-        [this, requestId](LLMResult r) {
+        [this, requestId, capturedPackId, capturedHash](LLMResult r) {
+            // Bail silently if the pack or persona hash changed mid-flight.
+            if (capturedPackId != m_activePackId || capturedHash != m_personaHash) {
+                ++m_stats.ondemandStale;
+                return;
+            }
+
             if (!r.ok || r.text.trimmed().isEmpty()) {
                 ++m_stats.ondemandFail;
                 m_stats.lastError = r.error;
                 if (m_memory) m_memory->increment(QStringLiteral("stats.persona.ondemand.fail"));
+                emit tipUpgradeFailed(requestId);
                 return;
             }
             ++m_stats.ondemandOk;
@@ -211,8 +242,9 @@ void PersonaEngine::loadStats(const QString &configDir)
 
     m_stats.refillsOk    = section.value(QStringLiteral("refillsOk")).toInt(0);
     m_stats.refillsFail  = section.value(QStringLiteral("refillsFail")).toInt(0);
-    m_stats.ondemandOk   = section.value(QStringLiteral("ondemandOk")).toInt(0);
-    m_stats.ondemandFail = section.value(QStringLiteral("ondemandFail")).toInt(0);
+    m_stats.ondemandOk    = section.value(QStringLiteral("ondemandOk")).toInt(0);
+    m_stats.ondemandFail  = section.value(QStringLiteral("ondemandFail")).toInt(0);
+    m_stats.ondemandStale = section.value(QStringLiteral("ondemandStale")).toInt(0);
     m_stats.tokensIn     = section.value(QStringLiteral("tokensIn")).toInteger(0);
     m_stats.tokensOut    = section.value(QStringLiteral("tokensOut")).toInteger(0);
     m_stats.lastError    = section.value(QStringLiteral("lastError")).toString();
@@ -224,8 +256,9 @@ void PersonaEngine::saveStats(const QString &configDir)
     QJsonObject section;
     section[QStringLiteral("refillsOk")]    = m_stats.refillsOk;
     section[QStringLiteral("refillsFail")]  = m_stats.refillsFail;
-    section[QStringLiteral("ondemandOk")]   = m_stats.ondemandOk;
-    section[QStringLiteral("ondemandFail")] = m_stats.ondemandFail;
+    section[QStringLiteral("ondemandOk")]     = m_stats.ondemandOk;
+    section[QStringLiteral("ondemandFail")]   = m_stats.ondemandFail;
+    section[QStringLiteral("ondemandStale")]  = m_stats.ondemandStale;
     section[QStringLiteral("tokensIn")]     = m_stats.tokensIn;
     section[QStringLiteral("tokensOut")]    = m_stats.tokensOut;
     section[QStringLiteral("lastError")]    = m_stats.lastError;
