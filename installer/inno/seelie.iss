@@ -104,7 +104,15 @@ begin
   WizardForm.Bevel.Visible := False;
   WizardForm.MainPanel.Color := clWhite;
 
-  { --- Page name + description label styling (all pages) --- }
+  { --- Page name + description label styling (all pages) ---
+    Inno's default PageNameLabel + PageDescriptionLabel share the same Left
+    by design, and that Left aligns with the body content on every page.
+    We hide the description label but borrow its Left so the title stays
+    flush with the body paragraphs / list boxes / license memo underneath.
+    Height grows with the 12pt bold font — the default ~22px label clips
+    descenders ("g" in "Agreement", "y" in "Ready"). }
+  if WizardForm.PageDescriptionLabel <> nil then
+    WizardForm.PageDescriptionLabel.Visible := False;
   if WizardForm.PageNameLabel <> nil then
   begin
     WizardForm.PageNameLabel.Font.Name := 'Segoe UI';
@@ -112,12 +120,10 @@ begin
     WizardForm.PageNameLabel.Font.Style := [fsBold];
     WizardForm.PageNameLabel.Font.Color := NEAR_BLACK;
     WizardForm.PageNameLabel.Top := ScaleY(20);
-    WizardForm.PageNameLabel.Left := ScaleX(12);
+    if WizardForm.PageDescriptionLabel <> nil then
+      WizardForm.PageNameLabel.Left := WizardForm.PageDescriptionLabel.Left;
+    WizardForm.PageNameLabel.Height := ScaleY(30);
   end;
-  { Hide the subtitle label — Inno's default text overlaps with the actual
-    page content (description paragraphs, license text, etc.) on every page. }
-  if WizardForm.PageDescriptionLabel <> nil then
-    WizardForm.PageDescriptionLabel.Visible := False;
 
   { --- Welcome Page styling --- }
   if WizardForm.WelcomeLabel1 <> nil then
