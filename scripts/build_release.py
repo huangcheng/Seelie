@@ -856,6 +856,14 @@ def main():
     parser = argparse.ArgumentParser(description="Build and package Seelie for the current platform.")
     parser.add_argument("--build-dir", default="build", help="CMake build directory (default: build)")
     parser.add_argument("--config", default="Release", help="CMake build configuration (default: Release)")
+    # `cmake --build --parallel` *without a number* falls back to the native
+    # tool's default, which is "every available core". On thermally-limited
+    # machines that combined with rlottie's heavy templates + 35-pack bundling
+    # has caused full freezes. Default to a conservative 2; users can pass
+    # --jobs N (or set CMAKE_BUILD_PARALLEL_LEVEL) to override.
+    parser.add_argument("--jobs", "-j", type=int,
+                        default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "2")),
+                        help="Parallel build jobs (default: 2, or $CMAKE_BUILD_PARALLEL_LEVEL)")
     parser.add_argument("--qt-dir", default=None, help="Override Qt installation directory")
     parser.add_argument("--skip-build", action="store_true", help="Skip build step (use existing binaries)")
     parser.add_argument("--skip-package", action="store_true", help="Only build, skip packaging")
@@ -948,8 +956,9 @@ def main():
     # Build
     # ------------------------------------------------------------------
     if not args.skip_build:
-        print(f"\n[Build] Building ({args.config})...")
-        build_cmd = [str(cmake), "--build", str(build_dir), "--config", args.config, "--parallel"]
+        print(f"\n[Build] Building ({args.config}, -j{args.jobs})...")
+        build_cmd = [str(cmake), "--build", str(build_dir), "--config", args.config,
+                     "--parallel", str(args.jobs)]
         run(build_cmd, env=env)
     else:
         print("\n[Build] Skipped (--skip-build)")
