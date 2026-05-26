@@ -341,11 +341,21 @@ def package_macos(build_dir, version, qt_prefix):
         # arm64-only plugins next to /opt/Qt 6.11.1 universal frameworks).
         # The Qt plugin loader then rejects them on minor-version mismatch
         # — symptom: WEBP/SVG fail at runtime even though the .dylib exists.
-        # Pin PATH so the qmake adjacent to our macdeployqt wins.
+        # Pin PATH so the qmake adjacent to our macdeployqt wins, AND so the
+        # macOS native /usr/bin/strip wins over Homebrew GNU binutils' strip.
+        # macdeployqt internally calls `strip` to shrink the copied frameworks;
+        # GNU binutils strip doesn't understand Mach-O fat binaries and silently
+        # corrupts every framework it touches, which cascades into the rest of
+        # the script (install_name_tool: "no LC_ID_DYLIB load command", codesign
+        # verification errors, etc.). Putting /usr/bin first ensures strip and
+        # otool come from the Xcode toolchain.
         deploy_env = os.environ.copy()
+        path_parts = ["/usr/bin", "/bin"]
         qt_bin = str(Path(qt_prefix) / "bin") if qt_prefix else None
         if qt_bin:
-            deploy_env["PATH"] = qt_bin + os.pathsep + deploy_env.get("PATH", "")
+            path_parts.append(qt_bin)
+        path_parts.append(deploy_env.get("PATH", ""))
+        deploy_env["PATH"] = os.pathsep.join(p for p in path_parts if p)
         run([str(macdeployqt), str(app_bundle)], check=False, env=deploy_env)
     else:
         print("  [WARNING] macdeployqt not found – relying on cmake install deploy script.")
