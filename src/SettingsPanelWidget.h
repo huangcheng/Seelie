@@ -115,6 +115,10 @@ private:
 
     void setupUi();
     void setupProfileTab();
+    // Build a QGroupBox styled as a section header — bold orange title with a
+    // thin separator underneath and uniform spacing above. Used in both the
+    // General and AI tabs so all section headers look identical.
+    QGroupBox *makeSectionGroup(const QString &title);
 #ifdef SEELIE_TTS_ENABLED
     /// Builds the TTS tab content (Provider combo, per-provider field
     /// pages, Test + Clear voice cache action row). Extracted from
@@ -165,6 +169,12 @@ private:
     QWidget *m_ttsTab = nullptr;
     QWidget *m_profileTab = nullptr;
     QWidget *m_llmTab = nullptr;
+
+    // General tab group boxes (held for retranslateUi)
+    QGroupBox *m_appGroup = nullptr;
+    QGroupBox *m_characterGroup = nullptr;
+    QGroupBox *m_interactionGroup = nullptr;
+    QGroupBox *m_aiFeaturesGroup = nullptr;
 
     // LLM / AI tab widgets
     QGroupBox    *m_llmProfilesGroup = nullptr;
@@ -232,7 +242,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 420;
-    static constexpr int PANEL_HEIGHT = 520;
+    static constexpr int PANEL_HEIGHT = 580;
 };
 
 #endif // SETTINGSPANELWIDGET_H

@@ -483,6 +483,22 @@ Path: %2</source>
         <translation>语音</translation>
     </message>
     <message>
+        <source>Application</source>
+        <translation>应用</translation>
+    </message>
+    <message>
+        <source>Character</source>
+        <translation>角色</translation>
+    </message>
+    <message>
+        <source>Interaction</source>
+        <translation>交互</translation>
+    </message>
+    <message>
+        <source>AI Features</source>
+        <translation>AI 功能</translation>
+    </message>
+    <message>
         <source>Profiles</source>
         <translation>配置</translation>
     </message>
@@ -637,6 +653,14 @@ Path: %2</source>
     <message>
         <source>Shown in greetings</source>
         <translation>在问候语中显示</translation>
+    </message>
+    <message>
+        <source>About you</source>
+        <translation>关于你</translation>
+    </message>
+    <message>
+        <source>A few sentences — role, working style, anything you'd want a coworker to know. Markdown is fine.</source>
+        <translation>用几句话介绍一下自己 —— 你的角色、工作风格、想让同事了解的任何事。支持 Markdown。</translation>
     </message>
     <message>
         <source>Save</source>

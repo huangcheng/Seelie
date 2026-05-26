@@ -231,6 +231,39 @@ void SettingsPanelWidget::paintEvent(QPaintEvent *event)
     painter.restore();
 }
 
+QGroupBox *SettingsPanelWidget::makeSectionGroup(const QString &title)
+{
+    // Section header style: bold orange title sitting above a thin grey
+    // separator line. margin-top is just enough to fit the title — the
+    // visible gap *between* groups comes from the parent layout's spacing,
+    // not from oversized title margins.
+    static const QString qss = QStringLiteral(R"(
+        QGroupBox {
+            background: transparent;
+            border: none;
+            border-top: 1px solid #B8B8B8;
+            margin-top: 20px;
+            padding: 0px;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            left: 0px;
+            top: 2px;
+            padding: 0 0 4px 0;
+            color: #F36F1A;
+            background: transparent;
+            font-weight: bold;
+        }
+    )");
+    auto *g = new QGroupBox(title, m_contentWidget);
+    QFont titleFont = harmonyFont(11, QFont::Bold);
+    titleFont.setLetterSpacing(QFont::AbsoluteSpacing, 1.0);
+    g->setFont(titleFont);
+    g->setStyleSheet(qss);
+    return g;
+}
+
 void SettingsPanelWidget::setupUi()
 {
     // Create content widget that sits inside the panel area
@@ -392,7 +425,7 @@ void SettingsPanelWidget::setupUi()
     connect(m_autoStartCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onAutoStartToggled);
 
-    // Mode row: label + combo  (Row 2 — replaces old ECG checkbox row)
+    // Mode row: label + combo  (lives in the Character group below)
     m_modeLabel = new QLabel(tr("Mode"), m_contentWidget);
     m_modeLabel->setFont(harmonyFont(10));
     m_modeLabel->setStyleSheet("color: black; background: transparent;");
@@ -493,29 +526,36 @@ void SettingsPanelWidget::setupUi()
         }
     )").arg(arrowPath));
 
-    // Grid layout for form rows: labels in col 0, controls in col 1
-    // Row 0: Language
-    // Row 1: Launch at Login
-    // Row 2: Mode
-    // Row 3: Port
-    // Row 4: Model (hidden in ECG mode)
-    QGridLayout *formGrid = new QGridLayout();
-    formGrid->setHorizontalSpacing(10);
-    formGrid->setVerticalSpacing(VERTICAL_SPACING);
-    formGrid->setColumnStretch(1, 1);  // controls column stretches
+    // ----- General tab form -----
+    // Settings are split across four group boxes (Application / Character /
+    // Interaction / AI Features) using makeSectionGroup() for visually
+    // distinct section headers.
+    auto makeGroupGrid = [](QWidget *owner) -> QGridLayout* {
+        auto *g = new QGridLayout(owner);
+        g->setHorizontalSpacing(10);
+        g->setVerticalSpacing(VERTICAL_SPACING);
+        g->setContentsMargins(0, 8, 0, 0);
+        g->setColumnStretch(1, 1);
+        return g;
+    };
 
-    formGrid->addWidget(m_langLabel,       0, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_langCombo,       0, 1);
-    formGrid->addWidget(m_autoStartLabel,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_modeLabel,       2, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_modeCombo,       2, 1);
-    formGrid->addWidget(m_portLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_portInput,       3, 1);
-    formGrid->addWidget(m_packLabel,       4, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_packButton,      4, 1);
+    // --- Application group: language, login, shortcut, port ---
+    m_appGroup = makeSectionGroup(tr("Application"));
+    auto *appGrid = makeGroupGrid(m_appGroup);
+    appGrid->addWidget(m_langLabel,       0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    appGrid->addWidget(m_langCombo,       0, 1);
+    appGrid->addWidget(m_autoStartLabel,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    appGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
-    // Row 5: Global Shortcut
+    // --- Character group: display mode + pack picker ---
+    m_characterGroup = makeSectionGroup(tr("Character"));
+    auto *charGrid = makeGroupGrid(m_characterGroup);
+    charGrid->addWidget(m_modeLabel,   0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    charGrid->addWidget(m_modeCombo,   0, 1);
+    charGrid->addWidget(m_packLabel,   1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    charGrid->addWidget(m_packButton,  1, 1);
+
+    // Global shortcut row (placed in the Application group below).
     m_shortcutLabel = new QLabel(tr("Shortcut"), m_contentWidget);
     m_shortcutLabel->setFont(harmonyFont(10));
     m_shortcutLabel->setStyleSheet("color: black; background: transparent;");
@@ -543,10 +583,16 @@ void SettingsPanelWidget::setupUi()
         )");
     }
     m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
-    formGrid->addWidget(m_shortcutLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_shortcutEdit, 5, 1);
+    appGrid->addWidget(m_shortcutLabel, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    appGrid->addWidget(m_shortcutEdit,  2, 1);
+    appGrid->addWidget(m_portLabel,     3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    appGrid->addWidget(m_portInput,     3, 1);
     connect(m_shortcutEdit, &QKeySequenceEdit::keySequenceChanged,
             this, &SettingsPanelWidget::onShortcutChanged);
+
+    // --- Interaction group: gaming mode + event tips ---
+    m_interactionGroup = makeSectionGroup(tr("Interaction"));
+    auto *interactGrid = makeGroupGrid(m_interactionGroup);
 
     m_gamingModeLabel = new QLabel(tr("Gaming Mode"), m_contentWidget);
     m_gamingModeLabel->setFont(harmonyFont(10));
@@ -565,8 +611,9 @@ void SettingsPanelWidget::setupUi()
         m_gamingModeCheck->setChecked(enabled);
     });
 
-    formGrid->addWidget(m_gamingModeLabel, 6, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_gamingModeCheck, 6, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_gamingModeLabel, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_gamingModeCheck, 0, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     m_tipBubblesLabel = new QLabel(tr("Event Tips"), m_contentWidget);
     m_tipBubblesLabel->setFont(harmonyFont(10));
     m_tipBubblesLabel->setStyleSheet("color: black; background: transparent;");
@@ -584,12 +631,18 @@ void SettingsPanelWidget::setupUi()
         m_tipBubblesCheck->setChecked(enabled);
     });
 
-    formGrid->addWidget(m_tipBubblesLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_tipBubblesCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_tipBubblesLabel, 1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_tipBubblesCheck, 1, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
+    // --- AI Features group: TTS + persona toggles ---
+    m_aiFeaturesGroup = makeSectionGroup(tr("AI Features"));
+    auto *aiGrid = makeGroupGrid(m_aiFeaturesGroup);
+    int aiRow = 0;
 
 #ifdef SEELIE_TTS_ENABLED
-    // Enable TTS — lives on the General tab beside Event Tips, since users
-    // think of it as a feature toggle (like tips) rather than provider config.
+    // Enable TTS — lives on the General tab beside the persona toggle, since
+    // users think of it as a feature toggle (like the persona) rather than
+    // provider config.
     m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_contentWidget);
     m_ttsEnabledLabel->setFont(harmonyFont(10));
     m_ttsEnabledLabel->setStyleSheet("color: black; background: transparent;");
@@ -607,8 +660,9 @@ void SettingsPanelWidget::setupUi()
         m_ttsEnabledCheck->setChecked(enabled);
     });
 
-    formGrid->addWidget(m_ttsEnabledLabel, 8, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_ttsEnabledCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsEnabledLabel, aiRow, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsEnabledCheck, aiRow, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    ++aiRow;
 #endif
 
     // --- AI persona toggle (lives in General alongside TTS Enable) -------
@@ -624,8 +678,8 @@ void SettingsPanelWidget::setupUi()
     connect(m_personaEnabledCheck, &QCheckBox::toggled,
             m_config, &ConfigManager::setPersonaEnabled);
 
-    formGrid->addWidget(m_personaEnabledLabel, 9, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_personaEnabledCheck, 9, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_personaEnabledLabel, aiRow, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_personaEnabledCheck, aiRow, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
     // Tab buttons (left side). The active-vs-inactive stylesheet is
     // applied by onTabChanged() at the end of setupUi, but the buttons
@@ -691,8 +745,14 @@ void SettingsPanelWidget::setupUi()
     m_generalTab = new QWidget(m_contentWidget);
     QVBoxLayout *generalLayout = new QVBoxLayout(m_generalTab);
     generalLayout->setContentsMargins(0, 0, 0, 0);
-    generalLayout->setSpacing(0);
-    generalLayout->addLayout(formGrid);
+    // Generous gap between groups so each section reads as its own block.
+    // QGroupBox margin-top only reserves space for the title — the *visual*
+    // breathing room between groups comes from this spacing.
+    generalLayout->setSpacing(18);
+    generalLayout->addWidget(m_appGroup);
+    generalLayout->addWidget(m_characterGroup);
+    generalLayout->addWidget(m_interactionGroup);
+    generalLayout->addWidget(m_aiFeaturesGroup);
 
     generalLayout->addStretch(1);
 
@@ -732,34 +792,14 @@ void SettingsPanelWidget::setupUi()
     {
         auto *llmLayout = new QVBoxLayout(m_llmTab);
         llmLayout->setContentsMargins(0, 0, 0, 0);
-        llmLayout->setSpacing(VERTICAL_SPACING);
+        // Same inter-group rhythm as the General tab.
+        llmLayout->setSpacing(18);
 
         // --- Profiles group ---
-        m_llmProfilesGroup = new QGroupBox(tr("Profiles"), m_llmTab);
+        m_llmProfilesGroup = makeSectionGroup(tr("Profiles"));
         auto *profilesGroup = m_llmProfilesGroup;
-        // margin-top must accommodate the rendered title height. 4px was enough
-        // for the Chinese "配置" (2 short chars) but English "Profiles" (longer
-        // + descenders) overlapped the content below. 16px clears any of the
-        // languages we ship.
-        profilesGroup->setStyleSheet(QStringLiteral(R"(
-            QGroupBox {
-                background: transparent;
-                border: none;
-                margin-top: 16px;
-                padding-top: 0px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 0px;
-                padding: 0 4px;
-                color: black;
-                background: transparent;
-                font-weight: bold;
-            }
-        )"));
         auto *pgLayout = new QVBoxLayout(profilesGroup);
-        pgLayout->setContentsMargins(0, 4, 0, 0);
+        pgLayout->setContentsMargins(0, 8, 0, 0);
         pgLayout->setSpacing(8);
         m_llmProfilesList = new QListWidget(profilesGroup);
         m_llmProfilesList->setFont(harmonyFont(9));
@@ -812,30 +852,10 @@ void SettingsPanelWidget::setupUi()
                 this, &SettingsPanelWidget::onProfilesListContextMenu);
 
         // --- Privacy group ---
-        llmLayout->addSpacing(16);
-        m_llmPrivacyGroup = new QGroupBox(tr("Privacy"), m_llmTab);
+        m_llmPrivacyGroup = makeSectionGroup(tr("Privacy"));
         auto *privacyGroup = m_llmPrivacyGroup;
-        // Same rationale as profilesGroup: margin-top needs room for the
-        // rendered title in all shipped languages.
-        privacyGroup->setStyleSheet(QStringLiteral(R"(
-            QGroupBox {
-                background: transparent;
-                border: none;
-                margin-top: 16px;
-                padding-top: 0px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 0px;
-                padding: 0 4px;
-                color: black;
-                background: transparent;
-                font-weight: bold;
-            }
-        )"));
         auto *privLayout = new QVBoxLayout(privacyGroup);
-        privLayout->setContentsMargins(0, 4, 0, 0);
+        privLayout->setContentsMargins(0, 8, 0, 0);
         privLayout->setSpacing(8);
         m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI"), privacyGroup);
         m_shareMemoryCheck->setToolTip(tr("Sends your name and milestones to the AI provider with each on-demand event."));
@@ -1441,7 +1461,11 @@ void SettingsPanelWidget::retranslateUi()
     if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
-    m_packLabel->setText(tr("Model"));
+    if (m_packLabel) m_packLabel->setText(tr("Model"));
+    if (m_appGroup) m_appGroup->setTitle(tr("Application"));
+    if (m_characterGroup) m_characterGroup->setTitle(tr("Character"));
+    if (m_interactionGroup) m_interactionGroup->setTitle(tr("Interaction"));
+    if (m_aiFeaturesGroup) m_aiFeaturesGroup->setTitle(tr("AI Features"));
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
     if (m_profileTabBtn) m_profileTabBtn->setText(tr("Profile"));
     if (m_llmTabBtn) m_llmTabBtn->setText(tr("AI"));
