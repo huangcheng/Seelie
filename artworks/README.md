@@ -138,6 +138,29 @@ distribution channels using the same workflow as Qobster and LiteBot:
 - **Internal pack**: `assets/packs/sweetheart-meow/` (manifest.json + animations.json + spritesheet.webp + preview.jpg)
 - **Codex pet**: `codex-pet/sweetheart-meow/` (pet.json + spritesheet.webp — byte-identical atlas)
 
+## QClaw (`codex-pet/qclaw/` → `assets/packs/qclaw/`)
+
+QClaw — an original creature mascot — imported as a built-in sprite-sheet
+pack. Generated as an 8×9 atlas via OpenAI's `hatch-pet` skill, identical
+geometry to the other built-ins (1536×1872, 192×208 cells, 9 animation
+rows). The source `codex-pet/` bundle was created outside this repo and
+delivered as `qclaw.codex-pet.zip`; the import extracted it into both
+distribution channels using the same workflow as Qobster:
+
+- **Internal pack**: `assets/packs/qclaw/` (manifest.json + animations.json + spritesheet.webp)
+- **Codex pet**: `codex-pet/qclaw/` (pet.json + spritesheet.webp — byte-identical atlas)
+
+## QClaw (Clay) (`codex-pet/qclaw-clay/` → `assets/packs/qclaw-clay/`)
+
+QClaw (Clay) — a clay-style variant of the QClaw mascot — imported as a
+built-in sprite-sheet pack. Geometry matches the rest of the built-in
+roster (1536×1872, 192×208 cells, 9 animation rows). The source `codex-pet/`
+bundle was delivered as `qclaw-clay.codex-pet.zip` and imported into both
+distribution channels:
+
+- **Internal pack**: `assets/packs/qclaw-clay/` (manifest.json + animations.json + spritesheet.webp)
+- **Codex pet**: `codex-pet/qclaw-clay/` (pet.json + spritesheet.webp — byte-identical atlas)
+
 ## What does NOT belong here
 
 - The built sprite atlas (`assets/packs/seelie/spritesheet.webp`) — that

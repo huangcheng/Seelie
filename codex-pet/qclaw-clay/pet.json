@@ -1,0 +1,7 @@
+{
+  "id": "qclaw-clay",
+  "displayName": "QClaw (Clay)",
+  "description": "QClaw (Clay)",
+  "spritesheetPath": "spritesheet.webp",
+  "kind": "creature"
+}

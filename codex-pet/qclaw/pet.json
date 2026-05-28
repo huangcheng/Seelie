@@ -1,0 +1,7 @@
+{
+  "id": "qclaw",
+  "displayName": "QClaw",
+  "description": "QClaw",
+  "spritesheetPath": "spritesheet.webp",
+  "kind": "creature"
+}
