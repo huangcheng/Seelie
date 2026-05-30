@@ -462,7 +462,6 @@ target_compile_definitions(Seelie PRIVATE
     PROJECT_VERSION="${PROJECT_VERSION}"
     SEELIE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
     SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}"
-    QT_DEBUG  # Force-enable qDebug() output even in Release builds
 )
 
 # --- Icon resource -----------------------------------------------------------

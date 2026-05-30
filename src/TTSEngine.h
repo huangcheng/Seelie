@@ -103,13 +103,13 @@ private:
     int m_retryCount = 0;
     QTimer *m_retryTimer = nullptr;
 
-    // Audio pipeline. Decoder is recreated per-utterance (Qt 6.11 WMF
-    // backend stops emitting bufferReady on a reused instance after the
-    // first decode). The sink runs in pull mode against m_pcmBuffer: we
-    // accumulate decoded PCM into the buffer as bufferReady fires, then
-    // hand the buffer to QAudioSink::start() once the decoder finishes.
-    // Pull mode lets the sink read at its own pace and eliminates the
-    // short-write loss that push mode produced on Windows.
+    // Audio pipeline. Decoder AND its source QBuffer are recreated per-
+    // utterance (Qt 6.11 WMF backend stops emitting bufferReady on a reused
+    // decoder, and can cache stale state from a reused buffer). The sink runs
+    // in pull mode against m_pcmBuffer: we accumulate decoded PCM into the
+    // buffer as bufferReady fires, then hand the buffer to QAudioSink::start()
+    // once the decoder finishes. Pull mode lets the sink read at its own pace
+    // and eliminates the short-write loss that push mode produced on Windows.
     QBuffer *m_audioBuffer = nullptr;        // MP3 input to the decoder
     QAudioDecoder *m_decoder = nullptr;
     QByteArray m_pcm;                        // accumulated decoded PCM

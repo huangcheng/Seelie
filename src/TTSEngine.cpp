@@ -126,8 +126,9 @@ void TTSEngine::stop()
 void TTSEngine::initOnThread()
 {
     m_nam = new QNetworkAccessManager(this);
-    m_audioBuffer = new QBuffer(this);
-    // Decoder is built lazily in startDecode() — see header for why.
+    // Decoder and its source QBuffer are both recreated per-utterance;
+    // see startDecode() and the header for why (Qt 6.11 WMF backend
+    // caching issues on Windows).
 
     m_retryTimer = new QTimer(this);
     m_retryTimer->setSingleShot(true);
@@ -445,25 +446,33 @@ void TTSEngine::onDecoderFinished()
     m_pcmBuffer->setData(m_pcm);
     m_pcmBuffer->open(QIODevice::ReadOnly);
 
-    m_audioSink = new QAudioSink(QMediaDevices::defaultAudioOutput(),
-                                  m_pcmFormat, this);
+    QAudioDevice outDevice = QMediaDevices::defaultAudioOutput();
+    QAudioFormat sinkFormat = m_pcmFormat;
+    if (!outDevice.isFormatSupported(m_pcmFormat)) {
+        qCWarning(lcTts) << "PCM format not supported by device, trying preferred";
+        sinkFormat = outDevice.preferredFormat();
+        qCInfo(lcTts) << "preferred format:" << sinkFormat;
+    }
+
+    m_audioSink = new QAudioSink(outDevice, sinkFormat, this);
     connect(m_audioSink, &QAudioSink::stateChanged, this,
             [this](QAudio::State s) {
                 qCDebug(lcTts) << "sink state ->" << s;
                 // IdleState after Active means the source ran out — playback
-                // is done. StoppedState means we called stop() ourselves.
-                if (s == QAudio::IdleState) {
+                // is done. StoppedState means we called stop() ourselves or
+                // an error occurred (e.g. format rejected by the backend).
+                if (s == QAudio::IdleState || s == QAudio::StoppedState) {
                     m_speaking = false;
                     emit speakingFinished();
                 }
             });
 
-    qCInfo(lcTts) << "sink start (pull mode), device="
-                  << QMediaDevices::defaultAudioOutput().description();
+    qCInfo(lcTts) << "sink start (pull mode), device=" << outDevice.description()
+                  << "format=" << sinkFormat;
     m_audioSink->start(m_pcmBuffer);
     // QAudioSink::start() in pull mode returns void. A failed start
-    // transitions immediately to StoppedState — the existing stateChanged
-    // handler covers that path. As a safety net, poll the state after
+    // transitions immediately to StoppedState — the stateChanged handler
+    // now covers that path. As a safety net, poll the state after
     // starting: if it's already stopped, the sink never began playback.
     if (m_audioSink->state() == QAudio::StoppedState) {
         qCWarning(lcTts) << "QAudioSink::start() immediately entered StoppedState";
@@ -475,13 +484,14 @@ void TTSEngine::onDecoderFinished()
 
 void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
 {
-    // Recreate the decoder every time. Reusing a single QAudioDecoder across
-    // utterances is unreliable on Qt 6.11's WMF backend (Windows): once a
-    // decode completes or errors, setSourceDevice() + start() on the same
-    // instance frequently produces no bufferReady signals. A fresh decoder
-    // sidesteps that entirely.
+    // Recreate the decoder and its source QBuffer every time. Reusing either
+    // across utterances is unreliable on Qt 6.11's WMF backend (Windows):
+    // the decoder stops emitting bufferReady, and the buffer can retain
+    // cached WMF state that confuses subsequent decodes. Fresh instances
+    // sidestep both issues.
     resetAudio();
 
+    m_audioBuffer = new QBuffer(this);
     m_audioBuffer->setData(audio);
     m_audioBuffer->open(QIODevice::ReadOnly);
 
@@ -533,7 +543,8 @@ void TTSEngine::resetAudio()
     }
     if (m_audioBuffer) {
         m_audioBuffer->close();
-        m_audioBuffer->setData(QByteArray());
+        m_audioBuffer->deleteLater();
+        m_audioBuffer = nullptr;
     }
     m_pcm.clear();
     m_pcmFormat = QAudioFormat{};

@@ -195,22 +195,6 @@ void TipsEngine::initMatchers()
         "explain"
     });
 
-    // 8. Git commands (check tool names)
-    m_matchers.append({
-        "git_commands",
-        [](const QVector<QPair<QString, QDateTime>> &events) {
-            for (const auto &e : events) {
-                if (e.first == CE::ToolBefore || e.first == CE::ToolAfter) {
-                    // Would need to check tool name in data
-                    return false; // Simplified for now
-                }
-            }
-            return false;
-        },
-        tr("Using git?"),
-        tr("It looks like you're working with git. Remember to pull before pushing!"),
-        "explain"
-    });
 }
 
 void TipsEngine::retranslateUi()

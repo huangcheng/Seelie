@@ -31,6 +31,40 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     return f;
 }
 
+// Wrap raw 16-bit mono PCM data in a WAV header.
+static QByteArray writeWavFile(const QByteArray &pcmData, int sampleRate)
+{
+    QByteArray wav;
+    wav.reserve(44 + pcmData.size());
+
+    auto putU32 = [&](quint32 v) {
+        wav.append(char(v & 0xFF));
+        wav.append(char((v >> 8) & 0xFF));
+        wav.append(char((v >> 16) & 0xFF));
+        wav.append(char((v >> 24) & 0xFF));
+    };
+    auto putU16 = [&](quint16 v) {
+        wav.append(char(v & 0xFF));
+        wav.append(char((v >> 8) & 0xFF));
+    };
+
+    wav.append("RIFF");
+    putU32(36 + quint32(pcmData.size()));
+    wav.append("WAVE");
+    wav.append("fmt ");
+    putU32(16);
+    putU16(1);              // PCM
+    putU16(1);              // mono
+    putU32(sampleRate);
+    putU32(sampleRate * 2); // byte rate (16-bit mono)
+    putU16(2);              // block align
+    putU16(16);             // bits per sample
+    wav.append("data");
+    putU32(pcmData.size());
+    wav.append(pcmData);
+    return wav;
+}
+
 } // namespace
 
 // Linker definition for constexpr arrays declared in the header.
@@ -775,35 +809,7 @@ QByteArray ECGWidget::synthesizeBeepWav()
         pcm.append(static_cast<char>((v >> 8) & 0xFF));
     }
 
-    QByteArray wav;
-    wav.reserve(44 + pcm.size());
-
-    auto putU32 = [&](quint32 v) {
-        wav.append(char(v & 0xFF));
-        wav.append(char((v >> 8) & 0xFF));
-        wav.append(char((v >> 16) & 0xFF));
-        wav.append(char((v >> 24) & 0xFF));
-    };
-    auto putU16 = [&](quint16 v) {
-        wav.append(char(v & 0xFF));
-        wav.append(char((v >> 8) & 0xFF));
-    };
-
-    wav.append("RIFF");
-    putU32(36 + pcm.size());
-    wav.append("WAVE");
-    wav.append("fmt ");
-    putU32(16);
-    putU16(1);
-    putU16(1);
-    putU32(sr);
-    putU32(sr * 2);
-    putU16(2);
-    putU16(16);
-    wav.append("data");
-    putU32(pcm.size());
-    wav.append(pcm);
-    return wav;
+    return writeWavFile(pcm, sr);
 }
 
 QByteArray ECGWidget::synthesizeFlatlineWav()
@@ -821,33 +827,5 @@ QByteArray ECGWidget::synthesizeFlatlineWav()
         pcm.append(static_cast<char>((v >> 8) & 0xFF));
     }
 
-    QByteArray wav;
-    wav.reserve(44 + pcm.size());
-
-    auto putU32 = [&](quint32 v) {
-        wav.append(char(v & 0xFF));
-        wav.append(char((v >> 8) & 0xFF));
-        wav.append(char((v >> 16) & 0xFF));
-        wav.append(char((v >> 24) & 0xFF));
-    };
-    auto putU16 = [&](quint16 v) {
-        wav.append(char(v & 0xFF));
-        wav.append(char((v >> 8) & 0xFF));
-    };
-
-    wav.append("RIFF");
-    putU32(36 + pcm.size());
-    wav.append("WAVE");
-    wav.append("fmt ");
-    putU32(16);
-    putU16(1);
-    putU16(1);
-    putU32(sr);
-    putU32(sr * 2);
-    putU16(2);
-    putU16(16);
-    wav.append("data");
-    putU32(pcm.size());
-    wav.append(pcm);
-    return wav;
+    return writeWavFile(pcm, sr);
 }
