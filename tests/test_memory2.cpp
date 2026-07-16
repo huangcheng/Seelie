@@ -5,6 +5,7 @@
 #include <QSqlQuery>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 #include <QCoreApplication>
 
 class TestMemory2 : public QObject {
@@ -66,6 +67,7 @@ private slots:
     }
 
     void testBondLevelThresholds() {
+        // L0: fresh DB starts at 0 XP; addBondXP(0) is a deliberate no-op (delta<=0 guard).
         const int xpFor[] = {0, 50, 150, 400, 1000, 2500};
         for (int lvl = 0; lvl < 6; ++lvl) {
             MemoryManager m(freshDb());
@@ -82,6 +84,8 @@ private slots:
         mem.addBondXP(50);              // crosses into L1
         QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.takeFirst().at(0).toInt(), 1);
+        mem.addBondXP(20);              // 80 XP, still L1 — no new emission
+        QCOMPARE(spy.count(), 0);
     }
 
     void testAddBondXPIgnoresNonPositive() {
@@ -89,6 +93,38 @@ private slots:
         mem.addBondXP(0);
         mem.addBondXP(-5);
         QCOMPARE(mem.bondXP(), 0);
+    }
+
+    // --- Task 3: decaying affection meter ---
+
+    void testAffectionStartsAtZero() {
+        MemoryManager mem(freshDb());
+        QCOMPARE(mem.affection(), 0);
+    }
+
+    void testAddAffectionClamps() {
+        MemoryManager mem(freshDb());
+        mem.addAffection(150);
+        QCOMPARE(mem.affection(), 100);         // clamp high
+        mem.addAffection(-500);
+        QCOMPARE(mem.affection(), 0);           // clamp low
+    }
+
+    void testAffectionDecaysLazily() {
+        MemoryManager mem(freshDb());
+        mem.addAffection(50);
+        // Backdate affection_ts by 4 hours -> expect 50 - 4*5 = 30
+        const qint64 fourHoursAgo = QDateTime::currentMSecsSinceEpoch() - 4LL*3600*1000;
+        QVERIFY(mem.setValue(QStringLiteral("rel.affection_ts"), QString::number(fourHoursAgo)));
+        QCOMPARE(mem.affection(), 30);
+    }
+
+    void testDecayFloorsAtZero() {
+        MemoryManager mem(freshDb());
+        mem.addAffection(3);
+        const qint64 dayAgo = QDateTime::currentMSecsSinceEpoch() - 24LL*3600*1000;
+        QVERIFY(mem.setValue(QStringLiteral("rel.affection_ts"), QString::number(dayAgo)));
+        QCOMPARE(mem.affection(), 0);
     }
 
 private:

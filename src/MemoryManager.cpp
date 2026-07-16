@@ -11,6 +11,9 @@ namespace {
 constexpr int kBondThresholds[] = {0, 50, 150, 400, 1000, 2500};
 constexpr int kBondMaxLevel = 5;
 
+constexpr int kAffectionMax = 100;
+constexpr int kAffectionDecayPerHour = 5;
+
 int levelForXP(int xp) {
     int lvl = 0;
     for (int i = 0; i <= kBondMaxLevel; ++i)
@@ -111,6 +114,27 @@ void MemoryManager::addBondXP(int delta)
     if (now < 0) return;                                               // DB failure — silent
     const int after = levelForXP(now);
     if (after != before) emit bondLevelChanged(after);
+}
+
+int MemoryManager::affection()
+{
+    if (!m_valid) return 0;
+    const int stored = value(QStringLiteral("rel.affection"), QStringLiteral("0")).toInt();
+    const qint64 ts  = value(QStringLiteral("rel.affection_ts"), QStringLiteral("0")).toLongLong();
+    if (ts <= 0) return qBound(0, stored, kAffectionMax);
+    const qint64 elapsedMs = QDateTime::currentMSecsSinceEpoch() - ts;
+    if (elapsedMs <= 0) return qBound(0, stored, kAffectionMax);
+    const int decay = int(elapsedMs * kAffectionDecayPerHour / 3600000LL);
+    return qBound(0, stored - decay, kAffectionMax);
+}
+
+void MemoryManager::addAffection(int delta)
+{
+    if (!m_valid || delta == 0) return;
+    const int next = qBound(0, affection() + delta, kAffectionMax);
+    setValue(QStringLiteral("rel.affection"), QString::number(next));
+    setValue(QStringLiteral("rel.affection_ts"),
+             QString::number(QDateTime::currentMSecsSinceEpoch()));
 }
 
 QString MemoryManager::value(const QString &key, const QString &defaultValue) const
