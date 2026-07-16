@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QDateTime>
 #include <QCoreApplication>
+#include <cstring>
 
 class TestMemory2 : public QObject {
     Q_OBJECT
@@ -215,7 +216,51 @@ private slots:
         QVERIFY(!d.contains(QStringLiteral("line one\n")));
     }
 
+    // --- Task 6: embedding storage + exact cosine recall ---
+
+    void testHasEmbeddings() {
+        MemoryManager mem(freshDb());
+        QVERIFY(!mem.hasEmbeddings());
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("vec ep"),
+                         packVec({1.f, 0.f, 0.f}));
+        QVERIFY(mem.hasEmbeddings());
+    }
+
+    void testCosineRankingOrder() {
+        MemoryManager mem(freshDb());
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("x-axis"),
+                         packVec({1.f, 0.f, 0.f}));
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("y-axis"),
+                         packVec({0.f, 1.f, 0.f}));
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("near-x"),
+                         packVec({0.9f, 0.1f, 0.f}));
+        const auto hits = mem.recallByVector({1.f, 0.f, 0.f}, 2);
+        QCOMPARE(hits.size(), 2);
+        QCOMPARE(hits.at(0).text, QStringLiteral("x-axis"));
+        QCOMPARE(hits.at(1).text, QStringLiteral("near-x"));
+    }
+
+    void testRecallSkipsNullEmbeddings() {
+        MemoryManager mem(freshDb());
+        mem.recordEpisode(QStringLiteral("session"), QStringLiteral("plain"));
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("vec"),
+                         packVec({1.f, 0.f}));
+        const auto hits = mem.recallByVector({1.f, 0.f}, 10);
+        QCOMPARE(hits.size(), 1);
+        QCOMPARE(hits.at(0).text, QStringLiteral("vec"));
+    }
+
 private:
+    static QByteArray packVec(std::initializer_list<float> f) {
+        QByteArray b; b.resize(int(f.size() * sizeof(float)));
+        std::memcpy(b.data(), f.begin(), b.size());
+        return b;
+    }
+    qint64 insertEpisodeRaw(MemoryManager &mem, const QString &kind, const QString &text,
+                            const QByteArray &blob) {
+        return mem.insertEpisodeForTest(kind, text, blob);
+    }
+
     // Unique pristine DB path per call (tests are independent of each other).
     QString freshDb() {
         const QString p = QDir::temp().filePath(QStringLiteral("seelie_t2_%1.db").arg(m_counter++));

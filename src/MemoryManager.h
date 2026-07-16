@@ -68,6 +68,16 @@ public:
     QVector<Episode> recentEpisodes(int limit = 10) const;   // newest first
     int episodeCount() const;
 
+    // --- Embedding storage (Task 6) ---
+    // BLOB layout: raw host-endian float32 array (single-platform user DB; not
+    // portable across architectures, documented here for future migrations).
+    bool hasEmbeddings() const;
+    void setEpisodeEmbedding(qint64 episodeId, const QVector<float> &vec);
+    /// Exact cosine top-k over embedded episodes (brute force; <=2000 rows).
+    QVector<Episode> recallByVector(const QVector<float> &query, int limit = 5) const;
+    /// Test/diagnostic: insert episode with prebuilt embedding blob.
+    qint64 insertEpisodeForTest(const QString &kind, const QString &text, const QByteArray &blob);
+
     int daysMet() const;
     /// Machine-facing English digest for LLM prompts. Uses similarEpisodes()
     /// when embeddings exist (Task 7+), else recentEpisodes(). Never tr().

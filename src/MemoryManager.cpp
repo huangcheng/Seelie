@@ -7,6 +7,10 @@
 #include <QDateTime>
 #include <QDate>
 #include <QStringList>
+#include <QVariant>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 
 namespace {
 // XP thresholds for bond levels L0..L5. Tune here only.
@@ -23,6 +27,28 @@ int levelForXP(int xp) {
     for (int i = 0; i <= kBondMaxLevel; ++i)
         if (xp >= kBondThresholds[i]) lvl = i;
     return lvl;
+}
+
+// Pack a float vector into a raw float32 BLOB (host endianness).
+QByteArray packFloats(const QVector<float> &v) {
+    QByteArray b; b.resize(int(v.size() * sizeof(float)));
+    std::memcpy(b.data(), v.constData(), b.size());
+    return b;
+}
+// Unpack a raw float32 BLOB back into a vector (host endianness).
+QVector<float> unpackFloats(const QByteArray &b) {
+    QVector<float> v; v.resize(b.size() / int(sizeof(float)));
+    std::memcpy(v.data(), b.constData(), b.size() / int(sizeof(float)) * int(sizeof(float)));
+    return v;
+}
+// Cosine similarity in [-1,1]. Returns -2.f sentinel on dimension mismatch
+// or zero-norm vector so callers can filter invalid pairs out.
+float cosine(const QVector<float> &a, const QVector<float> &b) {
+    if (a.isEmpty() || a.size() != b.size()) return -2.f;
+    double dot = 0, na = 0, nb = 0;
+    for (int i = 0; i < a.size(); ++i) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+    if (na <= 0 || nb <= 0) return -2.f;
+    return float(dot / (std::sqrt(na) * std::sqrt(nb)));
 }
 } // namespace
 
@@ -299,6 +325,57 @@ int MemoryManager::episodeCount() const
     QSqlQuery q(m_db);
     if (!q.exec(QStringLiteral("SELECT COUNT(*) FROM episodes")) || !q.next()) return 0;
     return q.value(0).toInt();
+}
+
+bool MemoryManager::hasEmbeddings() const
+{
+    if (!m_valid) return false;
+    QSqlQuery q(m_db);
+    return q.exec(QStringLiteral("SELECT 1 FROM episodes WHERE embedding IS NOT NULL LIMIT 1")) && q.next();
+}
+
+void MemoryManager::setEpisodeEmbedding(qint64 episodeId, const QVector<float> &vec)
+{
+    if (!m_valid || vec.isEmpty()) return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("UPDATE episodes SET embedding=:e WHERE id=:id"));
+    q.bindValue(QStringLiteral(":e"), packFloats(vec));
+    q.bindValue(QStringLiteral(":id"), episodeId);
+    q.exec();
+}
+
+QVector<Episode> MemoryManager::recallByVector(const QVector<float> &query, int limit) const
+{
+    QVector<Episode> out;
+    if (!m_valid || query.isEmpty() || limit <= 0) return out;
+    QSqlQuery q(m_db);
+    if (!q.exec(QStringLiteral("SELECT ts, kind, text, embedding FROM episodes WHERE embedding IS NOT NULL")))
+        return out;
+    struct Scored { Episode ep; float score; };
+    QVector<Scored> scored;
+    while (q.next()) {
+        const float s = cosine(query, unpackFloats(q.value(3).toByteArray()));
+        if (s < -1.5f) continue;   // dimension mismatch / zero vector
+        scored.append({{q.value(0).toLongLong(), q.value(1).toString(), q.value(2).toString()}, s});
+    }
+    std::sort(scored.begin(), scored.end(),
+              [](const Scored &a, const Scored &b){ return a.score > b.score; });
+    for (int i = 0; i < qMin(limit, scored.size()); ++i) out.append(scored[i].ep);
+    return out;
+}
+
+qint64 MemoryManager::insertEpisodeForTest(const QString &kind, const QString &text, const QByteArray &blob)
+{
+    if (!m_valid) return -1;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("INSERT INTO episodes(ts, kind, text, embedding) VALUES(:ts,:k,:t,:e)"));
+    q.bindValue(QStringLiteral(":ts"), QDateTime::currentMSecsSinceEpoch());
+    q.bindValue(QStringLiteral(":k"), kind);
+    q.bindValue(QStringLiteral(":t"), text);
+    if (blob.isEmpty()) q.bindValue(QStringLiteral(":e"), QVariant(QMetaType::fromType<QByteArray>()));
+    else                q.bindValue(QStringLiteral(":e"), blob);
+    if (!q.exec()) return -1;
+    return q.lastInsertId().toLongLong();
 }
 
 int MemoryManager::daysMet() const
