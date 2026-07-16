@@ -25,6 +25,10 @@ public:
     /// Epoch ms of first-ever run with memory v2. 0 if invalid.
     qint64 firstMetTs() const;
 
+    int  bondXP() const;
+    int  bondLevel() const;          // derived from XP; L0..L5
+    void addBondXP(int delta);       // no-op if delta <= 0 or invalid
+
     QString value(const QString &key, const QString &defaultValue = QString()) const;
     bool setValue(const QString &key, const QString &value);
 
@@ -53,6 +57,7 @@ public:
 signals:
     void userNameChanged(const QString &name);
     void milestoneReached(const QString &title, const QString &body);
+    void bondLevelChanged(int newLevel);
 
 private:
     QSqlDatabase m_db;

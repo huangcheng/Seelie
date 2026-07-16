@@ -6,6 +6,19 @@
 #include <QDir>
 #include <QDateTime>
 
+namespace {
+// XP thresholds for bond levels L0..L5. Tune here only.
+constexpr int kBondThresholds[] = {0, 50, 150, 400, 1000, 2500};
+constexpr int kBondMaxLevel = 5;
+
+int levelForXP(int xp) {
+    int lvl = 0;
+    for (int i = 0; i <= kBondMaxLevel; ++i)
+        if (xp >= kBondThresholds[i]) lvl = i;
+    return lvl;
+}
+} // namespace
+
 MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
     : QObject(parent)
     , m_connectionName(QStringLiteral("seelie_memory_%1")
@@ -77,6 +90,27 @@ qint64 MemoryManager::firstMetTs() const
 {
     if (!m_valid) return 0;
     return value(QStringLiteral("rel.first_met_ts")).toLongLong();
+}
+
+int MemoryManager::bondXP() const
+{
+    if (!m_valid) return 0;
+    return value(QStringLiteral("rel.bond_xp")).toInt();
+}
+
+int MemoryManager::bondLevel() const
+{
+    return levelForXP(bondXP());
+}
+
+void MemoryManager::addBondXP(int delta)
+{
+    if (!m_valid || delta <= 0) return;
+    const int before = bondLevel();
+    const int now = increment(QStringLiteral("rel.bond_xp"), delta);   // existing API
+    if (now < 0) return;                                               // DB failure — silent
+    const int after = levelForXP(now);
+    if (after != before) emit bondLevelChanged(after);
 }
 
 QString MemoryManager::value(const QString &key, const QString &defaultValue) const
