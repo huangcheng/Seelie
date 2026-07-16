@@ -48,6 +48,8 @@
 #include <QShowEvent>
 #include <QStandardPaths>
 #include <QDir>
+#include <QDateTime>
+#include <QDate>
 #include <algorithm>
 
 #ifdef Q_OS_WIN
@@ -481,6 +483,15 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             }
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
+            // Poke write (Task 9): throttle to 2s, shared with dblclick via
+            // m_lastPokeWriteMs. Placed before the m_stateMachine split so both
+            // the FSM path and the legacy fallback path count as a poke.
+            const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+            if (m_memory && m_memory->isValid() && nowMs - m_lastPokeWriteMs >= 2000) {
+                m_lastPokeWriteMs = nowMs;
+                m_memory->increment(QStringLiteral("stats.pokes"));
+                m_memory->addAffection(1);
+            }
             // Route mouse-click through FSM so the state machine handles
             // user interaction and can trigger the appropriate animation chain.
             if (m_stateMachine) {
@@ -502,6 +513,14 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
+        // Poke write (Task 9): same throttle/affection logic as mouseReleaseEvent;
+        // m_lastPokeWriteMs is shared so click+dblclick within 2s counts once.
+        const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+        if (m_memory && m_memory->isValid() && nowMs - m_lastPokeWriteMs >= 2000) {
+            m_lastPokeWriteMs = nowMs;
+            m_memory->increment(QStringLiteral("stats.pokes"));
+            m_memory->addAffection(1);
+        }
         if (m_stateMachine) {
             m_stateMachine->onSyntheticEvent(QStringLiteral("user.doubleclick"));
             showRandomGreeting();
@@ -892,6 +911,18 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
         }, Qt::QueuedConnection);
     }
 
+    // (a2) EventRouter → MainWindow::onEventForMemory: Pet Memory 2.0 session
+    // bookkeeping (daily-login reward, session-end episodes, bond XP). Mirrors
+    // the (a) connect's signal signature: eventProcessed carries (name, payload);
+    // we forward name only. setPersonaEngine runs after both setMemoryManager
+    // and setEventRouter, so both pointers are guaranteed set here.
+    if (m_eventRouter) {
+        connect(m_eventRouter, &EventRouter::eventProcessed,
+                this, [this](const QString &name, const QJsonObject &) {
+            onEventForMemory(name);
+        });
+    }
+
     // (b) MemoryManager::milestoneReached → PersonaEngine
     if (m_memory) {
         connect(m_memory, &MemoryManager::milestoneReached,
@@ -931,6 +962,32 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
     //     in (a) for why we deferred speaking in the first place.
     connect(m_personaEngine, &PersonaEngine::tipUpgradeFailed,
             this, &MainWindow::onTipUpgradeFailed);
+}
+
+void MainWindow::onEventForMemory(const QString &eventName)
+{
+    if (!m_memory || !m_memory->isValid()) return;
+    ++m_sessionEventCount;
+    if (eventName == QLatin1String("session.start")) {
+        m_sessionStartMs = QDateTime::currentMSecsSinceEpoch();
+        m_sessionEventCount = 0;
+        // Daily login reward (once per calendar day)
+        const QString today = QDate::currentDate().toString(Qt::ISODate);
+        if (m_memory->value(QStringLiteral("rel.last_seen_day")) != today) {
+            m_memory->setValue(QStringLiteral("rel.last_seen_day"), today);
+            m_memory->addBondXP(5);
+        }
+    } else if (eventName == QLatin1String("session.end")) {
+        m_memory->increment(QStringLiteral("stats.sessions"));
+        m_memory->addBondXP(2);
+        const qint64 ms = QDateTime::currentMSecsSinceEpoch() - m_sessionStartMs;
+        if (m_sessionStartMs > 0 && ms >= 30LL * 60 * 1000) {
+            const int h = int(ms / 3600000), m = int(ms % 3600000 / 60000);
+            m_memory->recordEpisode(QStringLiteral("session"),
+                tr("%1h %2m, %3 events").arg(h).arg(m).arg(m_sessionEventCount));
+        }
+        m_sessionStartMs = 0;
+    }
 }
 
 void MainWindow::onTipUpgraded(quint64 requestId, const QString &newText)

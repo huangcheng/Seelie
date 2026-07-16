@@ -117,6 +117,7 @@ private slots:
     void onFullscreenStopped();
     void onTipUpgraded(quint64 requestId, const QString &newText);
     void onTipUpgradeFailed(quint64 requestId);
+    void onEventForMemory(const QString &eventName);
 
 private:
     void setupWindowFlags();
@@ -181,6 +182,11 @@ private:
     // bumps it; the 500 ms post-load crop lambda compares its captured value
     // against the current one and bails if it's been superseded.
     int m_packLoadId = 0;
+
+    // Pet Memory 2.0 (Task 9): session bookkeeping for episode/bond writes.
+    qint64 m_sessionStartMs = 0;
+    int    m_sessionEventCount = 0;
+    qint64 m_lastPokeWriteMs = 0;   // shared throttle across click + dblclick
 
 #ifdef Q_OS_WIN
     // Windows DWM can lose window attributes after long-running sessions

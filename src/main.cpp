@@ -43,6 +43,9 @@
 #include "TipsCatalog.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
+#include "EmbeddingService.h"
+#include "llm/LLMProvider.h"
+#include "llm/LLMProfile.h"
 #include "SettingsPanelWidget.h"
 
 static QString configDir() {
@@ -442,6 +445,47 @@ int main(int argc, char *argv[])
                      &w, [&w](const QString &title, const QString &body) {
         w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
     });
+
+    // Milestones also become episodes
+    QObject::connect(&memory, &MemoryManager::milestoneReached,
+                     &memory, [&memory](const QString &title, const QString &) {
+        memory.recordEpisode(QStringLiteral("milestone"), title);
+    });
+    // Bond level ups surface as tip bubbles
+    QObject::connect(&memory, &MemoryManager::bondLevelChanged,
+                     &w, [&w](int level) {
+        w.tipWidget()->showBubble(QObject::tr("Bond level up!"),
+            QObject::tr("Seelie feels closer to you (Lv %1).").arg(level),
+            TipWidget::TipBubble);
+    });
+
+    // Embedding service (gated: persona AI + memory sharing).
+    // Resolves the active LLM profile exactly how
+    // PersonaEngine::refreshActiveProfile does (config.personaProfile() →
+    // match by name in config.llmProfiles()). Only stands up the worker for
+    // OpenAI-Chat endpoints with a full config, since embedTextSync returns
+    // empty for Anthropic / OpenAI Responses (the embeddings endpoint is
+    // OpenAI-chat only). Task 10 will enqueue embedding jobs for new episodes.
+    EmbeddingService *embedSvc = nullptr;
+    if (config.personaEnabled() && config.shareMemoryWithAi()) {
+        LLMProfile prof;
+        const QString profName = config.personaProfile();
+        if (!profName.isEmpty()) {
+            for (const auto &p : config.llmProfiles()) {
+                if (p.name == profName) { prof = p; break; }
+            }
+        }
+        if (prof.protocol == LLMProfile::Protocol::OpenAIChat
+            && !prof.baseUrl.isEmpty() && !prof.apiKey.isEmpty()
+            && !prof.model.isEmpty()) {
+            embedSvc = new EmbeddingService(&memory,
+                [prof](const QString &text, QString *err) {
+                    return LLMProvider::embedTextSync(prof, text, err);
+                }, &a);
+        }
+    }
+    // Task 10: enqueue embeddings for new episodes
+    Q_UNUSED(embedSvc)
 
     // Restart IPC server when port changes
     QObject::connect(&config, &ConfigManager::ipcEndpointChanged,
