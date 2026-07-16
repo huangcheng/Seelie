@@ -421,6 +421,8 @@ qt_add_executable(Seelie
     src/PersonaPool.cpp
     src/PersonaEngine.h
     src/PersonaEngine.cpp
+    src/EmbeddingService.h
+    src/EmbeddingService.cpp
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.h>
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITTSProvider.h>

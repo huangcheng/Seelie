@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QUrl>
 #include <QDateTime>
+#include <QEventLoop>
 #include <memory>
 
 LLMProvider::LLMProvider(QObject *parent)
@@ -289,4 +290,71 @@ void LLMProvider::wireReply(QNetworkReply *reply, ResultCallback cb)
     });
 
     timeout->start();
+}
+
+// --- Blocking embeddings (worker-thread safe) ------------------------------
+
+QVector<float> LLMProvider::embedTextSync(const LLMProfile &profile, const QString &text,
+                                          QString *errorOut)
+{
+    auto fail = [errorOut](const QString &m) -> QVector<float> {
+        if (errorOut) *errorOut = m;
+        return {};
+    };
+
+    // Only the OpenAI-chat protocol shape has an /embeddings endpoint we speak.
+    if (profile.protocol != LLMProfile::Protocol::OpenAIChat)
+        return fail(QStringLiteral("embeddings unsupported for this protocol"));
+
+    // Local QNetworkAccessManager: thread-affine to whichever thread invokes
+    // us (the EmbeddingService worker thread in production). Intentionally
+    // NOT shared with the main-thread m_nam of LLMProvider instances.
+    QNetworkAccessManager nam;
+    QUrl url(profile.baseUrl + QStringLiteral("/embeddings"));
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("Authorization", ("Bearer " + profile.apiKey).toUtf8());
+
+    QJsonObject body;
+    body["model"] = profile.model;
+    body["input"]  = text;
+
+    QNetworkReply *reply = nam.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+
+    // Bounded blocking wait. 15s mirrors a typical embeddings round-trip
+    // ceiling; longer than the chat default (5s) because embedding batches
+    // can be larger.
+    QEventLoop loop;
+    QTimer timer;
+    timer.setSingleShot(true);
+    timer.start(15000);
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    if (!timer.isActive()) {
+        reply->abort();
+        reply->deleteLater();
+        return fail(QStringLiteral("timeout"));
+    }
+
+    const QByteArray data = reply->readAll();
+    const int status = reply->attribute(
+        QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    reply->deleteLater();
+
+    if (status / 100 != 2)
+        return fail(QStringLiteral("http %1").arg(status));
+
+    const QJsonObject root = QJsonDocument::fromJson(data).object();
+    const QJsonArray arr = root.value("data").toArray()
+                               .first().toObject().value("embedding").toArray();
+    if (arr.isEmpty())
+        return fail(QStringLiteral("empty embedding"));
+
+    QVector<float> out;
+    out.reserve(arr.size());
+    for (const QJsonValue &v : arr)
+        out.append(float(v.toDouble()));
+    return out;
 }

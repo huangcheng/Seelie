@@ -57,6 +57,15 @@ public:
     /// Last error string from the most recent failed call. For Settings UI.
     QString lastError() const { return m_lastError; }
 
+    /// Blocking embeddings call (OpenAI-compatible /embeddings only).
+    /// Safe to call from a worker thread: creates its own QNetworkAccessManager
+    /// local to the calling thread. Returns an empty vector on any failure
+    /// (errOut, if set, is filled with a short reason). Anthropic and OpenAI
+    /// Responses protocols are unsupported (embeddings endpoint is OpenAI-chat
+    /// only) and return empty. Not unit-tested (network) — production glue.
+    static QVector<float> embedTextSync(const LLMProfile &profile, const QString &text,
+                                        QString *errorOut = nullptr);
+
 private:
     QNetworkReply *sendOpenAiChat(const QString &system, const QString &user);
     QNetworkReply *sendOpenAiResponses(const QString &system, const QString &user);

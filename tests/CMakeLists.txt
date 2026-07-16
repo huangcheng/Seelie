@@ -191,8 +191,8 @@ endif()
 add_executable(test_memory2
     test_memory2.cpp
     ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
-)
-target_link_libraries(test_memory2 PRIVATE Qt::Sql Qt::Core Qt::Test)
+    ${CMAKE_SOURCE_DIR}/src/EmbeddingService.cpp)
+target_link_libraries(test_memory2 PRIVATE Qt::Core Qt::Sql Qt::Network Qt::Test)
 target_include_directories(test_memory2 PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME test_memory2 COMMAND test_memory2)
 if(WIN32)

@@ -1,4 +1,5 @@
 #include "MemoryManager.h"
+#include "EmbeddingService.h"
 #include <QtTest/QtTest>
 #include <QSignalSpy>
 #include <QSqlDatabase>
@@ -331,6 +332,40 @@ private slots:
         insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("vec"),
                          packVec({1.f}));
         QCOMPARE(mem.recallByVector({}, 5).size(), 0);
+    }
+
+    // --- Task 8: async EmbeddingService with injectable embed fn ---
+
+    void testEmbeddingServiceFillsRows() {
+        MemoryManager mem(freshDb());
+        const qint64 id = mem.insertEpisodeForTest(QStringLiteral("session"),
+                                                   QStringLiteral("embed me"), {});
+        // Fake embedder: deterministic 2-D vector from text length (no network).
+        EmbeddingService svc(&mem, [](const QString &text, QString *) {
+            return QVector<float>{float(text.size() % 7) + 1.f, 1.f};
+        });
+        svc.enqueueEpisode(id, QStringLiteral("embed me"));
+        QTRY_VERIFY_WITH_TIMEOUT(mem.hasEmbeddings(), 5000);
+        const auto hits = mem.recallByVector({6.f, 1.f}, 1);
+        QCOMPARE(hits.size(), 1);
+        QCOMPARE(hits.at(0).text, QStringLiteral("embed me"));
+    }
+
+    void testEmbeddingServiceSurvivesFailure() {
+        MemoryManager mem(freshDb());
+        const qint64 id = mem.insertEpisodeForTest(QStringLiteral("session"),
+                                                   QStringLiteral("will fail"), {});
+        EmbeddingService svc(&mem, [](const QString &, QString *err) {
+            if (err) *err = QStringLiteral("boom");
+            return QVector<float>{};
+        });
+        svc.enqueueEpisode(id, QStringLiteral("will fail"));
+        // Give the worker a beat; row must stay NULL-embedded, service alive.
+        QTest::qWait(300);
+        QVERIFY(!mem.hasEmbeddings());
+        svc.enqueueEpisode(id, QStringLiteral("will fail"));   // still callable
+        QTest::qWait(300);
+        QVERIFY(!mem.hasEmbeddings());
     }
 
 private:

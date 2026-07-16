@@ -1,0 +1,85 @@
+#include "EmbeddingService.h"
+#include "MemoryManager.h"
+
+// --- EmbeddingWorker (lives on m_thread) -----------------------------------
+//
+// Runs ONLY the injected embed fn and emits embedded()/failed(). Holds no DB
+// state and never touches SQLite — that's the main thread's job. The fn is
+// assumed pure / thread-safe (production: LLMProvider::embedTextSync, which
+// spins up its own QNetworkAccessManager on the calling thread).
+
+void EmbeddingWorker::onJob(qint64 episodeId, const QString &text)
+{
+    // Runs on m_thread. m_fn is the only thing executed here; the result is
+    // marshalled back via signal so the main thread applies the DB write.
+    QString err;
+    QVector<float> vec = m_fn(text, &err);
+    if (vec.isEmpty())
+        emit failed(episodeId);
+    else
+        emit embedded(episodeId, vec);
+}
+
+// --- EmbeddingService (main thread) ----------------------------------------
+
+EmbeddingService::EmbeddingService(MemoryManager *memory, EmbedFn fn, QObject *parent)
+    : QObject(parent), m_memory(memory)
+{
+    // Worker is intentionally NOT parented to `this`: it lives on m_thread and
+    // would otherwise be destroyed on the wrong thread by ~QObject. We delete
+    // it manually in the destructor after the thread has joined. (TTSEngine
+    // uses a queued-cleanup + moveToThread-back dance because the engine
+    // itself is the worker; here the worker is a separate object so a plain
+    // quit/wait/delete is sufficient and bulletproof.)
+    m_worker = new EmbeddingWorker(std::move(fn));
+    m_worker->moveToThread(&m_thread);
+
+    // main -> worker (auto => queued across threads)
+    connect(this, &EmbeddingService::jobRequested, m_worker, &EmbeddingWorker::onJob);
+
+    // worker -> main (auto => queued across threads): apply DB writes here,
+    // on the main thread, never inside the worker.
+    connect(m_worker, &EmbeddingWorker::embedded, this, [this](qint64 id, const QVector<float> &vec) {
+        if (m_pending > 0) --m_pending;
+        if (id < 0) {
+            // Digest-query job: store under the shared key and notify.
+            if (m_memory)
+                m_memory->setQueryEmbedding(MemoryManager::kDigestQueryKey, vec);
+            emit digestEmbeddingReady(vec);
+        } else {
+            if (m_memory)
+                m_memory->setEpisodeEmbedding(id, vec);
+        }
+    });
+    connect(m_worker, &EmbeddingWorker::failed, this, [this](qint64) {
+        if (m_pending > 0) --m_pending;
+        // Silent: row keeps NULL embedding.
+    });
+
+    m_thread.start();
+}
+
+EmbeddingService::~EmbeddingService()
+{
+    // Drain: queued pending jobs run before quit() takes effect (FIFO event
+    // queue). wait(3000) bounds total shutdown time.
+    m_thread.quit();
+    m_thread.wait(3000);
+    // Thread is now joined; safe to delete the worker from the main thread.
+    delete m_worker;
+    m_worker = nullptr;
+}
+
+void EmbeddingService::enqueueEpisode(qint64 episodeId, const QString &text)
+{
+    if (text.isEmpty()) return;
+    if (m_pending >= kMaxQueue) return;   // backpressure: drop overflow silently
+    ++m_pending;
+    emit jobRequested(episodeId, text);
+}
+
+void EmbeddingService::requestDigestEmbedding(const QString &contextText)
+{
+    // id < 0 marks this as a digest-query job in the main-thread apply handler.
+    enqueueEpisode(-1, contextText);
+}
