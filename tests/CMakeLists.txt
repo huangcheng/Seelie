@@ -186,3 +186,19 @@ if(WIN32)
     set_tests_properties(test_memory_manager PROPERTIES
         ENVIRONMENT "PATH=${_qt_bin_dir}\\;${_ctest_path}")
 endif()
+
+# --- MemoryManager v2 migration test (standalone — mirrors block above) -----
+add_executable(test_memory2
+    test_memory2.cpp
+    ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
+)
+target_link_libraries(test_memory2 PRIVATE Qt::Sql Qt::Core Qt::Test)
+target_include_directories(test_memory2 PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_memory2 COMMAND test_memory2)
+if(WIN32)
+    get_target_property(_qt_qmake_loc Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
+    string(REPLACE ";" "\\;" _ctest_path "$ENV{PATH}")
+    set_tests_properties(test_memory2 PROPERTIES
+        ENVIRONMENT "PATH=${_qt_bin_dir}\\;${_ctest_path}")
+endif()

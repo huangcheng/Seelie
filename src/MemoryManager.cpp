@@ -4,6 +4,7 @@
 #include <QThread>
 #include <QtGlobal>
 #include <QDir>
+#include <QDateTime>
 
 MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
     : QObject(parent)
@@ -26,12 +27,58 @@ MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
         qWarning() << "MemoryManager: failed to create table:" << q.lastError().text();
         m_valid = false;
     }
+
+    // --- v2 migration (user_version 0 -> 1): episodes table + first_met seed ---
+    QSqlQuery vq(m_db);
+    if (vq.exec(QStringLiteral("PRAGMA user_version")) && vq.next()) {
+        const int version = vq.value(0).toInt();
+        if (version < 1) {
+            QSqlQuery mig(m_db);
+            mig.exec(QStringLiteral(
+                "CREATE TABLE IF NOT EXISTS episodes ("
+                " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                " ts INTEGER NOT NULL,"
+                " kind TEXT NOT NULL,"
+                " text TEXT NOT NULL,"
+                " embedding BLOB)"));
+            mig.exec(QStringLiteral(
+                "CREATE INDEX IF NOT EXISTS idx_episodes_ts ON episodes(ts)"));
+            // Seed first_met only if absent (preserve across upgrades)
+            QSqlQuery seed(m_db);
+            seed.prepare(QStringLiteral(
+                "INSERT OR IGNORE INTO memory(key, value) VALUES('rel.first_met_ts', :v)"));
+            seed.bindValue(QStringLiteral(":v"),
+                           QString::number(QDateTime::currentMSecsSinceEpoch()));
+            seed.exec();
+            QSqlQuery uv(m_db);
+            uv.exec(QStringLiteral("PRAGMA user_version = 1"));
+        }
+    }
 }
 
 MemoryManager::~MemoryManager()
 {
     m_db.close();
     QSqlDatabase::removeDatabase(m_connectionName);
+}
+
+bool MemoryManager::hasTable(const QString &table) const
+{
+    if (!m_valid) return false;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT 1 FROM sqlite_master WHERE type='table' AND name=:t"));
+    q.bindValue(QStringLiteral(":t"), table);
+    return q.exec() && q.next();
+}
+
+qint64 MemoryManager::firstMetTs() const
+{
+    if (!m_valid) return 0;
+    // value() is non-const in v1; use a direct query here to stay const.
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral("SELECT value FROM memory WHERE key='rel.first_met_ts'"));
+    if (!q.exec() || !q.next()) return 0;
+    return q.value(0).toLongLong();
 }
 
 QString MemoryManager::value(const QString &key, const QString &defaultValue) const
