@@ -30,6 +30,7 @@ class IPCServer;
 class PetStateMachine;
 class GlobalShortcutManager;
 class PersonaEngine;
+class EmbeddingService;
 
 class QTranslator;
 class SystemTray;
@@ -63,6 +64,7 @@ public:
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
     void setMemoryManager(MemoryManager *memory);
     void setPersonaEngine(PersonaEngine *engine);
+    void setEmbeddingService(EmbeddingService *s);
 
     /// Fan out a named animation through Live2D > Lottie > Sprite engines.
     void dispatchAnimation(const QString &anim,
@@ -123,6 +125,7 @@ private:
     void setupWindowFlags();
     void reloadTranslator(const QString &lang);
     void showRandomGreeting();
+    void tryRecordPoke();
 
     QRect petRect() const;
     bool isInPetRect(const QPoint &pos) const;
@@ -147,6 +150,7 @@ private:
     GlobalShortcutManager *m_shortcutManager = nullptr;
     MemoryManager *m_memory = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
+    EmbeddingService *m_embeddingService = nullptr;
     quint64 m_activeBubbleRequestId = 0;
     // Catalog body for the current bubble — used as TTS fallback if the
     // persona LLM call for this requestId fails. Captured at event-route

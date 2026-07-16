@@ -238,6 +238,10 @@ Please restart Seelie for changes to take full effect.</source>
         <source>Import Failed</source>
         <translation>导入失败</translation>
     </message>
+    <message>
+        <source>%1h %2m, %3 events</source>
+        <translation>%1 小时 %2 分，%3 个事件</translation>
+    </message>
 </context>
 <context>
     <name>PackCategories</name>
@@ -414,6 +418,14 @@ Path: %2</source>
     <message>
         <source>Voice</source>
         <translation>音色</translation>
+    </message>
+    <message>
+        <source>Bond level up!</source>
+        <translation>羁绊升级！</translation>
+    </message>
+    <message>
+        <source>Seelie feels closer to you (Lv %1).</source>
+        <translation>Seelie 感觉和你更亲近了（Lv %1）。</translation>
     </message>
 </context>
 <context>

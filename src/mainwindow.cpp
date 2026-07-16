@@ -22,6 +22,7 @@
 #include "PetStateMachine.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
+#include "EmbeddingService.h"
 #include "StatisticsDialog.h"
 #include "ConfigExporter.h"
 #include "ConfigImporter.h"
@@ -483,15 +484,11 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             }
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
-            // Poke write (Task 9): throttle to 2s, shared with dblclick via
-            // m_lastPokeWriteMs. Placed before the m_stateMachine split so both
-            // the FSM path and the legacy fallback path count as a poke.
-            const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-            if (m_memory && m_memory->isValid() && nowMs - m_lastPokeWriteMs >= 2000) {
-                m_lastPokeWriteMs = nowMs;
-                m_memory->increment(QStringLiteral("stats.pokes"));
-                m_memory->addAffection(1);
-            }
+            // Poke write (Task 9 → Task 10 Rider B): throttle extracted to
+            // tryRecordPoke() (2s cooldown shared with dblclick). Placed before
+            // the m_stateMachine split so both the FSM path and the legacy
+            // fallback path count as a poke.
+            tryRecordPoke();
             // Route mouse-click through FSM so the state machine handles
             // user interaction and can trigger the appropriate animation chain.
             if (m_stateMachine) {
@@ -513,14 +510,10 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
-        // Poke write (Task 9): same throttle/affection logic as mouseReleaseEvent;
-        // m_lastPokeWriteMs is shared so click+dblclick within 2s counts once.
-        const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-        if (m_memory && m_memory->isValid() && nowMs - m_lastPokeWriteMs >= 2000) {
-            m_lastPokeWriteMs = nowMs;
-            m_memory->increment(QStringLiteral("stats.pokes"));
-            m_memory->addAffection(1);
-        }
+        // Poke write (Task 9 → Task 10 Rider B): same throttle/affection logic
+        // as mouseReleaseEvent; m_lastPokeWriteMs is shared so click+dblclick
+        // within 2s counts once.
+        tryRecordPoke();
         if (m_stateMachine) {
             m_stateMachine->onSyntheticEvent(QStringLiteral("user.doubleclick"));
             showRandomGreeting();
@@ -872,6 +865,11 @@ void MainWindow::setMemoryManager(MemoryManager *memory)
     }
 }
 
+void MainWindow::setEmbeddingService(EmbeddingService *s)
+{
+    m_embeddingService = s;
+}
+
 void MainWindow::setPersonaEngine(PersonaEngine *engine)
 {
     m_personaEngine = engine;
@@ -964,6 +962,18 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
             this, &MainWindow::onTipUpgradeFailed);
 }
 
+void MainWindow::tryRecordPoke()
+{
+    // Shared poke throttle (Task 10, Rider B): 2s cooldown across click +
+    // dblclick via m_lastPokeWriteMs. Extracted from the per-handler duplicates.
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (m_memory && m_memory->isValid() && nowMs - m_lastPokeWriteMs >= 2000) {
+        m_lastPokeWriteMs = nowMs;
+        m_memory->increment(QStringLiteral("stats.pokes"));
+        m_memory->addAffection(1);
+    }
+}
+
 void MainWindow::onEventForMemory(const QString &eventName)
 {
     if (!m_memory || !m_memory->isValid()) return;
@@ -983,8 +993,9 @@ void MainWindow::onEventForMemory(const QString &eventName)
         const qint64 ms = QDateTime::currentMSecsSinceEpoch() - m_sessionStartMs;
         if (m_sessionStartMs > 0 && ms >= 30LL * 60 * 1000) {
             const int h = int(ms / 3600000), m = int(ms % 3600000 / 60000);
-            m_memory->recordEpisode(QStringLiteral("session"),
-                tr("%1h %2m, %3 events").arg(h).arg(m).arg(m_sessionEventCount));
+            const QString text = tr("%1h %2m, %3 events").arg(h).arg(m).arg(m_sessionEventCount);
+            const qint64 id = m_memory->recordEpisode(QStringLiteral("session"), text);
+            if (m_embeddingService && id >= 0) m_embeddingService->enqueueEpisode(id, text);
         }
         m_sessionStartMs = 0;
     }

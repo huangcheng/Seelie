@@ -446,11 +446,6 @@ int main(int argc, char *argv[])
         w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
     });
 
-    // Milestones also become episodes
-    QObject::connect(&memory, &MemoryManager::milestoneReached,
-                     &memory, [&memory](const QString &title, const QString &) {
-        memory.recordEpisode(QStringLiteral("milestone"), title);
-    });
     // Bond level ups surface as tip bubbles
     QObject::connect(&memory, &MemoryManager::bondLevelChanged,
                      &w, [&w](int level) {
@@ -465,7 +460,7 @@ int main(int argc, char *argv[])
     // match by name in config.llmProfiles()). Only stands up the worker for
     // OpenAI-Chat endpoints with a full config, since embedTextSync returns
     // empty for Anthropic / OpenAI Responses (the embeddings endpoint is
-    // OpenAI-chat only). Task 10 will enqueue embedding jobs for new episodes.
+    // OpenAI-chat only). Episode enqueue jobs are wired up just below.
     EmbeddingService *embedSvc = nullptr;
     if (config.personaEnabled() && config.shareMemoryWithAi()) {
         LLMProfile prof;
@@ -484,8 +479,18 @@ int main(int argc, char *argv[])
                 }, &a);
         }
     }
-    // Task 10: enqueue embeddings for new episodes
-    Q_UNUSED(embedSvc)
+    // Milestones also become episodes — placed AFTER embedSvc construction so
+    // the capture can enqueue an embedding job for the new episode row.
+    // (Was previously before embedSvc was declared; moved here in Task 10.)
+    QObject::connect(&memory, &MemoryManager::milestoneReached,
+                     &memory, [&memory, embedSvc](const QString &title, const QString &) {
+        const qint64 id = memory.recordEpisode(QStringLiteral("milestone"), title);
+        if (embedSvc && id >= 0) embedSvc->enqueueEpisode(id, title);
+    });
+
+    // Wire the embedding service into MainWindow so session.end episodes can
+    // enqueue too. Setter stores the pointer as-is (nullptr when ungated).
+    w.setEmbeddingService(embedSvc);
 
     // Restart IPC server when port changes
     QObject::connect(&config, &ConfigManager::ipcEndpointChanged,
@@ -609,5 +614,13 @@ int main(int argc, char *argv[])
         StatisticsManager::instance()->saveAll();
     });
 
-    return a.exec();
+    const int rc = a.exec();
+    // Rider A (Task 9 review I-1): tear down the embedding worker BEFORE the
+    // MemoryManager stack object goes out of scope. EmbeddingService::~ stops
+    // its worker thread (quit + wait) and the worker's pending results were
+    // already delivered back to the main thread; deleting here avoids a
+    // use-after-free when `memory` is destroyed on function return.
+    delete embedSvc;
+    embedSvc = nullptr;
+    return rc;
 }
