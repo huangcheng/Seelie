@@ -26,10 +26,12 @@ private slots:
     }
 
     void testFirstMetSeededOnce() {
-        MemoryManager mem(m_dbPath);
-        const qint64 first = mem.firstMetTs();
-        QVERIFY(first > 0);
-        // Reopen — value must not change
+        qint64 first;
+        {
+            MemoryManager mem(m_dbPath);
+            first = mem.firstMetTs();
+            QVERIFY(first > 0);
+        }  // mem destroyed, connection removed
         MemoryManager mem2(m_dbPath);
         QCOMPARE(mem2.firstMetTs(), first);
     }

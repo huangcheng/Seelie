@@ -28,6 +28,8 @@ MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
         m_valid = false;
     }
 
+    if (!m_valid) return;   // v1 table failed — don't run v2 migration on a broken DB
+
     // --- v2 migration (user_version 0 -> 1): episodes table + first_met seed ---
     QSqlQuery vq(m_db);
     if (vq.exec(QStringLiteral("PRAGMA user_version")) && vq.next()) {
@@ -74,11 +76,7 @@ bool MemoryManager::hasTable(const QString &table) const
 qint64 MemoryManager::firstMetTs() const
 {
     if (!m_valid) return 0;
-    // value() is non-const in v1; use a direct query here to stay const.
-    QSqlQuery q(m_db);
-    q.prepare(QStringLiteral("SELECT value FROM memory WHERE key='rel.first_met_ts'"));
-    if (!q.exec() || !q.next()) return 0;
-    return q.value(0).toLongLong();
+    return value(QStringLiteral("rel.first_met_ts")).toLongLong();
 }
 
 QString MemoryManager::value(const QString &key, const QString &defaultValue) const
