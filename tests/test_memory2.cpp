@@ -171,6 +171,41 @@ private slots:
         QCOMPARE(mem.recentEpisodes(1).first().text, QStringLiteral("ep 2004"));
     }
 
+    // --- Task 5: daysMet + memory digest (recency mode) ---
+
+    void testDaysMet() {
+        MemoryManager mem(freshDb());
+        QCOMPARE(mem.daysMet(), 0);   // first_met is today
+        // Backdate first_met by 10 days
+        const qint64 tenDaysAgo = QDateTime::currentMSecsSinceEpoch() - 10LL*24*3600*1000;
+        QVERIFY(mem.setValue(QStringLiteral("rel.first_met_ts"), QString::number(tenDaysAgo)));
+        QCOMPARE(mem.daysMet(), 10);
+    }
+
+    void testDigestContainsCoreFacts() {
+        MemoryManager mem(freshDb());
+        mem.setUserName(QStringLiteral("Alex"));   // setUserName returns void
+        mem.addBondXP(200);           // L2
+        mem.addAffection(63);
+        mem.increment(QStringLiteral("stats.sessions"), 18);
+        mem.recordEpisode(QStringLiteral("session"), QStringLiteral("3h 12m, 42 events"));
+        const QString d = mem.memoryDigest();
+        QVERIFY(d.contains(QStringLiteral("Alex")));
+        QVERIFY(d.contains(QStringLiteral("L2")));
+        QVERIFY(d.contains(QStringLiteral("Affection 63")));
+        QVERIFY(d.contains(QStringLiteral("Sessions 18")));
+        QVERIFY(d.contains(QStringLiteral("3h 12m, 42 events")));
+        QVERIFY(d.length() <= 600);
+    }
+
+    void testDigestRespectsMaxChars() {
+        MemoryManager mem(freshDb());
+        for (int i = 0; i < 50; ++i)
+            mem.recordEpisode(QStringLiteral("session"),
+                QStringLiteral("a fairly long episode line number %1 with padding text").arg(i));
+        QVERIFY(mem.memoryDigest(300).length() <= 300);
+    }
+
 private:
     // Unique pristine DB path per call (tests are independent of each other).
     QString freshDb() {

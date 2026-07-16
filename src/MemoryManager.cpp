@@ -5,6 +5,8 @@
 #include <QtGlobal>
 #include <QDir>
 #include <QDateTime>
+#include <QDate>
+#include <QStringList>
 
 namespace {
 // XP thresholds for bond levels L0..L5. Tune here only.
@@ -297,6 +299,40 @@ int MemoryManager::episodeCount() const
     QSqlQuery q(m_db);
     if (!q.exec(QStringLiteral("SELECT COUNT(*) FROM episodes")) || !q.next()) return 0;
     return q.value(0).toInt();
+}
+
+int MemoryManager::daysMet() const
+{
+    const qint64 first = firstMetTs();
+    if (first <= 0) return 0;
+    return int(QDateTime::fromMSecsSinceEpoch(first).date().daysTo(QDate::currentDate()));
+}
+
+QString MemoryManager::memoryDigest(int maxChars) const
+{
+    if (!m_valid || maxChars <= 0) return QString();
+    const QString name = effectiveName();   // v1 API: displayName -> userName -> OS user
+    QStringList lines;
+    lines << QStringLiteral("Known %1 for %2 days.")
+                 .arg(name.isEmpty() ? QStringLiteral("the user") : name)
+                 .arg(daysMet());
+    lines << QStringLiteral("Bond L%1 (%2 XP). Affection %3/100.")
+                 .arg(bondLevel()).arg(bondXP()).arg(affection());
+    const int sessions = value(QStringLiteral("stats.sessions"), QStringLiteral("0")).toInt();
+    lines << QStringLiteral("Sessions %1.").arg(sessions);
+    const auto eps = recentEpisodes(10);
+    if (!eps.isEmpty()) {
+        lines << QStringLiteral("Memories:");
+        for (const Episode &e : eps) lines << QStringLiteral("- ") + e.text;
+    }
+    // Task 7 upgrades the episode selection to similarity-ranked when embedded.
+    QString out;
+    for (const QString &l : lines) {
+        if (out.length() + l.length() + 1 > maxChars) break;
+        if (!out.isEmpty()) out += QLatin1Char('\n');
+        out += l;
+    }
+    return out;
 }
 
 void MemoryManager::enforceEpisodeCap()

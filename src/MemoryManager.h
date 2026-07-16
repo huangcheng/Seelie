@@ -68,6 +68,11 @@ public:
     QVector<Episode> recentEpisodes(int limit = 10) const;   // newest first
     int episodeCount() const;
 
+    int daysMet() const;
+    /// Machine-facing English digest for LLM prompts. Uses similarEpisodes()
+    /// when embeddings exist (Task 6+), else recentEpisodes(). Never tr().
+    QString memoryDigest(int maxChars = 600) const;
+
 signals:
     void userNameChanged(const QString &name);
     void milestoneReached(const QString &title, const QString &body);
