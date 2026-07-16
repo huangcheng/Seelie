@@ -23,8 +23,8 @@ constexpr int kAffectionDecayPerHour = 5;
 constexpr int kEpisodeCap = 2000;
 
 // Minimum cosine similarity for two episodes to count as near-duplicates
-// during embedding-mode rollup. Strictly-greater-than comparison in
-// enforceEpisodeCap(); a pair must exceed this to be merged.
+// during embedding-mode rollup. Greater-than-or-equal comparison in
+// enforceEpisodeCap(); a pair must meet-or-exceed this to be merged.
 constexpr float kDedupThreshold = 0.95f;
 
 int levelForXP(int xp) {
@@ -451,7 +451,7 @@ void MemoryManager::enforceEpisodeCap()
                 for (int i = 0; i < rows.size(); ++i)
                     for (int j = i + 1; j < rows.size(); ++j) {
                         const float s = cosine(rows[i].v, rows[j].v);
-                        if (s > best) { best = s;
+                        if (s >= best) { best = s;
                             victimId = rows[i].ts <= rows[j].ts ? rows[i].id : rows[j].id;
                             victimKind = rows[i].ts <= rows[j].ts ? rows[i].kind : rows[j].kind; }
                     }
