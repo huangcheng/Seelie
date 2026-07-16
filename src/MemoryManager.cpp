@@ -14,6 +14,8 @@ constexpr int kBondMaxLevel = 5;
 constexpr int kAffectionMax = 100;
 constexpr int kAffectionDecayPerHour = 5;
 
+constexpr int kEpisodeCap = 2000;
+
 int levelForXP(int xp) {
     int lvl = 0;
     for (int i = 0; i <= kBondMaxLevel; ++i)
@@ -259,4 +261,58 @@ QString MemoryManager::effectiveName() const
     if (!env.isEmpty()) return env;
 
     return QDir::home().dirName();
+}
+
+void MemoryManager::recordEpisode(const QString &kind, const QString &text)
+{
+    if (!m_valid || kind.isEmpty() || text.isEmpty()) return;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral(
+        "INSERT INTO episodes(ts, kind, text) VALUES(:ts, :kind, :text)"));
+    q.bindValue(QStringLiteral(":ts"), QDateTime::currentMSecsSinceEpoch());
+    q.bindValue(QStringLiteral(":kind"), kind);
+    q.bindValue(QStringLiteral(":text"), text);
+    if (!q.exec()) return;
+    enforceEpisodeCap();
+}
+
+QVector<Episode> MemoryManager::recentEpisodes(int limit) const
+{
+    QVector<Episode> out;
+    if (!m_valid || limit <= 0) return out;
+    QSqlQuery q(m_db);
+    q.prepare(QStringLiteral(
+        "SELECT ts, kind, text FROM episodes ORDER BY ts DESC, id DESC LIMIT :n"));
+    q.bindValue(QStringLiteral(":n"), limit);
+    if (!q.exec()) return out;
+    while (q.next())
+        out.append({q.value(0).toLongLong(), q.value(1).toString(), q.value(2).toString()});
+    return out;
+}
+
+int MemoryManager::episodeCount() const
+{
+    if (!m_valid) return 0;
+    QSqlQuery q(m_db);
+    if (!q.exec(QStringLiteral("SELECT COUNT(*) FROM episodes")) || !q.next()) return 0;
+    return q.value(0).toInt();
+}
+
+void MemoryManager::enforceEpisodeCap()
+{
+    // Plain mode (Task 4): FIFO oldest-by-ts with rollup counter.
+    // Task 7 replaces the selection strategy when embeddings are present.
+    while (episodeCount() > kEpisodeCap) {
+        QSqlQuery oldest(m_db);
+        if (!oldest.exec(QStringLiteral(
+                "SELECT id, kind FROM episodes ORDER BY ts ASC, id ASC LIMIT 1")) || !oldest.next())
+            return;
+        const qint64 id = oldest.value(0).toLongLong();
+        const QString kind = oldest.value(1).toString();
+        increment(QStringLiteral("episodes.rolled.") + kind, 1);
+        QSqlQuery del(m_db);
+        del.prepare(QStringLiteral("DELETE FROM episodes WHERE id=:id"));
+        del.bindValue(QStringLiteral(":id"), id);
+        del.exec();
+    }
 }

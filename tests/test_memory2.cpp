@@ -137,6 +137,40 @@ private slots:
         QCOMPARE(mem.affection(), 50);
     }
 
+    // --- Task 4: episodic memory ---
+
+    void testRecordAndRecentEpisodes() {
+        MemoryManager mem(freshDb());
+        mem.recordEpisode(QStringLiteral("session"), QStringLiteral("1h 5m, 12 events"));
+        mem.recordEpisode(QStringLiteral("milestone"), QStringLiteral("First tip!"));
+        const auto eps = mem.recentEpisodes(10);
+        QCOMPARE(eps.size(), 2);
+        QCOMPARE(eps.first().kind, QStringLiteral("milestone"));   // newest first
+        QCOMPARE(eps.first().text, QStringLiteral("First tip!"));
+        QCOMPARE(eps.last().kind, QStringLiteral("session"));
+        QVERIFY(eps.first().ts > 0);
+    }
+
+    void testRecentEpisodesLimit() {
+        MemoryManager mem(freshDb());
+        for (int i = 0; i < 10; ++i)
+            mem.recordEpisode(QStringLiteral("session"), QStringLiteral("ep %1").arg(i));
+        QCOMPARE(mem.recentEpisodes(3).size(), 3);
+        QCOMPARE(mem.recentEpisodes(3).first().text, QStringLiteral("ep 9"));
+    }
+
+    void testPlainRollupAtCap() {
+        MemoryManager mem(freshDb());
+        // Fill to cap with no embeddings anywhere -> FIFO rollup
+        for (int i = 0; i < 2005; ++i)
+            mem.recordEpisode(QStringLiteral("session"), QStringLiteral("ep %1").arg(i));
+        QCOMPARE(mem.episodeCount(), 2000);
+        // Rolled-up oldest 5 tracked in counter
+        QCOMPARE(mem.value(QStringLiteral("episodes.rolled.session"), QStringLiteral("0")).toInt(), 5);
+        // Newest survived
+        QCOMPARE(mem.recentEpisodes(1).first().text, QStringLiteral("ep 2004"));
+    }
+
 private:
     // Unique pristine DB path per call (tests are independent of each other).
     QString freshDb() {

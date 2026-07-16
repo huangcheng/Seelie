@@ -4,6 +4,13 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QString>
+#include <QVector>
+
+struct Episode {
+    qint64  ts = 0;
+    QString kind;
+    QString text;
+};
 
 class MemoryManager : public QObject
 {
@@ -57,6 +64,10 @@ public:
 
     QString effectiveName() const;
 
+    void recordEpisode(const QString &kind, const QString &text);
+    QVector<Episode> recentEpisodes(int limit = 10) const;   // newest first
+    int episodeCount() const;
+
 signals:
     void userNameChanged(const QString &name);
     void milestoneReached(const QString &title, const QString &body);
@@ -66,6 +77,8 @@ private:
     QSqlDatabase m_db;
     QString m_connectionName;
     bool m_valid = false;
+
+    void enforceEpisodeCap();   // plain (FIFO) mode here; embedding mode added in Task 7
 };
 
 #endif // MEMORYMANAGER_H
