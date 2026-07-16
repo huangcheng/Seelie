@@ -263,17 +263,18 @@ QString MemoryManager::effectiveName() const
     return QDir::home().dirName();
 }
 
-void MemoryManager::recordEpisode(const QString &kind, const QString &text)
-{
-    if (!m_valid || kind.isEmpty() || text.isEmpty()) return;
+qint64 MemoryManager::recordEpisode(const QString &kind, const QString &text) {
+    if (!m_valid || kind.isEmpty() || text.isEmpty()) return -1;
     QSqlQuery q(m_db);
     q.prepare(QStringLiteral(
         "INSERT INTO episodes(ts, kind, text) VALUES(:ts, :kind, :text)"));
     q.bindValue(QStringLiteral(":ts"), QDateTime::currentMSecsSinceEpoch());
     q.bindValue(QStringLiteral(":kind"), kind);
     q.bindValue(QStringLiteral(":text"), text);
-    if (!q.exec()) return;
+    if (!q.exec()) return -1;
+    const qint64 id = q.lastInsertId().toLongLong();
     enforceEpisodeCap();
+    return id;
 }
 
 QVector<Episode> MemoryManager::recentEpisodes(int limit) const
@@ -313,6 +314,6 @@ void MemoryManager::enforceEpisodeCap()
         QSqlQuery del(m_db);
         del.prepare(QStringLiteral("DELETE FROM episodes WHERE id=:id"));
         del.bindValue(QStringLiteral(":id"), id);
-        del.exec();
+        if (!del.exec() || del.numRowsAffected() == 0) return;   // can't make progress — avoid infinite loop
     }
 }

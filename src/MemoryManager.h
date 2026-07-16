@@ -64,7 +64,7 @@ public:
 
     QString effectiveName() const;
 
-    void recordEpisode(const QString &kind, const QString &text);
+    qint64 recordEpisode(const QString &kind, const QString &text);   // new episode id, or -1 on failure/no-op
     QVector<Episode> recentEpisodes(int limit = 10) const;   // newest first
     int episodeCount() const;
 
