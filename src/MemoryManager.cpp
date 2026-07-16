@@ -346,7 +346,7 @@ void MemoryManager::setEpisodeEmbedding(qint64 episodeId, const QVector<float> &
     q.prepare(QStringLiteral("UPDATE episodes SET embedding=:e WHERE id=:id"));
     q.bindValue(QStringLiteral(":e"), packFloats(vec));
     q.bindValue(QStringLiteral(":id"), episodeId);
-    q.exec();
+    if (!q.exec()) qWarning() << "setEpisodeEmbedding failed for id" << episodeId << q.lastError().text();
 }
 
 QVector<Episode> MemoryManager::recallByVector(const QVector<float> &query, int limit) const
