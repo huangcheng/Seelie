@@ -22,6 +22,11 @@ constexpr int kAffectionDecayPerHour = 5;
 
 constexpr int kEpisodeCap = 2000;
 
+// Minimum cosine similarity for two episodes to count as near-duplicates
+// during embedding-mode rollup. Strictly-greater-than comparison in
+// enforceEpisodeCap(); a pair must exceed this to be merged.
+constexpr float kDedupThreshold = 0.95f;
+
 int levelForXP(int xp) {
     int lvl = 0;
     for (int i = 0; i <= kBondMaxLevel; ++i)
@@ -382,6 +387,10 @@ void MemoryManager::setQueryEmbedding(const QString &key, const QVector<float> &
     if (!vec.isEmpty()) m_queryEmbeds[key] = vec;
 }
 
+void MemoryManager::clearQueryEmbedding(const QString &key) {
+    m_queryEmbeds.remove(key);
+}
+
 int MemoryManager::daysMet() const
 {
     const qint64 first = firstMetTs();
@@ -401,8 +410,8 @@ QString MemoryManager::memoryDigest(int maxChars) const
                  .arg(bondLevel()).arg(bondXP()).arg(affection());
     const int sessions = value(QStringLiteral("stats.sessions"), QStringLiteral("0")).toInt();
     lines << QStringLiteral("Sessions %1.").arg(sessions);
-    const auto eps = m_queryEmbeds.contains(QStringLiteral("__digest__"))
-        ? recallByVector(m_queryEmbeds.value(QStringLiteral("__digest__")), 5)
+    const auto eps = m_queryEmbeds.contains(kDigestQueryKey)
+        ? recallByVector(m_queryEmbeds.value(kDigestQueryKey), 5)
         : recentEpisodes(10);
     if (!eps.isEmpty()) {
         lines << QStringLiteral("Memories:");
@@ -436,7 +445,9 @@ void MemoryManager::enforceEpisodeCap()
                 while (q.next())
                     rows.append({q.value(0).toLongLong(), q.value(1).toLongLong(),
                                  q.value(2).toString(), unpackFloats(q.value(3).toByteArray())});
-                float best = 0.949999f;
+                float best = kDedupThreshold;
+                // Global-max scan (plan deviation, deliberate): examine ALL pairs in the
+                // window and take the single most-similar pair, not the first qualifying one.
                 for (int i = 0; i < rows.size(); ++i)
                     for (int j = i + 1; j < rows.size(); ++j) {
                         const float s = cosine(rows[i].v, rows[j].v);

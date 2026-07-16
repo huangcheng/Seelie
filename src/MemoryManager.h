@@ -82,6 +82,12 @@ public:
     /// Injected by EmbeddingService (Task 8) for digest/recall queries.
     void setQueryEmbedding(const QString &key, const QVector<float> &vec);
     void setQueryEmbeddingForTest(const QString &key, const QVector<float> &vec) { setQueryEmbedding(key, vec); }
+    /// Drop a previously-injected query embedding (e.g. when the digest query
+    /// changes or is no longer applicable). Safe to call for missing keys.
+    void clearQueryEmbedding(const QString &key);
+
+    /// Query-embedding key used by memoryDigest() for similarity-ranked memories.
+    static inline const QString kDigestQueryKey = QStringLiteral("__digest__");
 
     int daysMet() const;
     /// Machine-facing English digest for LLM prompts. Uses similarEpisodes()
