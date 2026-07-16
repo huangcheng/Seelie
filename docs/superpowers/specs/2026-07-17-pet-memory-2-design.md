@@ -1,7 +1,7 @@
 # Pet Memory 2.0 — Design Spec
 
 **Date:** 2026-07-17
-**Status:** draft
+**Status:** implemented
 **Scope:** Relationship state, episodic memory, memory digest — evolves the shipped Pet Memory MVP (2026-05-23). First of four specs in the "Senses & Touch" program (memory → senses → touch → AI commentary).
 
 ## Goal
