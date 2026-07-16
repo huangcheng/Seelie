@@ -206,6 +206,15 @@ private slots:
         QVERIFY(mem.memoryDigest(300).length() <= 300);
     }
 
+    void testDigestSanitizesNewlines() {
+        MemoryManager mem(freshDb());
+        mem.recordEpisode(QStringLiteral("session"), QStringLiteral("line one\nline two\r\nline three"));
+        const QString d = mem.memoryDigest();
+        QVERIFY(d.contains(QStringLiteral("- line one line two line three")));
+        // exactly one digest line belongs to the episode (no embedded newline leaked)
+        QVERIFY(!d.contains(QStringLiteral("line one\n")));
+    }
+
 private:
     // Unique pristine DB path per call (tests are independent of each other).
     QString freshDb() {

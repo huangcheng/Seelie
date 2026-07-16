@@ -323,12 +323,13 @@ QString MemoryManager::memoryDigest(int maxChars) const
     const auto eps = recentEpisodes(10);
     if (!eps.isEmpty()) {
         lines << QStringLiteral("Memories:");
-        for (const Episode &e : eps) lines << QStringLiteral("- ") + e.text;
+        for (const Episode &e : eps) lines << QStringLiteral("- ") + e.text.simplified();
     }
     // Task 7 upgrades the episode selection to similarity-ranked when embedded.
     QString out;
     for (const QString &l : lines) {
-        if (out.length() + l.length() + 1 > maxChars) break;
+        const int sep = out.isEmpty() ? 0 : 1;
+        if (out.length() + l.length() + sep > maxChars) break;
         if (!out.isEmpty()) out += QLatin1Char('\n');
         out += l;
     }

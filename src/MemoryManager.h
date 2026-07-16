@@ -70,7 +70,7 @@ public:
 
     int daysMet() const;
     /// Machine-facing English digest for LLM prompts. Uses similarEpisodes()
-    /// when embeddings exist (Task 6+), else recentEpisodes(). Never tr().
+    /// when embeddings exist (Task 7+), else recentEpisodes(). Never tr().
     QString memoryDigest(int maxChars = 600) const;
 
 signals:
