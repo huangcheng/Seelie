@@ -106,7 +106,7 @@ private:
 
     QHash<QString, QVector<float>> m_queryEmbeds;
 
-    void enforceEpisodeCap();   // plain (FIFO) mode here; embedding mode added in Task 7
+    void enforceEpisodeCap();   // embedding-aware dedup when hasEmbeddings(); FIFO fallback
 };
 
 #endif // MEMORYMANAGER_H
