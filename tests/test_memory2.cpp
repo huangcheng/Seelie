@@ -127,6 +127,16 @@ private slots:
         QCOMPARE(mem.affection(), 0);
     }
 
+    void testAddAffectionZeroIsNoop() {
+        MemoryManager mem(freshDb());
+        mem.addAffection(50);
+        const qint64 tsBefore = mem.value(QStringLiteral("rel.affection_ts")).toLongLong();
+        mem.addAffection(0);
+        const qint64 tsAfter = mem.value(QStringLiteral("rel.affection_ts")).toLongLong();
+        QCOMPARE(tsAfter, tsBefore);   // timestamp NOT refreshed
+        QCOMPARE(mem.affection(), 50);
+    }
+
 private:
     // Unique pristine DB path per call (tests are independent of each other).
     QString freshDb() {

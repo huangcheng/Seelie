@@ -116,7 +116,7 @@ void MemoryManager::addBondXP(int delta)
     if (after != before) emit bondLevelChanged(after);
 }
 
-int MemoryManager::affection()
+int MemoryManager::affection() const
 {
     if (!m_valid) return 0;
     const int stored = value(QStringLiteral("rel.affection"), QStringLiteral("0")).toInt();
@@ -132,6 +132,7 @@ void MemoryManager::addAffection(int delta)
 {
     if (!m_valid || delta == 0) return;
     const int next = qBound(0, affection() + delta, kAffectionMax);
+    // Two writes: not atomic, but main-thread-only + self-correcting on next read.
     setValue(QStringLiteral("rel.affection"), QString::number(next));
     setValue(QStringLiteral("rel.affection_ts"),
              QString::number(QDateTime::currentMSecsSinceEpoch()));

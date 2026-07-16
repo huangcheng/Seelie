@@ -29,7 +29,7 @@ public:
     int  bondLevel() const;          // derived from XP; L0..L5
     void addBondXP(int delta);       // no-op if delta <= 0 or invalid
 
-    int  affection();                // decay-adjusted 0..100
+    int  affection() const;          // decay-adjusted 0..100
     void addAffection(int delta);    // applies decay, then delta, clamps, stamps ts
 
     QString value(const QString &key, const QString &defaultValue = QString()) const;
