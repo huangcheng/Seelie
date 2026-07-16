@@ -2,6 +2,7 @@
 #define MEMORYMANAGER_H
 
 #include <QObject>
+#include <QHash>
 #include <QSqlDatabase>
 #include <QString>
 #include <QVector>
@@ -78,6 +79,10 @@ public:
     /// Test/diagnostic: insert episode with prebuilt embedding blob.
     qint64 insertEpisodeForTest(const QString &kind, const QString &text, const QByteArray &blob);
 
+    /// Injected by EmbeddingService (Task 8) for digest/recall queries.
+    void setQueryEmbedding(const QString &key, const QVector<float> &vec);
+    void setQueryEmbeddingForTest(const QString &key, const QVector<float> &vec) { setQueryEmbedding(key, vec); }
+
     int daysMet() const;
     /// Machine-facing English digest for LLM prompts. Uses similarEpisodes()
     /// when embeddings exist (Task 7+), else recentEpisodes(). Never tr().
@@ -92,6 +97,8 @@ private:
     QSqlDatabase m_db;
     QString m_connectionName;
     bool m_valid = false;
+
+    QHash<QString, QVector<float>> m_queryEmbeds;
 
     void enforceEpisodeCap();   // plain (FIFO) mode here; embedding mode added in Task 7
 };

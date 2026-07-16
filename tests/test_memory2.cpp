@@ -250,6 +250,71 @@ private slots:
         QCOMPARE(hits.at(0).text, QStringLiteral("vec"));
     }
 
+    // --- Task 7: embedding-aware rollup + similarity-ranked digest ---
+
+    void testRollupMergesNearDuplicates() {
+        MemoryManager mem(freshDb());
+        // Two near-identical vectors at the OLD end; distinct filler after.
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("dup-a"),
+                         packVec({1.f, 0.f}));
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("dup-b"),
+                         packVec({0.9999f, 0.01f}));
+        // 1998 deterministic pseudo-random 16-dim fillers (pairwise cos << 0.95),
+        // so the only near-duplicate pair in the oldest-200 scan is dup-a/dup-b.
+        for (int i = 0; i < 1998; ++i) {
+            float v[16];
+            for (int k = 0; k < 16; ++k)
+                v[k] = float(((i * 7919 + k * 104729) % 200) - 100) / 100.f;
+            QByteArray b; b.resize(int(sizeof(v)));
+            std::memcpy(b.data(), v, b.size());
+            insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("f%1").arg(i), b);
+        }
+        QCOMPARE(mem.episodeCount(), 2000);
+        // One more insert triggers embedding-mode rollup: a dup should die, not a filler
+        mem.recordEpisode(QStringLiteral("session"), QStringLiteral("new one"));
+        QCOMPARE(mem.episodeCount(), 2000);
+        bool dupAAlive = false, dupBAlive = false;
+        for (const auto &e : mem.recentEpisodes(2000)) {
+            if (e.text == QStringLiteral("dup-a")) dupAAlive = true;
+            if (e.text == QStringLiteral("dup-b")) dupBAlive = true;
+        }
+        QVERIFY(dupAAlive != dupBAlive);   // exactly one survived
+        QCOMPARE(mem.value(QStringLiteral("episodes.rolled.session"), QStringLiteral("0")).toInt(), 1);
+    }
+
+    void testDigestUsesSimilarityWhenEmbedded() {
+        MemoryManager mem(freshDb());
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("late night save"),
+                         packVec({1.f, 0.f}));
+        // 5 near-query fillers outrank the irrelevant episode in top-5
+        for (int i = 0; i < 5; ++i)
+            insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("filler %1").arg(i),
+                             packVec({0.9f, 0.1f}));
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("unrelated thing"),
+                         packVec({0.f, 1.f}));
+        mem.setQueryEmbeddingForTest(QStringLiteral("__digest__"), {1.f, 0.f});
+        const QString d = mem.memoryDigest();
+        QVERIFY(d.contains(QStringLiteral("late night save")));
+        QVERIFY(!d.contains(QStringLiteral("unrelated thing")));   // ranked 7th of 7, cut by top-5
+    }
+
+    // --- Riders from Task 6 quality review ---
+
+    void testRecallSkipsDimensionMismatch() {
+        MemoryManager mem(freshDb());
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("3-dim"),
+                         packVec({1.f, 0.f, 0.f}));
+        const auto hits = mem.recallByVector({1.f, 0.f}, 10);   // 2-dim query
+        QCOMPARE(hits.size(), 0);   // mismatch skipped (sentinel filtered)
+    }
+
+    void testRecallEmptyQuery() {
+        MemoryManager mem(freshDb());
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("vec"),
+                         packVec({1.f}));
+        QCOMPARE(mem.recallByVector({}, 5).size(), 0);
+    }
+
 private:
     static QByteArray packVec(std::initializer_list<float> f) {
         QByteArray b; b.resize(int(f.size() * sizeof(float)));

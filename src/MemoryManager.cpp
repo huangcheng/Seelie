@@ -378,6 +378,10 @@ qint64 MemoryManager::insertEpisodeForTest(const QString &kind, const QString &t
     return q.lastInsertId().toLongLong();
 }
 
+void MemoryManager::setQueryEmbedding(const QString &key, const QVector<float> &vec) {
+    if (!vec.isEmpty()) m_queryEmbeds[key] = vec;
+}
+
 int MemoryManager::daysMet() const
 {
     const qint64 first = firstMetTs();
@@ -397,7 +401,9 @@ QString MemoryManager::memoryDigest(int maxChars) const
                  .arg(bondLevel()).arg(bondXP()).arg(affection());
     const int sessions = value(QStringLiteral("stats.sessions"), QStringLiteral("0")).toInt();
     lines << QStringLiteral("Sessions %1.").arg(sessions);
-    const auto eps = recentEpisodes(10);
+    const auto eps = m_queryEmbeds.contains(QStringLiteral("__digest__"))
+        ? recallByVector(m_queryEmbeds.value(QStringLiteral("__digest__")), 5)
+        : recentEpisodes(10);
     if (!eps.isEmpty()) {
         lines << QStringLiteral("Memories:");
         for (const Episode &e : eps) lines << QStringLiteral("- ") + e.text.simplified();
@@ -416,18 +422,43 @@ QString MemoryManager::memoryDigest(int maxChars) const
 void MemoryManager::enforceEpisodeCap()
 {
     // Plain mode (Task 4): FIFO oldest-by-ts with rollup counter.
-    // Task 7 replaces the selection strategy when embeddings are present.
+    // Embedding mode (Task 7): merge the most-similar pair (>=0.95), deleting
+    // the older row. Scans only the oldest 200 embedded rows (bounded cost).
     while (episodeCount() > kEpisodeCap) {
-        QSqlQuery oldest(m_db);
-        if (!oldest.exec(QStringLiteral(
-                "SELECT id, kind FROM episodes ORDER BY ts ASC, id ASC LIMIT 1")) || !oldest.next())
-            return;
-        const qint64 id = oldest.value(0).toLongLong();
-        const QString kind = oldest.value(1).toString();
-        increment(QStringLiteral("episodes.rolled.") + kind, 1);
+        qint64 victimId = -1; QString victimKind;
+        if (hasEmbeddings()) {
+            QSqlQuery q(m_db);
+            if (q.exec(QStringLiteral(
+                    "SELECT id, ts, kind, embedding FROM episodes "
+                    "WHERE embedding IS NOT NULL ORDER BY ts ASC, id ASC LIMIT 200"))) {
+                struct Row { qint64 id; qint64 ts; QString kind; QVector<float> v; };
+                QVector<Row> rows;
+                while (q.next())
+                    rows.append({q.value(0).toLongLong(), q.value(1).toLongLong(),
+                                 q.value(2).toString(), unpackFloats(q.value(3).toByteArray())});
+                float best = 0.949999f;
+                for (int i = 0; i < rows.size(); ++i)
+                    for (int j = i + 1; j < rows.size(); ++j) {
+                        const float s = cosine(rows[i].v, rows[j].v);
+                        if (s > best) { best = s;
+                            victimId = rows[i].ts <= rows[j].ts ? rows[i].id : rows[j].id;
+                            victimKind = rows[i].ts <= rows[j].ts ? rows[i].kind : rows[j].kind; }
+                    }
+            }
+        }
+        if (victimId < 0) {
+            // Plain mode / no dup found: FIFO oldest
+            QSqlQuery oldest(m_db);
+            if (!oldest.exec(QStringLiteral(
+                    "SELECT id, kind FROM episodes ORDER BY ts ASC, id ASC LIMIT 1")) || !oldest.next())
+                return;
+            victimId = oldest.value(0).toLongLong();
+            victimKind = oldest.value(1).toString();
+        }
+        increment(QStringLiteral("episodes.rolled.") + victimKind, 1);
         QSqlQuery del(m_db);
         del.prepare(QStringLiteral("DELETE FROM episodes WHERE id=:id"));
-        del.bindValue(QStringLiteral(":id"), id);
+        del.bindValue(QStringLiteral(":id"), victimId);
         if (!del.exec() || del.numRowsAffected() == 0) return;   // can't make progress — avoid infinite loop
     }
 }
