@@ -368,6 +368,26 @@ private slots:
         QVERIFY(!mem.hasEmbeddings());
     }
 
+    // Digest-path coverage: a digest-query job (id < 0) flows through the
+    // worker, emits digestEmbeddingReady, lands under the shared key, and
+    // subsequently drives the similarity-ranked digest (not recency fallback).
+    void testEmbeddingServiceDigestPath() {
+        MemoryManager mem(freshDb());
+        EmbeddingService svc(&mem, [](const QString &, QString *) {
+            return QVector<float>{1.f, 0.f};
+        });
+        QSignalSpy spy(&svc, &EmbeddingService::digestEmbeddingReady);
+        svc.requestDigestEmbedding(QStringLiteral("evening debugging session"));
+        QTRY_VERIFY_WITH_TIMEOUT(spy.count() == 1, 5000);
+        QCOMPARE(spy.takeFirst().at(0).value<QVector<float>>(), (QVector<float>{1.f, 0.f}));
+        // Query embedding was applied under the shared key → digest now uses
+        // similarity mode and ranks the related episode into the output.
+        insertEpisodeRaw(mem, QStringLiteral("session"), QStringLiteral("related memory"),
+                         packVec({1.f, 0.f}));
+        const QString d = mem.memoryDigest();
+        QVERIFY(d.contains(QStringLiteral("related memory")));
+    }
+
 private:
     static QByteArray packVec(std::initializer_list<float> f) {
         QByteArray b; b.resize(int(f.size() * sizeof(float)));

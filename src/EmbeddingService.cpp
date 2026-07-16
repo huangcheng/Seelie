@@ -64,16 +64,21 @@ EmbeddingService::~EmbeddingService()
     // Drain: queued pending jobs run before quit() takes effect (FIFO event
     // queue). wait(3000) bounds total shutdown time.
     m_thread.quit();
-    m_thread.wait(3000);
-    // Thread is now joined; safe to delete the worker from the main thread.
-    delete m_worker;
+    if (m_thread.wait(3000)) {
+        delete m_worker;      // thread joined — safe
+    } else {
+        qWarning() << "EmbeddingService: worker thread did not finish in 3s; detaching (OS reclaims at exit)";
+    }
     m_worker = nullptr;
 }
 
 void EmbeddingService::enqueueEpisode(qint64 episodeId, const QString &text)
 {
     if (text.isEmpty()) return;
-    if (m_pending >= kMaxQueue) return;   // backpressure: drop overflow silently
+    if (m_pending >= kMaxQueue) {
+        qDebug() << "EmbeddingService: queue full, dropping episode" << episodeId;
+        return;
+    }
     ++m_pending;
     emit jobRequested(episodeId, text);
 }
