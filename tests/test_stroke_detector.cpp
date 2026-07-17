@@ -39,6 +39,9 @@ private slots:
     void testTossSpeedAboveThreshold();
     void testSlowReleaseIsNotToss();
     void testParkedCursorDecaysSpeed();
+    void testVerticalMovementConvertsToDrag();
+    void testStrokingPersistsBeyondBudget();
+    void testMoveBeforePressIsNoop();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -166,6 +169,7 @@ void TestStrokeDetector::testReleaseUndecidedMeansClick()
     const StrokeDetector::Phase result = d.release(QPoint(102, 101), now);
     QCOMPARE(result, StrokeDetector::Phase::Undecided);   // caller treats as click
     QCOMPARE(d.phase(), StrokeDetector::Phase::Idle);
+    QCOMPARE(d.releaseSpeedPxPerSec(), 0.0);   // never a false toss candidate
 }
 
 void TestStrokeDetector::testTossSpeedAboveThreshold()
@@ -204,6 +208,40 @@ void TestStrokeDetector::testParkedCursorDecaysSpeed()
     now += 500;   // cursor parked half a second before release
     d.release(QPoint(416, 100), now);
     QVERIFY(d.releaseSpeedPxPerSec() < StrokeDetector::TOSS_SPEED_PX_PER_SEC);  // decayed
+}
+
+void TestStrokeDetector::testVerticalMovementConvertsToDrag()
+{
+    // Design pin: x-only reversal counting means pure-vertical movement can
+    // never form a stroke — it hits the displacement budget and becomes a
+    // drag. Correct UX: vertical pulls on the pet ARE drags (spec §1:
+    // "strokes are predominantly horizontal").
+    StrokeDetector d;
+    qint64 now = 1000;
+    d.press(QPoint(100, 100), now);
+    now += 10; d.move(QPoint(100, 116), now);   // pure vertical, manhattan 16 ≥ 15
+    QCOMPARE(d.phase(), StrokeDetector::Phase::Dragging);
+}
+
+void TestStrokeDetector::testStrokingPersistsBeyondBudget()
+{
+    // Design pin: once a stroke session forms, the displacement budget no
+    // longer applies — vigorous petting that wanders must not suddenly yank
+    // the window. (The budget gate checks phase == Undecided only.)
+    StrokeDetector d;
+    qint64 now = 1000;
+    d.press(QPoint(100, 100), now);
+    feedMoves(d, {106, 112, 106, 100, 106, 112}, 100, now);
+    QCOMPARE(d.phase(), StrokeDetector::Phase::Stroking);
+    feedMoves(d, {120, 130, 140, 150}, 100, now);   // 50px from press
+    QCOMPARE(d.phase(), StrokeDetector::Phase::Stroking);
+}
+
+void TestStrokeDetector::testMoveBeforePressIsNoop()
+{
+    StrokeDetector d;
+    d.move(QPoint(100, 100), 1000);   // no press() — Idle guard must swallow it
+    QCOMPARE(d.phase(), StrokeDetector::Phase::Idle);
 }
 
 QTEST_MAIN(TestStrokeDetector)
