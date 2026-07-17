@@ -78,8 +78,9 @@ void TestPetStateMachine::testWorkingGraceExpiresToIdle()
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
 
     QSignalSpy stateSpy(m_fsm, &PetStateMachine::stateChanged);
-    QTest::qWait(1700);  // > WORKING_GRACE_MS (1500)
-    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
+    // Grace expiry is a single-shot timer; poll so a late fire under load
+    // doesn't race the QCOMPARE.
+    QTRY_COMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
     QCOMPARE(stateSpy.count(), 1);
 }
 
@@ -139,9 +140,15 @@ void TestPetStateMachine::testFailedOneShotReturnsToWorking()
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);  // base preserved
 
-    // After the one-shot completes, overlay should clear.
-    QTest::qWait(2200);  // > NOTIFICATION_ONESHOT_MS, used as default duration
-    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
+    // Overlay must persist for the full one-shot duration
+    // (NOTIFICATION_ONESHOT_MS == 2000) — prove it hasn't cleared early at
+    // the halfway mark.
+    QTest::qWait(1000);  // ~NOTIFICATION_ONESHOT_MS / 2
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
+
+    // After the one-shot completes, overlay should clear. QTRY_COMPARE polls
+    // (default ~5s) so a late timer fire under parallel load doesn't race.
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
 }
 
 void TestPetStateMachine::testGreetingOnlyFromIdle()
@@ -282,10 +289,10 @@ void TestPetStateMachine::testFailedOverlayPreservesWorkingGrace()
     m_fsm->onCanonicalEvent("tool.failed");
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
 
-    QTest::qWait(2300);  // > NOTIFICATION_ONESHOT_MS so overlay finishes
-    // After overlay, base should be Working (restored from m_savedSustained).
+    // After overlay finishes the one-shot clears and restores the saved
+    // sustained state. Poll so a late timer fire doesn't race the check.
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
-    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
 }
 
 QTEST_MAIN(TestPetStateMachine)

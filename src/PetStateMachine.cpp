@@ -187,6 +187,16 @@ void PetStateMachine::onWalkIdleExpired()
 }
 void PetStateMachine::onWorkingGraceExpired()
 {
+    // Grace-neutral overlays: while a one-shot overlay is showing, suppress
+    // the Working→Idle transition entirely. WORKING_GRACE_MS (1500) is
+    // shorter than NOTIFICATION_ONESHOT_MS (2000), so without this guard
+    // every overlay entered from Working would drop to Idle mid-overlay,
+    // and enterBase(Idle) would also overwrite m_savedSustained via the
+    // C7 branch — so onOneShotFinished() could only ever restore Idle.
+    // The single-shot timer has already fired by the time we get here, so
+    // there is nothing to stop; onOneShotFinished() re-arms a fresh full
+    // grace window once the overlay clears and we're back on Working.
+    if (m_overlayState != State::Idle) return;
     if (m_baseState == State::Working) {
         enterBase(State::Idle, NormalPriority);
     }
@@ -210,9 +220,23 @@ void PetStateMachine::onOneShotFinished()
     // Restore from saved-sustained because m_baseState may have changed
     // during the overlay (e.g. a tool.before arrived while Failed was
     // showing). m_savedSustained holds whatever was active when the
-    // one-shot started.
+    // one-shot started. (Grace-neutral overlays: if the grace fired
+    // while the overlay was up, m_baseState was *not* demoted to Idle —
+    // onWorkingGraceExpired() bails under overlays — so this restore is
+    // a no-op when nothing else perturbed the base, and we re-arm grace
+    // below.)
     if (m_baseState != m_savedSustained) {
         m_baseState = m_savedSustained;
+    }
+    // Re-arm Working grace after a grace-neutral overlay. The grace
+    // single-shot (1500ms) is shorter than the one-shot overlay (2000ms)
+    // and was suppressed above, so by now it has fired and gone inactive.
+    // Restarting here gives the restored Working state a fresh full grace
+    // window. The guards make this a no-op for overlays entered from
+    // non-Working states (Idle/Thinking/Reviewing) and after a mid-overlay
+    // session.end/session.idle (which stops grace and sets base=Idle).
+    if (m_baseState == State::Working && !m_workingGrace.isActive()) {
+        m_workingGrace.start();
     }
     emit stateChanged(activeState());
     emitChainFor(m_baseState, NormalPriority);
@@ -238,9 +262,13 @@ void PetStateMachine::enterBase(State s, Priority priority)
 }
 void PetStateMachine::enterOneShot(State s, int durationMs)
 {
-    // Save the sustained state so we can restore on completion. Grace
-    // timers keep ticking under the overlay so the underlying state's
-    // exit conditions still apply.
+    // Save the sustained state so we can restore on completion. Overlays
+    // are grace-neutral: the Working grace timer is not stopped here, but
+    // onWorkingGraceExpired() suppresses the Working→Idle transition while
+    // an overlay is up, and onOneShotFinished() re-arms a fresh full grace
+    // window once we return to Working. So a Failed/Celebrating overlay
+    // entered from Working always restores to Working with a new grace
+    // window — never to Idle.
     if (m_overlayState == State::Idle) {
         m_savedSustained = m_baseState;
     }
