@@ -55,9 +55,15 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   plan: `docs/superpowers/plans/2026-07-17-context-senses.md` (10-task).
   **Pending:** merge to `main` + Linux compile/runtime verification of the X11 branch
   (never compiled on this Mac).
-- [ ] **Spec 3 — TouchReactions**: `user.hover`, `user.pet` (press+drag), `user.grab`/
-  `user.toss` (window drag with velocity); affection/XP effects via MemoryManager
-  (API already shipped); animations + persona lines per touch event.
+- [x] **Spec 3 — TouchReactions** — SHIPPED 2026-07-17 on branch `touch-reactions`
+  (pending merge). Stroke-detected petting (≥2 reversals, <15px budget — window
+  stays put), grab with sustained FSM overlay, toss via 1500px/s release-velocity
+  EMA (reaction-only, no momentum), silent hover. New FSM states Petted/Grabbed/
+  Tossed reusing existing pack animations (candidate-fallback chains; no new assets).
+  Positive-only affection (pet +2/2s, hover +1/60s), stats + first_pet/first_toss
+  milestones, canned touch bubbles (tips JSON "touch" pools, en+zh_CN), master
+  toggle `touchReactionsEnabled` (default on) + Settings → Interaction checkbox.
+  12 detector tests + 7 FSM touch tests; suite green. Parked: momentum glide physics.
 - [ ] **Spec 4 — AI-native commentary**: PersonaEngine prompt builder gains the memory
   digest (`MemoryManager::memoryDigest()`, behind `shareMemoryWithAi`) + context injection;
   new persona-pool event names for context/touch events; LLM-generated `session.end`
@@ -88,7 +94,7 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   never compiled/run — verify on a Linux machine (X11 session); Wayland stays a
   documented no-op.
 
-**Suite status:** 18/18 green on macOS as of 2026-07-17 (was 15/17 before ContextSenses).
+**Suite status:** 19/19 green on macOS as of 2026-07-17 (was 15/17 before ContextSenses).
 
 ---
 
