@@ -1,16 +1,15 @@
 # Seelie — TODO / Next Steps
 
-**Updated:** 2026-07-17 · **Branch:** `pet-memory-2` (20 commits, rebased on `main`, clean)
+**Updated:** 2026-07-17 · **Branch:** `pet-memory-2` merged into `main` (ff `31ba078 → ee2f379`), pushed to `origin/main`
 
 ---
 
-## 0. Right now (handoff to Mac)
+## 0. Status: ✅ merged to main
 
-- [ ] **Push the branch** so the Mac can pull it (not done — left for your call):
-  `git push -u origin pet-memory-2`
-- [ ] **Merge to main when ready** — final whole-implementation review verdict was **READY TO MERGE**.
-  All 10 plan tasks passed spec + quality review loops. Options: merge commit / squash / PR.
-- [ ] On the Mac: `git fetch && git checkout pet-memory-2`, then build per CLAUDE.md
+- [x] **Merged to main** 2026-07-17 — fast-forward, all 24 commits, pushed to `origin/main`.
+  Final whole-implementation review verdict was **READY TO MERGE**; all 10 plan tasks
+  passed spec + quality review loops.
+- [x] Mac handoff complete — building from `main` per CLAUDE.md
   (`cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"`). The Windows PATH quirks noted
   below do not apply to macOS.
 
@@ -30,15 +29,15 @@ wiring (sessions/daily-login/pokes/milestones/level-up bubbles), zh_CN i18n.
 
 ### Follow-ups from final review (not blocking merge)
 
-- [ ] **(Medium) Decouple memory wiring from persona** — the `EventRouter::eventProcessed`
-  → memory connect lives in `MainWindow::setPersonaEngine()`. A future "no-persona" mode
-  would silently disable all memory tracking. Move the connect to `setMemoryManager()` or
-  `setEventRouter()` (both are called unconditionally in `main.cpp`).
+- [x] **(Medium) Decouple memory wiring from persona** — DONE 2026-07-17 (`0a0f872`).
+  The connect now lives in idempotent `MainWindow::wireMemoryEventConnect()`,
+  called from `setEventRouter()`/`setMemoryManager()`; persona is no longer involved.
 - [ ] **(Low) Smoke-test real embeddings once** — `embedTextSync` is untested network glue.
   With an OpenAI profile + `shareMemoryWithAi` on: record an episode, confirm its
   `embedding` BLOB fills and `memoryDigest()` switches to similarity mode.
-- [ ] **(Low) `~MemoryManager` "connection still in use" warning** — cosmetic Qt warning on
-  teardown; fix by ensuring all QSqlQuery copies die before `removeDatabase`.
+- [x] **(Low) `~MemoryManager` "connection still in use" warning** — DONE 2026-07-17
+  (`0a0f872`): `m_db` released before `removeDatabase`; warning confirmed gone
+  from `test_memory2` output.
 
 ---
 
@@ -46,11 +45,13 @@ wiring (sessions/daily-login/pokes/milestones/level-up bubbles), zh_CN i18n.
 
 Agreed program: memory → senses → touch → AI commentary. Memory is done.
 
-- [ ] **Spec 2 — ContextSenses** (next up): `SystemContextEngine` emitting synthetic events
-  (`context.latenight`, `context.longsession`, `context.idle`, `context.gaming`,
-  `context.lowbattery`, time-of-day bucket on `session.start`) into the existing pipeline
-  with rate limits + cooldowns. Also finish the Linux `FullscreenWatcher` stub and
-  gaming-mode auto-hide wiring. Brainstorm via the brainstorming skill, then spec → plan.
+- [~] **Spec 2 — ContextSenses** — spec ✅ + 10-task plan ✅ committed 2026-07-17
+  (`docs/superpowers/specs/2026-07-17-context-senses-design.md`,
+  `docs/superpowers/plans/2026-07-17-context-senses.md`). **Implementation not started.**
+  Scope decided: `SystemContextEngine` emitting `context.latenight/longsession/idle/away/
+  gaming/lowbattery/timeofday` with cooldowns; gaming = quiet hide + welcome-back on
+  fullscreen stop (auto-hide wiring already exists in MainWindow — found during recon);
+  Linux `FullscreenWatcher` X11 impl is plan Task 9. Execute via subagent-driven-development.
 - [ ] **Spec 3 — TouchReactions**: `user.hover`, `user.pet` (press+drag), `user.grab`/
   `user.toss` (window drag with velocity); affection/XP effects via MemoryManager
   (API already shipped); animations + persona lines per touch event.
@@ -69,13 +70,21 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
 
 ## 3. Pre-existing issues (independent of memory work)
 
-- [ ] `test_ipc_animations` — SEGFAULT on Windows (UDP/socket flake; noted in CLAUDE.md era)
-- [ ] `test_pet_state_machine` — QTimer precision flake under parallel load
-  (`testFailedOneShotReturnsToWorking`, tests/test_pet_state_machine.cpp:144)
-- [ ] Duplicate `"Character"` source string in `Seelie_zh_CN.ts` (SettingsPanelWidget
-  context, ~lines 461/501) — lrelease warning
+- [x] `test_ipc_animations` — FIXED 2026-07-17 (`e8e590d`). Root cause was NOT a UDP
+  flake: `assets/map.png` was removed (c8e7b99) so asset discovery always failed and
+  the null-unsafe `cleanupTestCase` segfaulted. Now resolves from `assets/packs/*/sprites`,
+  null-safe cleanup, harness falls back past legacy MS-Agent name drift. 10/10 green.
+- [x] `test_pet_state_machine` — FIXED 2026-07-17 (`fd37a4d`). Root cause was NOT a
+  QTimer flake: grace (1500ms) deterministically expired under every 2000ms one-shot
+  overlay → Idle. FSM now suppresses grace under overlays + re-arms on finish (user
+  decision); tests hardened with QTRY_COMPARE. 21/21 green, 5 consecutive runs.
+- [x] Duplicate `"Character"` source string in `Seelie_zh_CN.ts` — FIXED 2026-07-17
+  (`2172475`): distinct `tr()` disambiguation comments (display-mode option vs
+  settings section title); survives lupdate.
 - [ ] Linux `FullscreenWatcher::isFullscreenAppActive()` stub returns false
-  (covered by Spec 2 above)
+  (owned by Spec 2 plan, Task 9 — X11 impl; Wayland stays stubbed)
+
+**Suite status:** 17/17 green on macOS as of 2026-07-17 (was 15/17).
 
 ---
 
