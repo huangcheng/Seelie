@@ -846,6 +846,33 @@ void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
     }
 }
 
+void MainWindow::setEventRouter(EventRouter *router)
+{
+    m_eventRouter = router;
+    // (a2) is now decoupled from setPersonaEngine: wire as soon as both the
+    // router and the memory manager are available so session bookkeeping
+    // keeps working in a future no-persona mode.
+    wireMemoryEventConnect();
+}
+
+void MainWindow::wireMemoryEventConnect()
+{
+    // (a2) EventRouter → MainWindow::onEventForMemory: Pet Memory 2.0 session
+    // bookkeeping (daily-login reward, session-end episodes, bond XP). Mirrors
+    // the (a) connect's signal signature: eventProcessed carries (name, payload);
+    // we forward name only. onEventForMemory null-checks m_memory internally, but
+    // we also gate wiring on both pointers being set so the connect is deferred
+    // until the second of {setEventRouter, setMemoryManager} runs. Connects
+    // exactly once via m_memoryEventWired — Qt::UniqueConnection is unreliable
+    // with lambdas.
+    if (m_memoryEventWired || !m_eventRouter || !m_memory) return;
+    m_memoryEventWired = true;
+    connect(m_eventRouter, &EventRouter::eventProcessed,
+            this, [this](const QString &name, const QJsonObject &) {
+        onEventForMemory(name);
+    });
+}
+
 void MainWindow::setMemoryManager(MemoryManager *memory)
 {
     m_memory = memory;
@@ -863,6 +890,8 @@ void MainWindow::setMemoryManager(MemoryManager *memory)
             }
         });
     }
+    // Now that m_memory is set, the (a2) memory-event wiring may be runnable.
+    wireMemoryEventConnect();
 }
 
 void MainWindow::setEmbeddingService(EmbeddingService *s)
@@ -909,17 +938,11 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
         }, Qt::QueuedConnection);
     }
 
-    // (a2) EventRouter → MainWindow::onEventForMemory: Pet Memory 2.0 session
-    // bookkeeping (daily-login reward, session-end episodes, bond XP). Mirrors
-    // the (a) connect's signal signature: eventProcessed carries (name, payload);
-    // we forward name only. setPersonaEngine runs after both setMemoryManager
-    // and setEventRouter, so both pointers are guaranteed set here.
-    if (m_eventRouter) {
-        connect(m_eventRouter, &EventRouter::eventProcessed,
-                this, [this](const QString &name, const QJsonObject &) {
-            onEventForMemory(name);
-        });
-    }
+    // (a2) EventRouter → onEventForMemory is intentionally NOT wired here: it
+    // lives in wireMemoryEventConnect() (called from setEventRouter /
+    // setMemoryManager) so Pet Memory 2.0 session bookkeeping keeps working
+    // even without a PersonaEngine. (b) below, by contrast, genuinely needs
+    // persona to resolve milestone text, so it stays here.
 
     // (b) MemoryManager::milestoneReached → PersonaEngine
     if (m_memory) {

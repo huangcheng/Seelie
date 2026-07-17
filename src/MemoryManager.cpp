@@ -112,6 +112,11 @@ MemoryManager::MemoryManager(const QString &dbPath, QObject *parent)
 MemoryManager::~MemoryManager()
 {
     m_db.close();
+    // Drop our member reference to the connection before removing it. The
+    // m_db member (a QSqlDatabase handle) is destroyed after the destructor
+    // body runs, so without this reset Qt logs "connection still in use" on
+    // teardown. Assigning a default-constructed handle releases our ref now.
+    m_db = QSqlDatabase();
     QSqlDatabase::removeDatabase(m_connectionName);
 }
 

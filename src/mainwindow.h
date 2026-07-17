@@ -59,7 +59,7 @@ public:
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
-    void setEventRouter(EventRouter *router) { m_eventRouter = router; }
+    void setEventRouter(EventRouter *router);
     void setIPCServer(IPCServer *ipc) { m_ipcServer = ipc; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
     void setMemoryManager(MemoryManager *memory);
@@ -126,6 +126,12 @@ private:
     void reloadTranslator(const QString &lang);
     void showRandomGreeting();
     void tryRecordPoke();
+    // Wire the EventRouter::eventProcessed → onEventForMemory connection.
+    // Idempotent: connect exactly once via m_memoryEventWired (lambdas can't
+    // use Qt::UniqueConnection reliably). Called from both setEventRouter()
+    // and setMemoryManager() so memory bookkeeping works regardless of
+    // whether a PersonaEngine is set.
+    void wireMemoryEventConnect();
 
     QRect petRect() const;
     bool isInPetRect(const QPoint &pos) const;
@@ -191,6 +197,9 @@ private:
     qint64 m_sessionStartMs = 0;
     int    m_sessionEventCount = 0;
     qint64 m_lastPokeWriteMs = 0;   // shared throttle across click + dblclick
+    // Connect-once guard for the EventRouter → onEventForMemory wiring.
+    // See wireMemoryEventConnect(); lambdas can't rely on Qt::UniqueConnection.
+    bool m_memoryEventWired = false;
 
 #ifdef Q_OS_WIN
     // Windows DWM can lose window attributes after long-running sessions
