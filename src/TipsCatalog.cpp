@@ -182,6 +182,7 @@ TipsCatalog::Bundle TipsCatalog::loadBundle(const QString &locale)
     }
     qDebug() << "TipsCatalog: loaded" << b.events.size() << "event tips +"
              << b.greetings.size() << "greetings +"
-             << b.messages.size() << "messages for locale" << locale;
+             << b.messages.size() << "messages +"
+             << b.touch.size() << "touch gestures for locale" << locale;
     return b;
 }
