@@ -43,6 +43,9 @@ void SystemContextEngine::start()
     if (isRunning()) return;
     m_lastActivityMs = nowMs();
     m_timeofdaySent = false;
+    m_idleLatched = false;   // fresh state on restart (latches, unlike
+    m_away = false;          // cooldowns, should not survive a stop→start
+    m_lowBattery = false;    // cycle — user re-enabling expects a clean slate)
     m_clockTimer->start();
     m_sharedTimer->start();
 }
@@ -81,6 +84,10 @@ void SystemContextEngine::emitContext(const QString &name, const QJsonObject &pa
         && now - m_lastFired.value(name) < cd) {
         return;
     }
+    // Cooldown recorded before routeEvent: emitContext always constructs
+    // well-formed events (source "system", registered name), so validation
+    // cannot fail here. If routeEvent ever gains a bool return, move this
+    // insert after the call.
     m_lastFired.insert(name, now);
     QJsonObject ev = payload;
     ev.insert(QStringLiteral("type"), QStringLiteral("event"));

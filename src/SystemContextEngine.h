@@ -67,7 +67,7 @@ private:
     qint64 nowMs() const;
 
     EventRouter *m_router;
-    ConfigManager *m_config;
+    ConfigManager *m_config;  // reserved for Task 10: contextSensesEnabled gate
     FullscreenWatcher *m_watcher = nullptr;
 
     QTimer *m_clockTimer = nullptr;    // 60 s
@@ -98,7 +98,7 @@ private:
     static constexpr int CLOCK_INTERVAL_MS = 60000;
     static constexpr int SHARED_INTERVAL_MS = 30000;
 
-    static constexpr qint64 LATENIGHT_HOUR = 23;
+    static constexpr int LATENIGHT_HOUR = 23;
     static constexpr qint64 LATENIGHT_COOLDOWN_MS = 20LL * 60 * 60 * 1000;
 
     static constexpr qint64 LONGSESSION_MIN_MS = 3LL * 60 * 60 * 1000;
