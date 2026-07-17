@@ -99,6 +99,7 @@ set(TEST_SOURCES
     test_ipc_animations.cpp
     test_ecg.cpp
     test_gaming_mode.cpp
+    test_system_context.cpp
     test_pet_state_machine.cpp
     test_tts_providers.cpp
     test_tts_engine.cpp

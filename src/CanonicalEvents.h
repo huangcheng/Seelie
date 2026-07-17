@@ -40,6 +40,17 @@ inline constexpr const char *FileWatched         = "file.watched";
 
 inline constexpr const char *TodoUpdated         = "todo.updated";
 
+// ContextSenses (Spec 2): synthetic events emitted by SystemContextEngine.
+// source "system" needs no s_validSources entry — unknown sources are
+// accepted with a qDebug, unknown events are rejected by EventRouter.
+inline constexpr const char *ContextLateNight     = "context.latenight";
+inline constexpr const char *ContextLongSession   = "context.longsession";
+inline constexpr const char *ContextIdle          = "context.idle";
+inline constexpr const char *ContextAway          = "context.away";
+inline constexpr const char *ContextGaming        = "context.gaming";
+inline constexpr const char *ContextLowBattery    = "context.lowbattery";
+inline constexpr const char *ContextTimeOfDay     = "context.timeofday";
+
 } // namespace CanonicalEvents
 
 #endif // SEELIE_CANONICALEVENTS_H

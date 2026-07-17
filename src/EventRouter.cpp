@@ -20,7 +20,14 @@ const QSet<QString> EventRouter::s_validEvents = {
     CE::SubagentStarted, CE::SubagentStopped,
     CE::NotificationSent,
     CE::FileEdited, CE::FileWatched,
-    CE::TodoUpdated
+    CE::TodoUpdated,
+    // ContextSenses (Spec 2): synthetic events from SystemContextEngine.
+    // source "system" needs no s_validSources entry — unknown sources are
+    // accepted with a qDebug, unknown events are rejected.
+    CE::ContextLateNight, CE::ContextLongSession,
+    CE::ContextIdle, CE::ContextAway,
+    CE::ContextGaming, CE::ContextLowBattery,
+    CE::ContextTimeOfDay
 };
 
 const QSet<QString> EventRouter::s_validSources = {
