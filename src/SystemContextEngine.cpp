@@ -62,6 +62,7 @@ static SystemContextEngine::PowerState platformPowerState()
     CFTypeRef info = IOPSCopyPowerSourcesInfo();
     if (!info) return ps;
     CFArrayRef list = IOPSCopyPowerSourcesList(info);
+    CFRelease(info);        // Create-rule: released once list is copied out
     if (!list) return ps;
     const CFIndex n = CFArrayGetCount(list);
     for (CFIndex i = 0; i < n; ++i) {
