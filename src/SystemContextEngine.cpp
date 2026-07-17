@@ -27,7 +27,7 @@ static int platformOsIdleSeconds()
 {
     LASTINPUTINFO lii{sizeof(lii)};
     if (!GetLastInputInfo(&lii)) return -1;
-    return static_cast<int>((GetTickCount() - lii.dwTime) / 1000);
+    return static_cast<int>((GetTickCount() - lii.dwTime) / 1000);  // unsigned math: correct across the 49.7-day GetTickCount wrap
 }
 #elif defined(Q_OS_LINUX) && defined(SEELIE_HAS_XSS)
 #include <X11/Xlib.h>
@@ -37,6 +37,7 @@ static int platformOsIdleSeconds()
     Display *dpy = XOpenDisplay(nullptr);
     if (!dpy) return -1;  // Wayland — unsupported
     XScreenSaverInfo *info = XScreenSaverAllocInfo();
+    if (!info) { XCloseDisplay(dpy); return -1; }
     int idle = -1;
     if (XScreenSaverQueryInfo(dpy, DefaultRootWindow(dpy), info)) {
         idle = static_cast<int>(info->idle / 1000);
@@ -86,6 +87,8 @@ void SystemContextEngine::start()
     m_idleLatched = false;   // fresh state on restart (latches, unlike
     m_away = false;          // cooldowns, should not survive a stop→start
     m_lowBattery = false;    // cycle — user re-enabling expects a clean slate)
+    // m_awayProbeDead intentionally NOT reset: it records platform capability
+    // (e.g. Wayland), not episode state — a stop→start cycle can't fix it.
     m_clockTimer->start();
     m_sharedTimer->start();
 }
@@ -234,6 +237,10 @@ void SystemContextEngine::sharedTick()
     // would stay silent with no activity in between to release the latch.
     // (Header is frozen for this task, so emitContext can't return bool —
     // the cooldown gate is re-checked here against the same constant.)
+    // Interaction with away (below): while the user is OS-away, context.idle
+    // may still fire — accepted: the bubble auto-dismisses in 6s unseen, and
+    // the return-path welcome-back (context.away) is the meaningful event.
+    // Suppressing idle on m_away was considered and deferred to dogfooding.
     if (!m_idleLatched && now - m_lastActivityMs >= IDLE_THRESHOLD_MS) {
         const qint64 lastIdle = m_lastFired.value(QLatin1String(CE::ContextIdle), 0);
         if (now - lastIdle >= IDLE_COOLDOWN_MS) {
