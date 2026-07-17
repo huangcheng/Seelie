@@ -118,7 +118,16 @@ static SystemContextEngine::PowerState platformPowerState()
     QFile st(base.absoluteFilePath(bats.first() + QStringLiteral("/status")));
     if (!cap.open(QIODevice::ReadOnly) || !st.open(QIODevice::ReadOnly)) return ps;
     ps.present = true;
-    ps.percent = QString::fromUtf8(cap.readAll()).trimmed().toInt();
+    bool ok = false;
+    ps.percent = QString::fromUtf8(cap.readAll()).trimmed().toInt(&ok);
+    if (!ok) {
+        // Transient garbage/empty read (sysfs race, firmware update): report
+        // full charge rather than a bogus 0% — never fires, never kills the
+        // probe. Next tick retries the read.
+        ps.percent = 100;
+        ps.discharging = false;
+        return ps;
+    }
     ps.discharging = QString::fromUtf8(st.readAll()).trimmed()
         == QLatin1String("Discharging");
     return ps;
@@ -351,7 +360,10 @@ void SystemContextEngine::sharedTick()
     if (!m_batteryProbeDead && (m_sharedTickCount % 2 == 0)) {
         const PowerState ps = m_batteryFn ? m_batteryFn() : platformPowerState();
         if (!ps.present) {
-            m_batteryProbeDead = true;  // desktop / no battery — silent
+            m_batteryProbeDead = true;  // desktop / no battery — silent.
+            // TODO(resilience): a transient read failure (suspend/resume
+            // race) also lands here and disables the probe until restart;
+            // a 3-consecutive-failures counter would be more tolerant.
         } else if (ps.discharging && ps.percent <= BATTERY_LOW_PERCENT && !m_lowBattery) {
             m_lowBattery = true;
             emitContext(QLatin1String(CE::ContextLowBattery),
