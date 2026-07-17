@@ -152,6 +152,15 @@ foreach(test_src ${TEST_SOURCES})
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
 
+    # TipsCatalog resource bundle — needed by tests that resolve tip text.
+    qt_add_resources(${test_name} "tips_i18n"
+        PREFIX "/i18n"
+        BASE "${CMAKE_SOURCE_DIR}/assets"
+        FILES
+            ${CMAKE_SOURCE_DIR}/assets/i18n/tips.en.json
+            ${CMAKE_SOURCE_DIR}/assets/i18n/tips.zh_CN.json
+    )
+
     find_package(Qt6 6.5 COMPONENTS HttpServer QUIET)
     if(Qt6HttpServer_FOUND)
         target_link_libraries(${test_name} PRIVATE Qt6::HttpServer)

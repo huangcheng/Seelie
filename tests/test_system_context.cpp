@@ -21,6 +21,18 @@
 #include "ConfigManager.h"
 #include "FullscreenWatcher.h"
 
+static bool jsonHasEventKeys(const QString &path, const QStringList &keys)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    const QJsonObject events = QJsonDocument::fromJson(f.readAll())
+        .object().value(QStringLiteral("events")).toObject();
+    for (const QString &k : keys) {
+        if (!events.contains(k)) return false;
+    }
+    return true;
+}
+
 class TestSystemContext : public QObject
 {
     Q_OBJECT
@@ -31,6 +43,10 @@ private slots:
     // Task 1: registration
     void testContextEventsAccepted();
     void testUnknownContextEventRejected();
+
+    // Task 2: tips catalog entries
+    void testTipsJsonEntriesEn();
+    void testTipsJsonEntriesZhCn();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -72,6 +88,28 @@ void TestSystemContext::testUnknownContextEventRejected()
                        {QStringLiteral("source"), QStringLiteral("system")},
                        {QStringLiteral("event"), QStringLiteral("context.bogus")}});
     QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testTipsJsonEntriesEn()
+{
+    const QStringList keys = {
+        QStringLiteral("context.latenight"), QStringLiteral("context.longsession"),
+        QStringLiteral("context.idle"), QStringLiteral("context.away"),
+        QStringLiteral("context.gaming"), QStringLiteral("context.lowbattery"),
+        QStringLiteral("context.timeofday"),
+    };
+    QVERIFY(jsonHasEventKeys(QStringLiteral(SOURCE_DIR) + QStringLiteral("/assets/i18n/tips.en.json"), keys));
+}
+
+void TestSystemContext::testTipsJsonEntriesZhCn()
+{
+    const QStringList keys = {
+        QStringLiteral("context.latenight"), QStringLiteral("context.longsession"),
+        QStringLiteral("context.idle"), QStringLiteral("context.away"),
+        QStringLiteral("context.gaming"), QStringLiteral("context.lowbattery"),
+        QStringLiteral("context.timeofday"),
+    };
+    QVERIFY(jsonHasEventKeys(QStringLiteral(SOURCE_DIR) + QStringLiteral("/assets/i18n/tips.zh_CN.json"), keys));
 }
 
 QTEST_MAIN(TestSystemContext)

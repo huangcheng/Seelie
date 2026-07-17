@@ -16,7 +16,14 @@
     "notification.sent":    {"title": "Notification",         "body": "You have a new message!"},
     "file.edited":          {"title": "File saved",           "body": "Your changes have been saved."},
     "file.watched":         {"title": "",                     "body": ""},
-    "todo.updated":         {"title": "Task complete!",       "body": "Nice work checking off that todo!"}
+    "todo.updated":         {"title": "Task complete!",       "body": "Nice work checking off that todo!"},
+    "context.latenight":    {"title": "Late night",          "body": "It's getting late — consider wrapping up soon."},
+    "context.longsession":  {"title": "Long session",        "body": "You've been at this for hours. Stretch break?"},
+    "context.idle":         {"title": "Quiet…",              "body": "No activity for a while."},
+    "context.away":         {"title": "Welcome back!",       "body": "Hope you had a good break!"},
+    "context.gaming":       {"title": "Welcome back!",       "body": "GG! Hope the session went well."},
+    "context.lowbattery":   {"title": "Low battery",         "body": "Battery is running low — time to plug in."},
+    "context.timeofday":    {"title": "",                    "body": ""}
   },
   "greetings": [
     {"title": "Hi there, {name}!",   "body": "Need any help today?"},
