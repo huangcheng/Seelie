@@ -17,13 +17,13 @@
     "file.edited":          {"title": "文件已保存",     "body": "你的修改已保存。"},
     "file.watched":         {"title": "",               "body": ""},
     "todo.updated":         {"title": "任务完成！",     "body": "干得漂亮，又完成了一项待办！"},
-    "context.latenight":    {"title": "夜深了",              "body": "很晚了，早点休息吧！"},
-    "context.longsession":  {"title": "连续工作很久了",      "body": "已经好几个小时了，起来活动一下吧？"},
-    "context.idle":         {"title": "好安静…",             "body": "有一会儿没有动静了。"},
-    "context.away":         {"title": "欢迎回来！",           "body": "休息好了吗？继续加油吧！"},
-    "context.gaming":       {"title": "欢迎回来！",           "body": "游戏打得怎么样？欢迎回来！"},
-    "context.lowbattery":   {"title": "电量不足",             "body": "电池快没电了，记得插上电源。"},
-    "context.timeofday":    {"title": "",                    "body": ""}
+    "context.latenight":    {"title": "夜深了",       "body": "很晚了，早点休息吧！"},
+    "context.longsession":  {"title": "连续工作很久了",   "body": "已经好几个小时了，起来活动一下吧？"},
+    "context.idle":         {"title": "好安静…",      "body": "有一会儿没有动静了。"},
+    "context.away":         {"title": "欢迎回来！",     "body": "休息好了吗？继续加油吧！"},
+    "context.gaming":       {"title": "欢迎回来！",     "body": "游戏打得怎么样？欢迎回来！"},
+    "context.lowbattery":   {"title": "电量不足",      "body": "电池快没电了，记得插上电源。"},
+    "context.timeofday":    {"title": "",          "body": ""}
   },
   "greetings": [
     {"title": "你好呀，{name}！",   "body": "今天需要点什么帮助吗？"},
