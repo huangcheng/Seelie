@@ -460,6 +460,7 @@ Path: %2</source>
     </message>
     <message>
         <source>Character</source>
+        <comment>display mode option</comment>
         <translation>角色</translation>
     </message>
     <message>
@@ -500,6 +501,7 @@ Path: %2</source>
     </message>
     <message>
         <source>Character</source>
+        <comment>settings section title</comment>
         <translation>角色</translation>
     </message>
     <message>

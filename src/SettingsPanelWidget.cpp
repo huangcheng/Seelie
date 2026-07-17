@@ -435,7 +435,7 @@ void SettingsPanelWidget::setupUi()
     auto *modeListView = new QListView(m_modeCombo);
     modeListView->setFont(harmonyFont(10));
     m_modeCombo->setView(modeListView);
-    m_modeCombo->addItem(tr("Character"), "character");
+    m_modeCombo->addItem(tr("Character", "display mode option"), "character");
     m_modeCombo->addItem(tr("ECG Monitor"), "ecg");
     m_modeCombo->setFont(harmonyFont(10));
     m_modeCombo->setFixedHeight(24);
@@ -548,7 +548,7 @@ void SettingsPanelWidget::setupUi()
     appGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
     // --- Character group: display mode + pack picker ---
-    m_characterGroup = makeSectionGroup(tr("Character"));
+    m_characterGroup = makeSectionGroup(tr("Character", "settings section title"));
     auto *charGrid = makeGroupGrid(m_characterGroup);
     charGrid->addWidget(m_modeLabel,   0, 0, Qt::AlignLeft | Qt::AlignVCenter);
     charGrid->addWidget(m_modeCombo,   0, 1);
@@ -1454,7 +1454,7 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
     m_modeLabel->setText(tr("Mode"));
-    m_modeCombo->setItemText(0, tr("Character"));
+    m_modeCombo->setItemText(0, tr("Character", "display mode option"));
     m_modeCombo->setItemText(1, tr("ECG Monitor"));
     m_portLabel->setText(tr("Port"));
     if (m_shortcutLabel) m_shortcutLabel->setText(tr("Shortcut"));
@@ -1463,7 +1463,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     if (m_packLabel) m_packLabel->setText(tr("Model"));
     if (m_appGroup) m_appGroup->setTitle(tr("Application"));
-    if (m_characterGroup) m_characterGroup->setTitle(tr("Character"));
+    if (m_characterGroup) m_characterGroup->setTitle(tr("Character", "settings section title"));
     if (m_interactionGroup) m_interactionGroup->setTitle(tr("Interaction"));
     if (m_aiFeaturesGroup) m_aiFeaturesGroup->setTitle(tr("AI Features"));
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
