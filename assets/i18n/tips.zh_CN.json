@@ -44,5 +44,19 @@
     "update.available":    {"title": "有新版本",   "body": "Seelie {latest} 已发布，当前版本是 {current}。"},
     "update.none":         {"title": "已是最新",   "body": "Seelie {current} 已经是最新版本。"},
     "update.failed":       {"title": "检查更新失败", "body": "无法检查更新：{error}"}
+  },
+  "touch": {
+    "pet": [
+      {"title": "嗯…",            "body": "好舒服呀。"},
+      {"title": "呼噜呼噜~",      "body": "再来一下！"},
+      {"title": "嘿嘿",           "body": "有点痒！"},
+      {"title": "开心",           "body": "喜欢被摸摸。"}
+    ],
+    "toss": [
+      {"title": "哇——",           "body": "我飞起来了！"},
+      {"title": "哇！",           "body": "快放我下来！"},
+      {"title": "啊！",           "body": "干嘛扔我呀？"},
+      {"title": "晕…",            "body": "天旋地转……"}
+    ]
   }
 }

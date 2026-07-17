@@ -38,6 +38,10 @@ public:
     /// if the pool is empty.
     Tip randomGreeting() const;
 
+    /// Pick one touch-reaction line at random for `gesture` ("pet", "toss").
+    /// Empty Tip if the gesture has no lines in active or fallback locale.
+    Tip touchLine(const QString &gesture) const;
+
     /// Resolve an interaction message (about box, pack-install result, etc.)
     /// by id. Empty Tip if no entry exists in active or fallback locale.
     Tip message(const QString &id) const;
@@ -52,6 +56,7 @@ private:
         QHash<QString, Tip> events;
         QVector<Tip> greetings;
         QHash<QString, Tip> messages;
+        QHash<QString, QVector<Tip>> touch;   // gesture → line pool
     };
 
     static Bundle loadBundle(const QString &locale);

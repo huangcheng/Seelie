@@ -76,6 +76,23 @@ TipsCatalog::Tip TipsCatalog::randomGreeting() const
     return {};
 }
 
+TipsCatalog::Tip TipsCatalog::touchLine(const QString &gesture) const
+{
+    const Bundle &active = activeBundle();
+    if (auto it = active.touch.constFind(gesture);
+        it != active.touch.constEnd() && !it.value().isEmpty()) {
+        return substitute(it.value().at(
+            QRandomGenerator::global()->bounded(it.value().size())));
+    }
+    const Bundle &fb = fallbackBundle();
+    if (auto it = fb.touch.constFind(gesture);
+        it != fb.touch.constEnd() && !it.value().isEmpty()) {
+        return substitute(it.value().at(
+            QRandomGenerator::global()->bounded(it.value().size())));
+    }
+    return {};
+}
+
 TipsCatalog::Tip TipsCatalog::message(const QString &id) const
 {
     const Bundle &active = activeBundle();
@@ -151,6 +168,17 @@ TipsCatalog::Bundle TipsCatalog::loadBundle(const QString &locale)
         b.messages.insert(it.key(),
                           Tip{m.value(QStringLiteral("title")).toString(),
                               m.value(QStringLiteral("body")).toString()});
+    }
+    const QJsonObject touch = root.value(QStringLiteral("touch")).toObject();
+    for (auto it = touch.begin(); it != touch.end(); ++it) {
+        QVector<Tip> lines;
+        const QJsonArray arr = it.value().toArray();
+        for (const QJsonValue &v : arr) {
+            const QJsonObject t = v.toObject();
+            lines.append(Tip{t.value(QStringLiteral("title")).toString(),
+                             t.value(QStringLiteral("body")).toString()});
+        }
+        b.touch.insert(it.key(), lines);
     }
     qDebug() << "TipsCatalog: loaded" << b.events.size() << "event tips +"
              << b.greetings.size() << "greetings +"

@@ -13,9 +13,14 @@
 #include <QTemporaryDir>
 #include <QSettings>
 #include <QPoint>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include "ConfigManager.h"
 #include "StrokeDetector.h"
+#include "TipsCatalog.h"
 
 class TestStrokeDetector : public QObject
 {
@@ -42,6 +47,11 @@ private slots:
     void testVerticalMovementConvertsToDrag();
     void testStrokingPersistsBeyondBudget();
     void testMoveBeforePressIsNoop();
+
+    // Task 4: touch line pools
+    void testTipsJsonTouchPools();
+    void testTouchLineAccessor();
+    void testTouchLineUnknownGestureEmpty();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -242,6 +252,34 @@ void TestStrokeDetector::testMoveBeforePressIsNoop()
     StrokeDetector d;
     d.move(QPoint(100, 100), 1000);   // no press() — Idle guard must swallow it
     QCOMPARE(d.phase(), StrokeDetector::Phase::Idle);
+}
+
+void TestStrokeDetector::testTipsJsonTouchPools()
+{
+    for (const QString &file : {QStringLiteral("/assets/i18n/tips.en.json"),
+                                QStringLiteral("/assets/i18n/tips.zh_CN.json")}) {
+        QFile f(QStringLiteral(SOURCE_DIR) + file);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QJsonObject touch = QJsonDocument::fromJson(f.readAll())
+            .object().value(QStringLiteral("touch")).toObject();
+        QVERIFY(touch.contains(QStringLiteral("pet")));
+        QVERIFY(touch.contains(QStringLiteral("toss")));
+        QVERIFY(touch.value(QStringLiteral("pet")).toArray().size() >= 3);
+        QVERIFY(touch.value(QStringLiteral("toss")).toArray().size() >= 3);
+    }
+}
+
+void TestStrokeDetector::testTouchLineAccessor()
+{
+    // TipsCatalog singleton reads the qrc bundle (all test targets carry it).
+    const auto tip = TipsCatalog::instance().touchLine(QStringLiteral("pet"));
+    QVERIFY(!tip.body.isEmpty());
+}
+
+void TestStrokeDetector::testTouchLineUnknownGestureEmpty()
+{
+    const auto tip = TipsCatalog::instance().touchLine(QStringLiteral("backflip"));
+    QVERIFY(tip.body.isEmpty());
 }
 
 QTEST_MAIN(TestStrokeDetector)
