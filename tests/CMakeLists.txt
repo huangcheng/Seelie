@@ -156,6 +156,8 @@ foreach(test_src ${TEST_SOURCES})
                 target_compile_definitions(${test_name} PRIVATE SEELIE_HAS_XSS=1)
                 target_link_libraries(${test_name} PRIVATE ${X11_Xss_LIB})
             endif()
+        else()
+            message(STATUS "X11 not found — FullscreenWatcher and OS-idle probe will be no-ops")
         endif()
     endif()
     target_include_directories(${test_name} PRIVATE

@@ -892,6 +892,8 @@ if(UNIX AND NOT APPLE)
             target_compile_definitions(Seelie PRIVATE SEELIE_HAS_XSS=1)
             target_link_libraries(Seelie PRIVATE ${X11_Xss_LIB})
         endif()
+    else()
+        message(STATUS "X11 not found — FullscreenWatcher and OS-idle probe will be no-ops")
     endif()
 endif()
 

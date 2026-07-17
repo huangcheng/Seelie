@@ -16,8 +16,9 @@ class QTimer;
  *   macOS    — CGWindowListCopyWindowInfo; covers borderless fullscreen.
  *               True fullscreen apps live in their own Space, so overlap
  *               is rare but the check still runs correctly.
- *   Linux    — Not yet implemented; isFullscreenAppActive() always returns
- *               false (Gaming Mode is a no-op, no crash).
+ *   Linux    — X11: _NET_ACTIVE_WINDOW + _NET_WM_STATE_FULLSCREEN scan
+ *               (built only when SEELIE_HAS_X11 is defined by CMake).
+ *               Wayland / no-X11-dev-files: no-op returning false.
  */
 class FullscreenWatcher : public QObject
 {

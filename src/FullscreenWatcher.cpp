@@ -164,6 +164,14 @@ static bool platformCheckFullscreen()
         XFree(prop);
         prop = nullptr;
 
+        // _NET_ACTIVE_WINDOW is None (0) when no window has focus (EWMH).
+        // Querying window 0 raises BadWindow, and Xlib's default async error
+        // handler exits the process — guard before the second query.
+        if (active == 0) {
+            XCloseDisplay(dpy);
+            return false;
+        }
+
         unsigned char *stateProp = nullptr;
         if (XGetWindowProperty(dpy, active, netState, 0, 32, False,
                                XA_ATOM, &actualType, &actualFormat, &nitems,
