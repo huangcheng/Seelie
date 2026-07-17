@@ -587,6 +587,10 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
+    // Spec 3 note: no explicit StrokeDetector reset here — Qt's
+    // press→release→doubleClick sequence already consumed the stroke session
+    // via mouseReleaseEvent (Undecided release = click), so the detector is
+    // reset by the time this handler runs.
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
         // Poke write (Task 9 → Task 10 Rider B): same throttle/affection logic
         // as mouseReleaseEvent; m_lastPokeWriteMs is shared so click+dblclick

@@ -1386,3 +1386,44 @@ git commit -m "docs: mark Spec 3 (TouchReactions) shipped"
 - **Type consistency:** `StrokeDetector::Phase{Idle,Undecided,Stroking,Dragging}` uniform; `takeStrokePulses/takeDragEngaged/releaseSpeedPxPerSec` match header; FSM `State::Petted/Grabbed/Tossed` added at enum END (Q_ENUM/value stability); `touchLine(const QString &)` returns `TipsCatalog::Tip`.
 - **Deliberate deviations from first-draft spec:** VelocityTracker folded into StrokeDetector (one class, fewer files — spec mentioned two units; the class doc comment records it); pet/toss have NO Idle gate on the FSM overlay (unlike click→Greeting) — spec §2 says overlays interrupt; recorded here.
 - **Known untested-by-automation areas:** T5/T6 widget wiring (detector purity + FSM suites cover logic; manual smoke assigned to user in T8).
+
+---
+
+## Execution Errata (recorded 2026-07-17, after subagent-driven execution)
+
+Issues found by implementers' TDD red phases or the per-task review loops; all fixed
+in code. Kept as lessons, per the pet-memory-2/context-senses precedent.
+
+1. **T3 — one-shot timer raced the sustained overlay (review catch).** `user.grab`
+   during an active Petted/Tossed one-shot left `m_oneShotTimer` running; its
+   timeout cleared Grabbed mid-drag. Fixed with `m_oneShotTimer.stop()` in
+   `enterSustainedOverlay` + `testGrabDuringOneShotCancelsTimer` (`a7a8606`).
+   *Lesson: a shared single timer across overlay kinds must be cancelled on
+   every kind transition.*
+2. **T1 — signal test missed the early-return path.** Strengthened to verify
+   no-emit-on-same-value (`7bbdeb6`), mirroring the test_gaming_mode donor.
+3. **T2 — invariants unpinned.** Added tests for vertical→drag conversion,
+   stroke-persistence-beyond-budget, and move-before-press Idle guard
+   (`bccc2b9`). *Lesson: deliberate design constraints need tests, or a future
+   maintainer "fixes" them.*
+4. **T6 — milestone bubble overwritten by canned bubble.** First-ever pet/toss
+   showed the canned line instead of the one-time milestone. Guard added via
+   `hasMilestone`-before-`checkMilestone` capture (`95b99be`).
+5. **Chain candidates adjusted for Live2D fallbacks.** The ctor default chains
+   use `TouchHead`/`TouchBody`/`Tap` (Live2D names) where the spec table had
+   `Greeting`/`running-left`/`attention`; the `rebuildChainsFromMaps` lowercase
+   canonical candidates match the spec. Pragmatic for current packs; true
+   touch frames in future packs resolve first either way.
+6. **i18n tone alignment.** zh first-toss title aligned to the body's verb
+   (抛接→抛出, `136afc0`); zh pet title tonal fix (开心→开心~, `2006584`);
+   catalog load log gained the touch-pool count (`2006584`).
+7. **Known edge (no fix planned):** drag → cursor leaves window (`grabEnd`
+   delivered) → re-enters holding the button: the window keeps moving
+   correctly, but the Grabbed overlay does not re-engage until the next grab.
+   Harmless; documented here.
+8. **`mouseDoubleClickEvent` detector reset is implicit.** Qt's
+   press→release→doubleClick sequence means the detector is already reset via
+   the release; no explicit cancel in the handler (comment added post-review).
+
+**Final state:** 14 commits on `touch-reactions`, suite 19/19 (12 detector +
+7 FSM touch tests), final whole-implementation review verdict READY TO MERGE.
