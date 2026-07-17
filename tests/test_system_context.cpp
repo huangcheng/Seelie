@@ -79,6 +79,11 @@ private slots:
     void testAwaySilentWhileAway();
     void testAwayProbeUnsupportedDisables();
 
+    // Task 8: battery
+    void testLowBatteryFires();
+    void testLowBatteryLatchAndRearm();
+    void testNoBatteryDisablesProbe();
+
 private:
     QTemporaryDir m_tmpDir;
 };
@@ -459,6 +464,63 @@ void TestSystemContext::testAwayProbeUnsupportedDisables()
     engine.start();
     engine.sharedTick();
     engine.sharedTick();  // probe dead after first failure — no crash, no event
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testLowBatteryFires()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(16, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.setOsIdleProbe([] { return 0; });
+    engine.setBatteryProbe([] {
+        return SystemContextEngine::PowerState{true, true, 15};
+    });
+    engine.start();
+    engine.sharedTick();   // tick 1 — battery not evaluated
+    QCOMPARE(spy.count(), 0);
+    engine.sharedTick();   // tick 2 — battery evaluated
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("context.lowbattery"));
+}
+
+void TestSystemContext::testLowBatteryLatchAndRearm()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(16, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.setOsIdleProbe([] { return 0; });
+    SystemContextEngine::PowerState ps{true, true, 15};
+    engine.setBatteryProbe([&ps] { return ps; });
+    engine.start();
+    engine.sharedTick(); engine.sharedTick();  // fires (tick 2)
+    QCOMPARE(spy.count(), 1);
+    engine.sharedTick(); engine.sharedTick();  // latched — no refire at 15%
+    QCOMPARE(spy.count(), 1);
+    ps.discharging = false;                     // AC attached → re-arm
+    engine.sharedTick(); engine.sharedTick();
+    QCOMPARE(spy.count(), 1);
+    ps = {true, true, 18};                      // unplugged again, still low
+    engine.sharedTick(); engine.sharedTick();
+    QCOMPARE(spy.count(), 2);
+}
+
+void TestSystemContext::testNoBatteryDisablesProbe()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    engine.setOsIdleProbe([] { return 0; });
+    engine.setBatteryProbe([] { return SystemContextEngine::PowerState{}; });  // desktop
+    engine.start();
+    for (int i = 0; i < 4; ++i) engine.sharedTick();
     QCOMPARE(spy.count(), 0);
 }
 

@@ -788,8 +788,9 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets/lottie
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
     # AppKit is needed for MacFocusFix.mm (NSWindow / NSPanel APIs).
-    # CoreGraphics is needed for FullscreenWatcher.cpp (CGWindowListCopyWindowInfo).
-    target_link_libraries(Seelie PRIVATE "-framework AppKit" "-framework CoreGraphics")
+    # CoreGraphics: FullscreenWatcher + SystemContextEngine idle probe.
+    # IOKit: SystemContextEngine battery probe (IOPSCopyPowerSourcesInfo).
+    target_link_libraries(Seelie PRIVATE "-framework AppKit" "-framework CoreGraphics" "-framework IOKit")
     # Bake the @executable_path rpath into the binary at link time. macdeployqt
     # is supposed to do this post-build via install_name_tool, but it fails on
     # malformed bundled QtQml frameworks and aborts before fixing rpath. And

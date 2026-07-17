@@ -53,6 +53,82 @@ static int platformOsIdleSeconds()
 }
 #endif
 
+#if defined(Q_OS_MAC)
+#include <IOKit/ps/IOPSKeys.h>
+#include <IOKit/ps/IOPowerSources.h>
+static SystemContextEngine::PowerState platformPowerState()
+{
+    SystemContextEngine::PowerState ps;
+    CFTypeRef info = IOPSCopyPowerSourcesInfo();
+    if (!info) return ps;
+    CFArrayRef list = IOPSCopyPowerSourcesList(info);
+    if (!list) return ps;
+    const CFIndex n = CFArrayGetCount(list);
+    for (CFIndex i = 0; i < n; ++i) {
+        CFDictionaryRef src = static_cast<CFDictionaryRef>(
+            CFArrayGetValueAtIndex(list, i));
+        if (!src) continue;
+        // Only consider internal batteries (skip UPS etc. absent Type check)
+        CFStringRef type = static_cast<CFStringRef>(
+            CFDictionaryGetValue(src, CFSTR(kIOPSTypeKey)));
+        if (!type || CFStringCompare(type, CFSTR(kIOPSInternalBatteryType), 0)
+                != kCFCompareEqualTo) continue;
+        CFNumberRef cur = static_cast<CFNumberRef>(
+            CFDictionaryGetValue(src, CFSTR(kIOPSCurrentCapacityKey)));
+        CFBooleanRef charging = static_cast<CFBooleanRef>(
+            CFDictionaryGetValue(src, CFSTR(kIOPSIsChargingKey)));
+        CFStringRef state = static_cast<CFStringRef>(
+            CFDictionaryGetValue(src, CFSTR(kIOPSPowerSourceStateKey)));
+        int pct = 100;
+        if (cur) CFNumberGetValue(cur, kCFNumberIntType, &pct);
+        ps.present = true;
+        ps.percent = pct;
+        const bool onAc = state && CFStringCompare(state, CFSTR(kIOPSACPowerValue), 0)
+                              == kCFCompareEqualTo;
+        ps.discharging = !onAc && !(charging && CFBooleanGetValue(charging));
+        break;  // first internal battery wins
+    }
+    CFRelease(list);
+    return ps;
+}
+#elif defined(Q_OS_WIN)
+static SystemContextEngine::PowerState platformPowerState()
+{
+    SystemContextEngine::PowerState ps;
+    SYSTEM_POWER_STATUS sps = {};
+    if (!GetSystemPowerStatus(&sps)) return ps;
+    if (sps.BatteryFlag & 128) return ps;      // no system battery
+    if (sps.BatteryLifePercent > 100) return ps; // 255 = unknown
+    ps.present = true;
+    ps.discharging = (sps.ACLineStatus == 0);
+    ps.percent = sps.BatteryLifePercent;
+    return ps;
+}
+#elif defined(Q_OS_LINUX)
+#include <QDir>
+#include <QFile>
+static SystemContextEngine::PowerState platformPowerState()
+{
+    SystemContextEngine::PowerState ps;
+    const QDir base(QStringLiteral("/sys/class/power_supply"));
+    const QStringList bats = base.entryList({QStringLiteral("BAT*")}, QDir::Dirs);
+    if (bats.isEmpty()) return ps;
+    QFile cap(base.absoluteFilePath(bats.first() + QStringLiteral("/capacity")));
+    QFile st(base.absoluteFilePath(bats.first() + QStringLiteral("/status")));
+    if (!cap.open(QIODevice::ReadOnly) || !st.open(QIODevice::ReadOnly)) return ps;
+    ps.present = true;
+    ps.percent = QString::fromUtf8(cap.readAll()).trimmed().toInt();
+    ps.discharging = QString::fromUtf8(st.readAll()).trimmed()
+        == QLatin1String("Discharging");
+    return ps;
+}
+#else
+static SystemContextEngine::PowerState platformPowerState()
+{
+    return {};
+}
+#endif
+
 SystemContextEngine::SystemContextEngine(EventRouter *router, ConfigManager *config,
                                          QObject *parent)
     : QObject(parent)
@@ -269,7 +345,20 @@ void SystemContextEngine::sharedTick()
         }
     }
 
-    // Task 8: battery probe (every 2nd tick) goes here.
+    // Battery: every second shared tick (≈60 s). Latch + re-arm: fire once
+    // when crossing ≤20% discharging; re-arm on AC attach or charge > 30%.
+    if (!m_batteryProbeDead && (m_sharedTickCount % 2 == 0)) {
+        const PowerState ps = m_batteryFn ? m_batteryFn() : platformPowerState();
+        if (!ps.present) {
+            m_batteryProbeDead = true;  // desktop / no battery — silent
+        } else if (ps.discharging && ps.percent <= BATTERY_LOW_PERCENT && !m_lowBattery) {
+            m_lowBattery = true;
+            emitContext(QLatin1String(CE::ContextLowBattery),
+                        {{QStringLiteral("percent"), ps.percent}});
+        } else if (!ps.discharging || ps.percent > BATTERY_REARM_PERCENT) {
+            m_lowBattery = false;
+        }
+    }
 }
 
 // Task 9 fills this in.

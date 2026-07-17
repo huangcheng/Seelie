@@ -141,7 +141,8 @@ foreach(test_src ${TEST_SOURCES})
     if(APPLE)
         # MacFocusFix.mm uses NSWindow / NSPanel from AppKit.
         # FullscreenWatcher.cpp uses CGWindowListCopyWindowInfo from CoreGraphics.
-        target_link_libraries(${test_name} PRIVATE "-framework AppKit" "-framework CoreGraphics")
+        # SystemContextEngine.cpp uses IOPSCopyPowerSourcesInfo from IOKit.
+        target_link_libraries(${test_name} PRIVATE "-framework AppKit" "-framework CoreGraphics" "-framework IOKit")
     endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
