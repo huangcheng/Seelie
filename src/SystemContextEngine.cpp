@@ -12,6 +12,46 @@
 
 namespace CE = CanonicalEvents;
 
+// ── Platform probes ─────────────────────────────────────────────────────────
+
+#if defined(Q_OS_MAC)
+#include <CoreGraphics/CoreGraphics.h>
+static int platformOsIdleSeconds()
+{
+    return static_cast<int>(CGEventSourceSecondsSinceLastEventType(
+        kCGEventSourceStateHIDSystemState, kCGAnyInputEventType));
+}
+#elif defined(Q_OS_WIN)
+#include <windows.h>
+static int platformOsIdleSeconds()
+{
+    LASTINPUTINFO lii{sizeof(lii)};
+    if (!GetLastInputInfo(&lii)) return -1;
+    return static_cast<int>((GetTickCount() - lii.dwTime) / 1000);
+}
+#elif defined(Q_OS_LINUX) && defined(SEELIE_HAS_XSS)
+#include <X11/Xlib.h>
+#include <X11/extensions/scrnsaver.h>
+static int platformOsIdleSeconds()
+{
+    Display *dpy = XOpenDisplay(nullptr);
+    if (!dpy) return -1;  // Wayland — unsupported
+    XScreenSaverInfo *info = XScreenSaverAllocInfo();
+    int idle = -1;
+    if (XScreenSaverQueryInfo(dpy, DefaultRootWindow(dpy), info)) {
+        idle = static_cast<int>(info->idle / 1000);
+    }
+    XFree(info);
+    XCloseDisplay(dpy);
+    return idle;
+}
+#else
+static int platformOsIdleSeconds()
+{
+    return -1;  // unsupported platform — detector self-disables
+}
+#endif
+
 SystemContextEngine::SystemContextEngine(EventRouter *router, ConfigManager *config,
                                          QObject *parent)
     : QObject(parent)
@@ -203,7 +243,25 @@ void SystemContextEngine::sharedTick()
         }
     }
 
-    // Task 7: OS-away probe goes here.
+    // OS-away: fires on RETURN, not while away (a bubble for an absent user
+    // is pointless — mirrors the gaming quiet-hide decision). Probe returning
+    // -1 means unsupported (Wayland); disable after a single warning.
+    if (!m_awayProbeDead) {
+        const int idleSec = m_osIdleFn ? m_osIdleFn() : platformOsIdleSeconds();
+        if (idleSec < 0) {
+            m_awayProbeDead = true;
+            qWarning() << "SystemContextEngine: OS idle probe unsupported — context.away disabled";
+        } else if (!m_away && idleSec >= AWAY_THRESHOLD_SEC) {
+            m_away = true;
+            m_awayStartMs = now - static_cast<qint64>(idleSec) * 1000;
+        } else if (m_away && idleSec < AWAY_THRESHOLD_SEC) {
+            const qint64 awayMs = now - m_awayStartMs;
+            m_away = false;
+            emitContext(QLatin1String(CE::ContextAway),
+                        {{QStringLiteral("awayMinutes"), awayMs / 60000}});
+        }
+    }
+
     // Task 8: battery probe (every 2nd tick) goes here.
 }
 

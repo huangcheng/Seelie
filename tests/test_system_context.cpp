@@ -74,6 +74,11 @@ private slots:
     void testTimeOfDayNightBucket();
     void testTimeOfDayOncePerSession();
 
+    // Task 7: away
+    void testAwayFiresOnReturn();
+    void testAwaySilentWhileAway();
+    void testAwayProbeUnsupportedDisables();
+
 private:
     QTemporaryDir m_tmpDir;
 };
@@ -402,6 +407,59 @@ void TestSystemContext::testTimeOfDayOncePerSession()
         if (args.at(0).toString() == QStringLiteral("context.timeofday")) ++count;
     }
     QCOMPARE(count, 1);
+}
+
+void TestSystemContext::testAwayFiresOnReturn()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(16, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    int osIdleSec = 0;
+    engine.setOsIdleProbe([&osIdleSec] { return osIdleSec; });
+    engine.start();
+    fakeNow += 6LL * 60 * 1000;  // user walks away
+    osIdleSec = 360;
+    engine.sharedTick();         // enters away state — no event yet
+    QCOMPARE(spy.count(), 0);
+    fakeNow += 60 * 1000;
+    osIdleSec = 0;               // user returns
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 1);
+    const auto args = spy.takeFirst();
+    QCOMPARE(args.at(0).toString(), QStringLiteral("context.away"));
+    QVERIFY(args.at(1).toJsonObject().value(QStringLiteral("awayMinutes")).toInt() >= 6);
+}
+
+void TestSystemContext::testAwaySilentWhileAway()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(16, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    int osIdleSec = 400;
+    engine.setOsIdleProbe([&osIdleSec] { return osIdleSec; });
+    engine.start();
+    engine.sharedTick();
+    engine.sharedTick();  // still away — must not fire per tick
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testAwayProbeUnsupportedDisables()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    engine.setOsIdleProbe([] { return -1; });  // e.g. Wayland
+    engine.start();
+    engine.sharedTick();
+    engine.sharedTick();  // probe dead after first failure — no crash, no event
+    QCOMPARE(spy.count(), 0);
 }
 
 QTEST_MAIN(TestSystemContext)
