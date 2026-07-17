@@ -242,6 +242,22 @@ Please restart Seelie for changes to take full effect.</source>
         <source>%1h %2m, %3 events</source>
         <translation>%1 小时 %2 分，%3 个事件</translation>
     </message>
+    <message>
+        <source>First pet!</source>
+        <translation>第一次抚摸！</translation>
+    </message>
+    <message>
+        <source>You petted Seelie for the first time.</source>
+        <translation>你第一次抚摸了 Seelie。</translation>
+    </message>
+    <message>
+        <source>First toss!</source>
+        <translation>第一次抛接！</translation>
+    </message>
+    <message>
+        <source>You threw Seelie across the screen.</source>
+        <translation>你把 Seelie 扔了出去。</translation>
+    </message>
 </context>
 <context>
     <name>PackCategories</name>
@@ -631,6 +647,10 @@ Path: %2</source>
     <message>
         <source>Event Tips</source>
         <translation>事件提示</translation>
+    </message>
+    <message>
+        <source>Touch Reactions</source>
+        <translation>触摸互动</translation>
     </message>
     <message>
         <source>General</source>

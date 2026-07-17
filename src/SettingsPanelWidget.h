@@ -91,6 +91,7 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
+    void onTouchReactionsToggled(bool checked);
 
     void refreshLlmProfilesUi();
     void onAddProfileClicked();
@@ -156,6 +157,8 @@ private:
     QCheckBox *m_gamingModeCheck = nullptr;
     QLabel *m_tipBubblesLabel = nullptr;
     QCheckBox *m_tipBubblesCheck = nullptr;
+    QLabel *m_touchReactionsLabel = nullptr;
+    QCheckBox *m_touchReactionsCheck = nullptr;
     QLabel *m_personaEnabledLabel = nullptr;
 
     // Tab buttons (left side)
