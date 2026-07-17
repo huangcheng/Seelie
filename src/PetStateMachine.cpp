@@ -35,6 +35,12 @@ PetStateMachine::PetStateMachine(QObject *parent)
     m_chains[State::Failed]      = {"failed", "alert", "Alert", "TouchHead", "Tap"};
     m_chains[State::Celebrating] = {"jumping", "celebrate", "Congratulate", "TouchBody", "Tap"};
 
+    // Spec 3 touch overlays: semantic-first candidates; packs without touch
+    // frames fall back to attention/celebration/running animations.
+    m_chains[State::Petted]  = {"pat", "happy", "celebrate", "Congratulate", "TouchHead", "Tap"};
+    m_chains[State::Grabbed] = {"grab", "alert", "Alert", "GetAttention", "TouchBody", "Tap"};
+    m_chains[State::Tossed]  = {"toss", "running", "running-right", "GestureUp", "TouchBody", "Tap"};
+
     // M6: Store the immutable engine defaults so rebuildChainsFromMaps() can
     // always re-derive chains from the true originals rather than from the
     // current (potentially already-overridden) m_chains.
@@ -133,6 +139,26 @@ void PetStateMachine::onSyntheticEvent(const QString &eventName)
         if (m_baseState == State::Idle && m_overlayState == State::Idle) {
             enterOneShot(State::Greeting, NOTIFICATION_ONESHOT_MS);
         }
+        return;
+    }
+    if (eventName == "user.pet") {
+        // No Idle gate (unlike click->Greeting): a physical interaction
+        // interrupts whatever the pet is doing; restore machinery returns
+        // to the saved sustained state afterwards.
+        enterOneShot(State::Petted, NOTIFICATION_ONESHOT_MS);
+        return;
+    }
+    if (eventName == "user.toss") {
+        enterOneShot(State::Tossed, NOTIFICATION_ONESHOT_MS);
+        return;
+    }
+    if (eventName == "user.grab") {
+        enterSustainedOverlay(State::Grabbed);
+        return;
+    }
+    if (eventName == "user.grabEnd") {
+        onOneShotFinished();  // shared restore: overlay clear + grace re-arm
+        return;
     }
     // Hover events (user.hoverEnter / user.hoverLeave) are accepted but
     // intentionally ignored: they're not state-changing per the spec.
@@ -277,6 +303,17 @@ void PetStateMachine::enterOneShot(State s, int durationMs)
     emit stateChanged(activeState());
     emitChainFor(s, HighPriority);
 }
+void PetStateMachine::enterSustainedOverlay(State s)
+{
+    // Sustained overlay: enterOneShot's save/emit shape without the timer --
+    // the caller exits explicitly (user.grabEnd -> onOneShotFinished).
+    if (m_overlayState == State::Idle) {
+        m_savedSustained = m_baseState;
+    }
+    m_overlayState = s;
+    emit stateChanged(activeState());
+    emitChainFor(s, HighPriority);
+}
 void PetStateMachine::emitChainFor(State s, Priority priority)
 {
     QStringList chain = resolveChain(s);
@@ -302,6 +339,9 @@ void PetStateMachine::rebuildChainsFromMaps(const QMap<QString, QStringList> &st
         {State::Reviewing,   "Reviewing",   {"attention", "gettechy", "getwizardy"}},
         {State::Failed,      "Failed",      {"alert"}},
         {State::Celebrating, "Celebrating", {"celebrate", "congratulate"}},
+        {State::Petted,      "Petted",      {"pat", "happy", "celebrate", "congratulate"}},
+        {State::Grabbed,     "Grabbed",     {"grab", "alert", "getattention", "attention"}},
+        {State::Tossed,      "Tossed",      {"toss", "running", "gesture_up"}},
     };
 
     // M6: Use the immutable engine defaults, not the current m_chains (which
@@ -366,6 +406,9 @@ QString PetStateMachine::stateName(State s)
         case State::Reviewing: return "Reviewing";
         case State::Failed: return "Failed";
         case State::Celebrating: return "Celebrating";
+        case State::Petted: return "Petted";
+        case State::Grabbed: return "Grabbed";
+        case State::Tossed: return "Tossed";
     }
     return "?";
 }

@@ -34,6 +34,10 @@ public:
         Reviewing,
         Failed,
         Celebrating,
+        // Spec 3 (TouchReactions): touch overlay states.
+        Petted,
+        Grabbed,
+        Tossed,
     };
     Q_ENUM(State)
 
@@ -84,6 +88,10 @@ private slots:
 private:
     void enterBase(State s, Priority priority);
     void enterOneShot(State s, int durationMs);
+    /// Sustained overlay with NO timer (Grabbed during window drag). Same
+    /// save/emit shape as enterOneShot; exited explicitly via grabEnd ->
+    /// onOneShotFinished (shared restore path, grace re-arm included).
+    void enterSustainedOverlay(State s);
     void emitChainFor(State s, Priority priority);
     void rebuildChainsFromPack(const CharacterPack *pack);
     QStringList resolveChain(State s) const;

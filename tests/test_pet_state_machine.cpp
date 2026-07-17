@@ -35,6 +35,13 @@ private slots:
     void testCodexNameMapRebuildsChains();
     void testExplicitStateMapOverridesNameMap();
     void testFailedOverlayPreservesWorkingGrace();
+    // Task 3 (Spec 3): touch states
+    void testPetOneShotReturnsToIdle();
+    void testPetRetriggerRefreshesOneShot();
+    void testGrabSustainedUntilGrabEnd();
+    void testTossOneShot();
+    void testPetOverlayFromWorkingRestoresWorking();
+    void testTouchChainsResolveFallback();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -293,6 +300,68 @@ void TestPetStateMachine::testFailedOverlayPreservesWorkingGrace()
     // sustained state. Poll so a late timer fire doesn't race the check.
     QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testPetOneShotReturnsToIdle()
+{
+    initFsm();
+    m_fsm->onSyntheticEvent("user.pet");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testPetRetriggerRefreshesOneShot()
+{
+    initFsm();
+    m_fsm->onSyntheticEvent("user.pet");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTest::qWait(1000);                 // half the one-shot (NOTIFICATION_ONESHOT_MS=2000)
+    m_fsm->onSyntheticEvent("user.pet");  // re-stroke -> timer restarts
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTest::qWait(1000);                 // total 2000ms but only 1000ms since re-trigger
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testGrabSustainedUntilGrabEnd()
+{
+    initFsm();
+    m_fsm->onSyntheticEvent("user.grab");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Grabbed);
+    QTest::qWait(2500);  // > NOTIFICATION_ONESHOT_MS -- sustained: must NOT expire
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Grabbed);
+    m_fsm->onSyntheticEvent("user.grabEnd");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testTossOneShot()
+{
+    initFsm();
+    m_fsm->onSyntheticEvent("user.toss");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Tossed);
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testPetOverlayFromWorkingRestoresWorking()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("tool.before");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+    m_fsm->onSyntheticEvent("user.pet");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTRY_COMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testTouchChainsResolveFallback()
+{
+    initFsm();
+    QSignalSpy spy(m_fsm, &PetStateMachine::animationRequested);
+    m_fsm->onSyntheticEvent("user.pet");
+    QVERIFY(spy.count() >= 1);
+    const QStringList chain = spy.takeFirst().at(0).toStringList();
+    QVERIFY(!chain.isEmpty());
+    // Default chain ends with the idle fallback appended by emitChainFor.
+    QCOMPARE(chain.last(), QStringLiteral("idle"));
 }
 
 QTEST_MAIN(TestPetStateMachine)
