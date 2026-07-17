@@ -880,6 +880,21 @@ if(APPLE)
     )
 endif()
 
+if(UNIX AND NOT APPLE)
+    # X11: FullscreenWatcher (Spec 2) and SystemContextEngine OS-idle probe.
+    # Optional: absent X11 dev files keep both features as runtime no-ops.
+    find_package(X11)
+    if(X11_FOUND)
+        target_compile_definitions(Seelie PRIVATE SEELIE_HAS_X11=1)
+        target_include_directories(Seelie PRIVATE ${X11_INCLUDE_DIR})
+        target_link_libraries(Seelie PRIVATE ${X11_LIBRARIES})
+        if(X11_Xss_FOUND)
+            target_compile_definitions(Seelie PRIVATE SEELIE_HAS_XSS=1)
+            target_link_libraries(Seelie PRIVATE ${X11_Xss_LIB})
+        endif()
+    endif()
+endif()
+
 qt_generate_deploy_app_script(
     TARGET Seelie
     OUTPUT_SCRIPT deploy_script

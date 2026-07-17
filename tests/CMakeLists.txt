@@ -144,6 +144,20 @@ foreach(test_src ${TEST_SOURCES})
         # SystemContextEngine.cpp uses IOPSCopyPowerSourcesInfo from IOKit.
         target_link_libraries(${test_name} PRIVATE "-framework AppKit" "-framework CoreGraphics" "-framework IOKit")
     endif()
+    if(UNIX AND NOT APPLE)
+        # X11: FullscreenWatcher (Spec 2) and SystemContextEngine OS-idle probe.
+        # Optional: absent X11 dev files keep both features as runtime no-ops.
+        find_package(X11)
+        if(X11_FOUND)
+            target_compile_definitions(${test_name} PRIVATE SEELIE_HAS_X11=1)
+            target_include_directories(${test_name} PRIVATE ${X11_INCLUDE_DIR})
+            target_link_libraries(${test_name} PRIVATE ${X11_LIBRARIES})
+            if(X11_Xss_FOUND)
+                target_compile_definitions(${test_name} PRIVATE SEELIE_HAS_XSS=1)
+                target_link_libraries(${test_name} PRIVATE ${X11_Xss_LIB})
+            endif()
+        endif()
+    endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${rlottie_SOURCE_DIR}/inc

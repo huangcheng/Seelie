@@ -24,6 +24,22 @@
 #include "FullscreenWatcher.h"
 #include "SystemContextEngine.h"
 
+// Testable subclass that overrides checkFullscreen() — same shape as the one
+// in test_gaming_mode.cpp (invokeMethod reaches the private slot onPoll via
+// the meta-object, so we don't need to friend it).
+class MockFullscreenWatcher : public FullscreenWatcher
+{
+public:
+    explicit MockFullscreenWatcher(QObject *parent = nullptr)
+        : FullscreenWatcher(parent) {}
+    void setNextResult(bool r) { m_next = r; }
+    void poll() { QMetaObject::invokeMethod(this, "onPoll", Qt::DirectConnection); }
+protected:
+    bool checkFullscreen() override { return m_next; }
+private:
+    bool m_next = false;
+};
+
 static bool jsonHasEventKeys(const QString &path, const QStringList &keys)
 {
     QFile f(path);
@@ -83,6 +99,11 @@ private slots:
     void testLowBatteryFires();
     void testLowBatteryLatchAndRearm();
     void testNoBatteryDisablesProbe();
+
+    // Task 9: gaming
+    void testGamingFiresOnFullscreenStop();
+    void testGamingSilentOnFullscreenStart();
+    void testGamingCooldown();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -522,6 +543,56 @@ void TestSystemContext::testNoBatteryDisablesProbe()
     engine.start();
     for (int i = 0; i < 4; ++i) engine.sharedTick();
     QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testGamingFiresOnFullscreenStop()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    MockFullscreenWatcher watcher;
+    engine.setFullscreenWatcher(&watcher);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    engine.start();
+    watcher.setNextResult(true);
+    watcher.poll();    // fullscreen starts — silent
+    QCOMPARE(spy.count(), 0);
+    watcher.setNextResult(false);
+    watcher.poll();    // fullscreen stops — welcome back
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("context.gaming"));
+}
+
+void TestSystemContext::testGamingSilentOnFullscreenStart()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    MockFullscreenWatcher watcher;
+    engine.setFullscreenWatcher(&watcher);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    engine.start();
+    watcher.setNextResult(true);
+    watcher.poll();
+    watcher.poll();    // steady state, still fullscreen
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testGamingCooldown()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    MockFullscreenWatcher watcher;
+    engine.setFullscreenWatcher(&watcher);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    engine.start();
+    watcher.setNextResult(true);  watcher.poll();
+    watcher.setNextResult(false); watcher.poll();  // fires
+    QCOMPARE(spy.count(), 1);
+    watcher.setNextResult(true);  watcher.poll();
+    watcher.setNextResult(false); watcher.poll();  // within 30min cooldown
+    QCOMPARE(spy.count(), 1);
 }
 
 QTEST_MAIN(TestSystemContext)

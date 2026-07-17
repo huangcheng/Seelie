@@ -122,9 +122,67 @@ static bool platformCheckFullscreen()
     return result;
 }
 
+#elif defined(Q_OS_LINUX) && defined(SEELIE_HAS_X11)
+
+// Linux/X11: focused window carries _NET_WM_STATE_FULLSCREEN. Wayland has no
+// compositor-agnostic equivalent — XOpenDisplay fails there and we stay a
+// no-op with a one-time warning (spec decision 2026-07-17).
+
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
+static bool platformCheckFullscreen()
+{
+    Display *dpy = XOpenDisplay(nullptr);
+    if (!dpy) {
+        static bool warned = false;
+        if (!warned) {
+            warned = true;
+            qWarning() << "FullscreenWatcher: X11 unavailable (Wayland?) — Gaming Mode disabled";
+        }
+        return false;
+    }
+
+    bool result = false;
+    const Atom netActive = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", True);
+    const Atom netState = XInternAtom(dpy, "_NET_WM_STATE", True);
+    const Atom netFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", True);
+    if (netActive == None || netState == None || netFullscreen == None) {
+        XCloseDisplay(dpy);
+        return false;
+    }
+
+    // Ask the root window for the currently active window
+    Atom actualType = None;
+    int actualFormat = 0;
+    unsigned long nitems = 0, bytesAfter = 0;
+    unsigned char *prop = nullptr;
+    if (XGetWindowProperty(dpy, DefaultRootWindow(dpy), netActive, 0, 1, False,
+                           XA_WINDOW, &actualType, &actualFormat, &nitems,
+                           &bytesAfter, &prop) == Success && prop && nitems == 1) {
+        const Window active = *reinterpret_cast<Window *>(prop);
+        XFree(prop);
+        prop = nullptr;
+
+        unsigned char *stateProp = nullptr;
+        if (XGetWindowProperty(dpy, active, netState, 0, 32, False,
+                               XA_ATOM, &actualType, &actualFormat, &nitems,
+                               &bytesAfter, &stateProp) == Success && stateProp) {
+            auto *atoms = reinterpret_cast<Atom *>(stateProp);
+            for (unsigned long i = 0; i < nitems; ++i) {
+                if (atoms[i] == netFullscreen) { result = true; break; }
+            }
+            XFree(stateProp);
+        }
+    }
+    if (prop) XFree(prop);
+    XCloseDisplay(dpy);
+    return result;
+}
+
 #else
 
-// Linux / other Unix: fullscreen detection not yet implemented.
+// Other Unix / Linux without X11 dev files: fullscreen detection unsupported.
 // Returns false so Gaming Mode is a harmless no-op on these platforms.
 static bool platformCheckFullscreen()
 {

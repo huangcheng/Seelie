@@ -375,4 +375,10 @@ void SystemContextEngine::sharedTick()
 }
 
 // Task 9 fills this in.
-void SystemContextEngine::onFullscreenStopped() {}
+void SystemContextEngine::onFullscreenStopped()
+{
+    // Welcome-back moment (start is the silent auto-hide). GATED on running:
+    // the watcher is shared with MainWindow and can outlive an engine stop.
+    if (!isRunning()) return;
+    emitContext(QLatin1String(CE::ContextGaming));
+}
