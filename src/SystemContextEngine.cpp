@@ -118,6 +118,8 @@ void SystemContextEngine::clockTick()
 {
     if (!isRunning()) return;
     const qint64 now = nowMs();
+    // Local time, deliberately: latenight/timeofday are user-facing concepts,
+    // not UTC ones. DST fall-back repeats an hour — the 20h cooldown absorbs it.
     const int hour = QDateTime::fromMSecsSinceEpoch(now).time().hour();
 
     // Late night: only meaningful while a session is active; the 20h cooldown
@@ -130,7 +132,8 @@ void SystemContextEngine::clockTick()
     // Long session: continuous session age; 2h cooldown spaces repeats.
     if (m_sessionActive && now - m_sessionStartMs >= LONGSESSION_MIN_MS) {
         emitContext(QLatin1String(CE::ContextLongSession),
-                    {{QStringLiteral("hours"), (now - m_sessionStartMs) / (60LL * 60 * 1000)}});
+                    {{QStringLiteral("hours"),  // integer hours, truncated
+                      (now - m_sessionStartMs) / (60LL * 60 * 1000)}});
     }
 }
 
@@ -146,8 +149,13 @@ void SystemContextEngine::onEventObserved(const QString &eventName,
     }
 
     if (eventName == QLatin1String(CE::SessionStart)) {
+        // First-start wins: with multiple gateways overlapping, the
+        // longsession clock tracks the session that opened the work period,
+        // not the most recent tool to join it.
+        if (!m_sessionActive) {
+            m_sessionStartMs = nowMs();
+        }
         m_sessionActive = true;
-        m_sessionStartMs = nowMs();
     } else if (eventName == QLatin1String(CE::SessionEnd)
                || eventName == QLatin1String(CE::SessionIdle)) {
         m_sessionActive = false;
