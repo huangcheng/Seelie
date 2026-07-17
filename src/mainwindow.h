@@ -59,6 +59,11 @@ public:
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);
     void setGlobalShortcutManager(GlobalShortcutManager *manager);
+
+    /** Owned FullscreenWatcher (Gaming Mode) — shared with SystemContextEngine
+        for the context.gaming welcome-back event. */
+    FullscreenWatcher *fullscreenWatcher() const { return m_fullscreenWatcher; }
+
     void setEventRouter(EventRouter *router);
     void setIPCServer(IPCServer *ipc) { m_ipcServer = ipc; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }

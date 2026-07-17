@@ -45,13 +45,16 @@ wiring (sessions/daily-login/pokes/milestones/level-up bubbles), zh_CN i18n.
 
 Agreed program: memory → senses → touch → AI commentary. Memory is done.
 
-- [~] **Spec 2 — ContextSenses** — spec ✅ + 10-task plan ✅ committed 2026-07-17
-  (`docs/superpowers/specs/2026-07-17-context-senses-design.md`,
-  `docs/superpowers/plans/2026-07-17-context-senses.md`). **Implementation not started.**
-  Scope decided: `SystemContextEngine` emitting `context.latenight/longsession/idle/away/
-  gaming/lowbattery/timeofday` with cooldowns; gaming = quiet hide + welcome-back on
-  fullscreen stop (auto-hide wiring already exists in MainWindow — found during recon);
-  Linux `FullscreenWatcher` X11 impl is plan Task 9. Execute via subagent-driven-development.
+- [x] **Spec 2 — ContextSenses** — SHIPPED 2026-07-17 on branch `context-senses`.
+  `SystemContextEngine` emitting `context.latenight/longsession/idle/away/gaming/
+  lowbattery/timeofday` with per-event cooldowns; X11 `FullscreenWatcher` for Linux
+  Gaming Mode (Wayland stays a documented no-op); macOS IOKit battery + CoreGraphics
+  idle probes; production wiring in `main.cpp` (start/stop follows the
+  `contextSensesEnabled` toggle live). 30 engine tests green; full ctest 18/18.
+  Spec: `docs/superpowers/specs/2026-07-17-context-senses-design.md`,
+  plan: `docs/superpowers/plans/2026-07-17-context-senses.md` (10-task).
+  **Pending:** merge to `main` + Linux compile/runtime verification of the X11 branch
+  (never compiled on this Mac).
 - [ ] **Spec 3 — TouchReactions**: `user.hover`, `user.pet` (press+drag), `user.grab`/
   `user.toss` (window drag with velocity); affection/XP effects via MemoryManager
   (API already shipped); animations + persona lines per touch event.
@@ -81,8 +84,9 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
 - [x] Duplicate `"Character"` source string in `Seelie_zh_CN.ts` — FIXED 2026-07-17
   (`2172475`): distinct `tr()` disambiguation comments (display-mode option vs
   settings section title); survives lupdate.
-- [ ] Linux `FullscreenWatcher::isFullscreenAppActive()` stub returns false
-  (owned by Spec 2 plan, Task 9 — X11 impl; Wayland stays stubbed)
+- [ ] Linux X11 `FullscreenWatcher` + Xss idle probe: implemented (Spec 2 T9) but
+  never compiled/run — verify on a Linux machine (X11 session); Wayland stays a
+  documented no-op.
 
 **Suite status:** 17/17 green on macOS as of 2026-07-17 (was 15/17).
 

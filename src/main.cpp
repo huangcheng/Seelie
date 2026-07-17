@@ -17,6 +17,7 @@
 #include "ECGWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
+#include "SystemContextEngine.h"
 #include "UpdateChecker.h"
 #include "GlobalShortcutManager.h"
 #include "PetStateMachine.h"
@@ -406,6 +407,19 @@ int main(int argc, char *argv[])
     w.setEventRouter(&eventRouter);
     w.setPersonaEngine(&personaEngine);
     if (w.settingsPanel()) w.settingsPanel()->setPersonaEngine(&personaEngine);
+
+    // --- System context engine (ContextSenses, Spec 2) -----------------------
+    // Emits synthetic context.* events through the same EventRouter pipeline.
+    // start/stop follows the contextSensesEnabled toggle live, mirroring the
+    // Gaming Mode wiring pattern in MainWindow.
+    SystemContextEngine contextEngine(&eventRouter, &config);
+    contextEngine.setFullscreenWatcher(w.fullscreenWatcher());
+    if (config.contextSensesEnabled())
+        contextEngine.start();
+    QObject::connect(&config, &ConfigManager::contextSensesEnabledChanged,
+                     &contextEngine, [&contextEngine](bool enabled) {
+        if (enabled) contextEngine.start(); else contextEngine.stop();
+    });
 
     // Tip-bubble user toggle: apply current value, then track changes live.
     w.tipWidget()->setSuppressedByUser(!config.tipBubblesEnabled());
