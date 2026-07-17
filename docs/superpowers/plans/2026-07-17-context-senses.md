@@ -1748,3 +1748,48 @@ git commit -m "feat(senses): wire SystemContextEngine in main.cpp; mark Spec 2 c
 - **Spec coverage:** 7 events (T1) · tips en+zh (T2) · master toggle (T3) · cooldowns (T4) · latenight/longsession (T5) · idle/timeofday (T6) · away (T7) · battery (T8) · gaming + X11 (T9) · wiring + verification (T10). Wayland-stub documented in T9 code comments + spec. Presentation reduced to tips+stats per spec §3 (revised).
 - **Type consistency:** `PowerState{present, discharging, percent}` used uniformly; `NowFn/OsIdleFn/BatteryFn` signatures match header; `emitContextForTest`/`clockTick`/`sharedTick` public in header and used by tests; `CE::Context*` constant names identical in CanonicalEvents.h, engine, and cooldownFor.
 - **Known deliberate deviations from first-draft spec:** no EventAction/animation table (doesn't exist); `context.timeofday` empty tip; settings-panel checkbox deferred.
+
+---
+
+## Execution Errata (recorded 2026-07-17, after subagent-driven execution)
+
+Bugs in THIS PLAN found by implementers' TDD red phases or review loops; all fixed in code. Kept as lessons for future plan authors.
+
+1. **Task 3 — missing `flush()` write.** The plan's ConfigManager snippet called
+   `save()` in the setter but never added `m_settings.setValue("contextSensesEnabled", …)`
+   to `flush()`. `save()` only schedules a debounced timer; `flush()` is the sole
+   persistence point. The round-trip test caught it. *Lesson: when mirroring a
+   persistence pattern, trace the full write path, not just the setter.*
+2. **Task 3 — round-trip test needed nested scopes.** The plan's inlined round-trip
+   would read stale state (debounced flush hadn't fired). The test_gaming_mode donor's
+   nested-scope shape was the correct one. *Lesson: copy the donor's structure, not
+   just its assertions.*
+3. **Task 6 — idle-latch/cooldown contradiction.** The plan's literal code set
+   `m_idleLatched = true` unconditionally before `emitContext`; a cooldown-suppressed
+   attempt then latched forever and the plan's OWN `testIdleLatchAndCooldown` could
+   never pass its final step. Fixed by gating the latch on cooldown expiry.
+   *Lesson: mentally execute plan tests against plan code — the plan wrote code and
+   tests that contradicted each other.*
+4. **Task 8 — wrong macOS API names + CF leak.** Plan snippet used
+   `IOPSGetPowerSourceInfo`/`IOPSCopyPowerSourceList`; real SDK exports
+   `IOPSCopyPowerSourcesInfo`/`IOPSCopyPowerSourcesList`. Snippet also leaked the
+   `info` snapshot (Create rule) — fixed with `CFRelease(info)` (`6e5ecb6`).
+   *Lesson: verify platform API names against the SDK, and always pair
+   Create-rule releases.*
+5. **Task 9 — `_NET_ACTIVE_WINDOW == 0` crash (review catch).** EWMH sets the
+   property to `None` when nothing is focused; the plan's X11 code would have
+   queried window 0 → BadWindow → fatal async X error. Guard added (`c2310ef`).
+   *Lesson: X error handling is fatal and async — every id from a property reply
+   needs a zero check before reuse.*
+6. **Task 4 — header default arg needs complete type.** `emitContext(name,
+   const QJsonObject &payload = {})` with only a forward declaration is ill-formed;
+   header includes `<QJsonObject>` instead. *Lesson: `{}` default args force the
+   include.*
+
+Review-loop improvements beyond the plan (all reviewed and committed): first-start-wins
+session clock (`b05853c`), latch resets on engine start (`4633523`), XScreenSaverAllocInfo
+null guard (`3c2a5ea`), Linux battery transient-read sentinel (`4ee7e87`), JSON column
+alignment (`c7367f7`), X11 absent-builder STATUS message (`c2310ef`).
+
+**Final state:** 19 commits on `context-senses`, suite 18/18 (30 engine tests),
+final whole-implementation review verdict READY TO MERGE.

@@ -242,7 +242,6 @@ void SystemContextEngine::setFullscreenWatcher(FullscreenWatcher *watcher)
     }
 }
 
-// Task 5 fills these in.
 void SystemContextEngine::clockTick()
 {
     if (!isRunning()) return;
@@ -308,7 +307,6 @@ void SystemContextEngine::onEventObserved(const QString &eventName,
     }
 }
 
-// Task 6/7/8 fill this in.
 void SystemContextEngine::sharedTick()
 {
     if (!isRunning()) return;
@@ -374,7 +372,6 @@ void SystemContextEngine::sharedTick()
     }
 }
 
-// Task 9 fills this in.
 void SystemContextEngine::onFullscreenStopped()
 {
     // Welcome-back moment (start is the silent auto-hide). GATED on running:

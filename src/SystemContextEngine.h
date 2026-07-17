@@ -67,7 +67,8 @@ private:
     qint64 nowMs() const;
 
     EventRouter *m_router;
-    ConfigManager *m_config;  // reserved for Task 10: contextSensesEnabled gate
+    ConfigManager *m_config;  // held for future use (Spec 4); the
+                              // contextSensesEnabled gate lives in main.cpp
     FullscreenWatcher *m_watcher = nullptr;
 
     QTimer *m_clockTimer = nullptr;    // 60 s
