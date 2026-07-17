@@ -114,8 +114,46 @@ void SystemContextEngine::setFullscreenWatcher(FullscreenWatcher *watcher)
 }
 
 // Task 5 fills these in.
-void SystemContextEngine::clockTick() {}
-void SystemContextEngine::onEventObserved(const QString &, const QJsonObject &) {}
+void SystemContextEngine::clockTick()
+{
+    if (!isRunning()) return;
+    const qint64 now = nowMs();
+    const int hour = QDateTime::fromMSecsSinceEpoch(now).time().hour();
+
+    // Late night: only meaningful while a session is active; the 20h cooldown
+    // in emitContext makes it once-per-night.
+    if (m_sessionActive && hour >= LATENIGHT_HOUR) {
+        emitContext(QLatin1String(CE::ContextLateNight),
+                    {{QStringLiteral("hour"), hour}});
+    }
+
+    // Long session: continuous session age; 2h cooldown spaces repeats.
+    if (m_sessionActive && now - m_sessionStartMs >= LONGSESSION_MIN_MS) {
+        emitContext(QLatin1String(CE::ContextLongSession),
+                    {{QStringLiteral("hours"), (now - m_sessionStartMs) / (60LL * 60 * 1000)}});
+    }
+}
+
+void SystemContextEngine::onEventObserved(const QString &eventName,
+                                          const QJsonObject &payload)
+{
+    // Synthetic system events must not count as "activity" — otherwise
+    // context.idle would reset its own clock and never fire again.
+    const QString source = payload.value(QStringLiteral("source")).toString();
+    if (source != QLatin1String("system")) {
+        m_lastActivityMs = nowMs();
+        m_idleLatched = false;
+    }
+
+    if (eventName == QLatin1String(CE::SessionStart)) {
+        m_sessionActive = true;
+        m_sessionStartMs = nowMs();
+    } else if (eventName == QLatin1String(CE::SessionEnd)
+               || eventName == QLatin1String(CE::SessionIdle)) {
+        m_sessionActive = false;
+        m_timeofdaySent = false;  // next session gets a fresh bucket
+    }
+}
 
 // Task 6/7/8 fill this in.
 void SystemContextEngine::sharedTick() {}

@@ -60,6 +60,12 @@ private slots:
     void testCooldownSuppressesSecondEmit();
     void testStoppedEngineIsSilent();
 
+    // Task 5: clock detectors
+    void testLateNightFiresAfter23WithSession();
+    void testLateNightSilentBefore23();
+    void testLateNightSilentWithoutSession();
+    void testLongSessionFiresAt3Hours();
+
 private:
     QTemporaryDir m_tmpDir;
 };
@@ -208,6 +214,76 @@ void TestSystemContext::testStoppedEngineIsSilent()
     engine.clockTick();
     engine.sharedTick();
     QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testLateNightFiresAfter23WithSession()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(23, 15)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("session.start")}});
+    spy.clear();
+    engine.clockTick();
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("context.latenight"));
+}
+
+void TestSystemContext::testLateNightSilentBefore23()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(22, 15)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("session.start")}});
+    spy.clear();
+    engine.clockTick();
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testLateNightSilentWithoutSession()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(23, 15)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();  // no session.start observed
+    engine.clockTick();
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestSystemContext::testLongSessionFiresAt3Hours()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(14, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("session.start")}});
+    fakeNow += (3LL * 60 + 1) * 60 * 1000;  // +3h01m
+    spy.clear();
+    engine.clockTick();
+    bool sawLong = false;
+    for (const auto &args : spy) {
+        if (args.at(0).toString() == QStringLiteral("context.longsession")) sawLong = true;
+    }
+    QVERIFY(sawLong);
 }
 
 QTEST_MAIN(TestSystemContext)
