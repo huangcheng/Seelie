@@ -391,6 +391,10 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragWindowPos = pos();
         m_dragging = false;
+        if (m_config->touchReactionsEnabled()) {
+            m_strokeDetector.press(m_dragStartPos, QDateTime::currentMSecsSinceEpoch());
+            m_strokeSession = true;
+        }
     }
     QWidget::mousePressEvent(event);
 }
@@ -427,12 +431,31 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 #endif
 
     if (event->buttons() & Qt::LeftButton) {
-        const QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
+        const QPoint globalNow = event->globalPosition().toPoint();
+        const QPoint delta = globalNow - m_dragStartPos;
 
-        if (!m_dragging && delta.manhattanLength() > DRAG_THRESHOLD) {
+        if (m_strokeSession) {
+            m_strokeDetector.move(globalNow, QDateTime::currentMSecsSinceEpoch());
+            // Stroke pulses (2nd+ reversal) → pet reaction per stroke endpoint.
+            for (int pulses = m_strokeDetector.takeStrokePulses(); pulses > 0; --pulses) {
+                onPetStroke();
+            }
+            // Drag conversion: the window starts moving now, at the FULL delta
+            // (positionally identical to a drag from press — no jump).
+            if (m_strokeDetector.takeDragEngaged()) {
+                m_dragging = true;
+                if (m_stateMachine) {
+                    m_stateMachine->onSyntheticEvent(QStringLiteral("user.grab"));
+                }
+                // Only sprite packs ship a 'gesture_down' animation (unchanged).
+                if (m_engine->hasAnimations()) {
+                    m_engine->playAnimation("gesture_down", SpriteAnimationEngine::HighPriority);
+                }
+            }
+        } else if (!m_dragging && delta.manhattanLength() > DRAG_THRESHOLD) {
+            // Toggle-off / press-outside-petRect path: today's behavior,
+            // byte-identical (no user.grab, no detector).
             m_dragging = true;
-            // Only sprite packs ship a 'gesture_down' animation. For Live2D
-            // the drag reaction is already provided by pointer tracking.
             if (m_engine->hasAnimations()) {
                 m_engine->playAnimation("gesture_down", SpriteAnimationEngine::HighPriority);
             }
@@ -450,6 +473,21 @@ void MainWindow::leaveEvent(QEvent *event)
 #ifdef SEELIE_LIVE2D_SUPPORT
     if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
 #endif
+    if (m_strokeSession) {
+        // Leaving mid-stroke cancels it (spec §6); a converted drag is
+        // unaffected — the window keeps following the cursor.
+        if (m_strokeDetector.phase() != StrokeDetector::Phase::Dragging) {
+            m_strokeSession = false;
+            m_strokeDetector.cancel();
+        } else {
+            // T3 reviewer follow-up: a drag that ends WITHOUT a release
+            // (cursor leaves, window deactivated) must not strand the FSM's
+            // sustained Grabbed overlay — deliver grabEnd here.
+            if (m_stateMachine) {
+                m_stateMachine->onSyntheticEvent(QStringLiteral("user.grabEnd"));
+            }
+        }
+    }
     if (m_stateMachine) {
         m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverLeave"));
     }
@@ -476,6 +514,35 @@ void MainWindow::enterEvent(QEnterEvent *event)
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        if (m_strokeSession) {
+            m_strokeSession = false;
+            const StrokeDetector::Phase phase = m_strokeDetector.release(
+                event->globalPosition().toPoint(), QDateTime::currentMSecsSinceEpoch());
+
+            if (phase == StrokeDetector::Phase::Dragging) {
+                m_dragging = false;
+                if (m_stateMachine) {
+                    m_stateMachine->onSyntheticEvent(QStringLiteral("user.grabEnd"));
+                }
+                if (m_strokeDetector.releaseSpeedPxPerSec()
+                        > StrokeDetector::TOSS_SPEED_PX_PER_SEC) {
+                    onTossDetected();
+                } else if (m_engine->hasAnimations()) {
+                    m_engine->playAnimation("lookdown", SpriteAnimationEngine::HighPriority);
+                    m_engine->playAnimation("rest", SpriteAnimationEngine::NormalPriority);
+                }
+                emit positionChanged(pos());
+                QWidget::mouseReleaseEvent(event);
+                return;
+            }
+            if (phase == StrokeDetector::Phase::Stroking) {
+                // Stroke session over: no click, no drag-release effects.
+                QWidget::mouseReleaseEvent(event);
+                return;
+            }
+            // Phase::Undecided → it was a click: fall through to today's path.
+        }
+
         if (m_dragging) {
             m_dragging = false;
             if (m_engine->hasAnimations()) {
@@ -994,6 +1061,20 @@ void MainWindow::tryRecordPoke()
         m_lastPokeWriteMs = nowMs;
         m_memory->increment(QStringLiteral("stats.pokes"));
         m_memory->addAffection(1);
+    }
+}
+
+void MainWindow::onPetStroke()
+{
+    if (m_stateMachine) {
+        m_stateMachine->onSyntheticEvent(QStringLiteral("user.pet"));
+    }
+}
+
+void MainWindow::onTossDetected()
+{
+    if (m_stateMachine) {
+        m_stateMachine->onSyntheticEvent(QStringLiteral("user.toss"));
     }
 }
 

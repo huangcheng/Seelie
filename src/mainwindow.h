@@ -9,6 +9,7 @@
 
 #include "AnimationEngine.h"
 #include "ConfigManager.h"
+#include "StrokeDetector.h"
 
 class MemoryManager;
 class SpriteAnimationEngine;
@@ -131,6 +132,11 @@ private:
     void reloadTranslator(const QString &lang);
     void showRandomGreeting();
     void tryRecordPoke();
+    /// Spec 3: one pet pulse from the StrokeDetector. Task 5 fires the FSM
+    /// overlay; Task 6 adds memory + canned lines.
+    void onPetStroke();
+    /// Spec 3: release velocity exceeded TOSS_SPEED_PX_PER_SEC at drag end.
+    void onTossDetected();
     // Wire the EventRouter::eventProcessed → onEventForMemory connection.
     // Idempotent: connect exactly once via m_memoryEventWired (lambdas can't
     // use Qt::UniqueConnection reliably). Called from both setEventRouter()
@@ -179,6 +185,11 @@ private:
     QPoint m_dragWindowPos;
     bool m_dragging = false;
     static constexpr int DRAG_THRESHOLD = 5;
+
+    // Spec 3 (TouchReactions): stroke/drag disambiguation. m_strokeSession is
+    // true while a petRect press is being classified (toggle on only).
+    StrokeDetector m_strokeDetector;
+    bool m_strokeSession = false;
 
     // Active pack's render size (drives petRect). Defaults to Clippy's
     // historical 124×93; onActivePackChanged() updates it to the pack's
