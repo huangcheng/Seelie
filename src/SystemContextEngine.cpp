@@ -156,6 +156,22 @@ void SystemContextEngine::onEventObserved(const QString &eventName,
             m_sessionStartMs = nowMs();
         }
         m_sessionActive = true;
+        if (!m_timeofdaySent && isRunning()) {
+            m_timeofdaySent = true;
+            const int h = QDateTime::fromMSecsSinceEpoch(nowMs()).time().hour();
+            const QString bucket = (h >= 5 && h < 11)  ? QStringLiteral("morning")
+                : (h >= 11 && h < 17)                  ? QStringLiteral("afternoon")
+                : (h >= 17 && h < 22)                  ? QStringLiteral("evening")
+                :                                        QStringLiteral("night");
+            // Queued: onEventObserved runs inside routeEvent's signal emission;
+            // re-entering routeEvent synchronously would nest stats/tip handling.
+            // singleShot with `this` as context is cancelled if the engine is
+            // destroyed first — stack-allocated test engines stay safe.
+            QTimer::singleShot(0, this, [this, bucket] {
+                emitContext(QLatin1String(CE::ContextTimeOfDay),
+                            {{QStringLiteral("bucket"), bucket}});
+            });
+        }
     } else if (eventName == QLatin1String(CE::SessionEnd)
                || eventName == QLatin1String(CE::SessionIdle)) {
         m_sessionActive = false;
@@ -164,7 +180,32 @@ void SystemContextEngine::onEventObserved(const QString &eventName,
 }
 
 // Task 6/7/8 fill this in.
-void SystemContextEngine::sharedTick() {}
+void SystemContextEngine::sharedTick()
+{
+    if (!isRunning()) return;
+    ++m_sharedTickCount;
+    const qint64 now = nowMs();
+
+    // Activity idle (no IPC events for IDLE_THRESHOLD_MS). Latch prevents
+    // refiring every tick; the latch releases on the next observed non-system
+    // event, and IDLE_COOLDOWN_MS in emitContext spaces out episodes.
+    // The latch is only set when emitContext will actually emit: a
+    // cooldown-blocked attempt must not latch, or the next post-cooldown tick
+    // would stay silent with no activity in between to release the latch.
+    // (Header is frozen for this task, so emitContext can't return bool —
+    // the cooldown gate is re-checked here against the same constant.)
+    if (!m_idleLatched && now - m_lastActivityMs >= IDLE_THRESHOLD_MS) {
+        const qint64 lastIdle = m_lastFired.value(QLatin1String(CE::ContextIdle), 0);
+        if (now - lastIdle >= IDLE_COOLDOWN_MS) {
+            m_idleLatched = true;
+            emitContext(QLatin1String(CE::ContextIdle),
+                        {{QStringLiteral("minutes"), (now - m_lastActivityMs) / 60000}});
+        }
+    }
+
+    // Task 7: OS-away probe goes here.
+    // Task 8: battery probe (every 2nd tick) goes here.
+}
 
 // Task 9 fills this in.
 void SystemContextEngine::onFullscreenStopped() {}

@@ -13,6 +13,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QSettings>
+#include <QCoreApplication>
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QFile>
@@ -65,6 +66,13 @@ private slots:
     void testLateNightSilentBefore23();
     void testLateNightSilentWithoutSession();
     void testLongSessionFiresAt3Hours();
+
+    // Task 6: idle + time-of-day
+    void testIdleFiresAfter10QuietMinutes();
+    void testIdleLatchAndCooldown();
+    void testTimeOfDayMorningBucket();
+    void testTimeOfDayNightBucket();
+    void testTimeOfDayOncePerSession();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -284,6 +292,116 @@ void TestSystemContext::testLongSessionFiresAt3Hours()
         if (args.at(0).toString() == QStringLiteral("context.longsession")) sawLong = true;
     }
     QVERIFY(sawLong);
+}
+
+void TestSystemContext::testIdleFiresAfter10QuietMinutes()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(15, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();  // activity clock starts now
+    fakeNow += 11LL * 60 * 1000;  // +11 min, nothing observed
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("context.idle"));
+}
+
+void TestSystemContext::testIdleLatchAndCooldown()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(15, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    fakeNow += 11LL * 60 * 1000;
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 1);          // fired
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 1);          // latched — no refire without activity
+    // Activity resumes (non-system source resets the clock)
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("file.edited")}});
+    spy.clear();
+    fakeNow += 11LL * 60 * 1000;       // quiet again, but within 30min cooldown
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 0);          // cooldown blocks
+    fakeNow += 20LL * 60 * 1000;       // cooldown elapsed
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 1);          // fires again
+}
+
+void TestSystemContext::testTimeOfDayMorningBucket()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(9, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("session.start")}});
+    QCoreApplication::processEvents();  // timeofday is queued (singleShot 0)
+    bool sawMorning = false;
+    for (const auto &args : spy) {
+        if (args.at(0).toString() == QStringLiteral("context.timeofday")) {
+            sawMorning = args.at(1).toJsonObject()
+                .value(QStringLiteral("bucket")).toString() == QStringLiteral("morning");
+        }
+    }
+    QVERIFY(sawMorning);
+}
+
+void TestSystemContext::testTimeOfDayNightBucket()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(23, 30)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("codex")},
+                       {QStringLiteral("event"), QStringLiteral("session.start")}});
+    QCoreApplication::processEvents();
+    bool sawNight = false;
+    for (const auto &args : spy) {
+        if (args.at(0).toString() == QStringLiteral("context.timeofday")) {
+            sawNight = args.at(1).toJsonObject()
+                .value(QStringLiteral("bucket")).toString() == QStringLiteral("night");
+        }
+    }
+    QVERIFY(sawNight);
+}
+
+void TestSystemContext::testTimeOfDayOncePerSession()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(9, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    const QJsonObject startEv{{QStringLiteral("type"), QStringLiteral("event")},
+                              {QStringLiteral("source"), QStringLiteral("codex")},
+                              {QStringLiteral("event"), QStringLiteral("session.start")}};
+    router.routeEvent(startEv);
+    router.routeEvent(startEv);  // duplicate start in same session
+    QCoreApplication::processEvents();
+    int count = 0;
+    for (const auto &args : spy) {
+        if (args.at(0).toString() == QStringLiteral("context.timeofday")) ++count;
+    }
+    QCOMPARE(count, 1);
 }
 
 QTEST_MAIN(TestSystemContext)
