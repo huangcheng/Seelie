@@ -1082,17 +1082,21 @@ void MainWindow::onPetStroke()
     }
 
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    bool milestoneJustFired = false;
     if (m_memory && m_memory->isValid() && nowMs - m_lastPetWriteMs >= 2000) {
         m_lastPetWriteMs = nowMs;
         m_memory->increment(QStringLiteral("stats.pets"));
         m_memory->addAffection(2);
+        // Capture before checkMilestone: first-ever pet shows the milestone
+        // bubble — don't let the canned line overwrite that one-time moment.
+        milestoneJustFired = !m_memory->hasMilestone(QStringLiteral("first_pet"));
         m_memory->checkMilestone(QStringLiteral("first_pet"),
             tr("First pet!"),
             tr("You petted Seelie for the first time."));
     }
 
     // Spam control: bubble on ~1 of 3 strokes (spec §4).
-    if (QRandomGenerator::global()->bounded(3) == 0) {
+    if (!milestoneJustFired && QRandomGenerator::global()->bounded(3) == 0) {
         showTouchBubble(QStringLiteral("pet"));
     }
 }
@@ -1102,13 +1106,18 @@ void MainWindow::onTossDetected()
     if (m_stateMachine) {
         m_stateMachine->onSyntheticEvent(QStringLiteral("user.toss"));
     }
+    bool milestoneJustFired = false;
     if (m_memory && m_memory->isValid()) {
         m_memory->increment(QStringLiteral("stats.tosses"));
+        // See onPetStroke: first-ever toss keeps its milestone bubble.
+        milestoneJustFired = !m_memory->hasMilestone(QStringLiteral("first_toss"));
         m_memory->checkMilestone(QStringLiteral("first_toss"),
             tr("First toss!"),
             tr("You threw Seelie across the screen."));
     }
-    showTouchBubble(QStringLiteral("toss"));  // always (spec §4)
+    if (!milestoneJustFired) {
+        showTouchBubble(QStringLiteral("toss"));  // always (spec §4)
+    }
 }
 
 void MainWindow::onEventForMemory(const QString &eventName)
