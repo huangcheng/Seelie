@@ -164,6 +164,7 @@ void ConfigManager::load()
     m_globalShortcutEnabled = m_settings.value("globalShortcutEnabled", m_globalShortcutEnabled).toBool();
     m_gamingModeEnabled = m_settings.value("gamingMode", false).toBool();
     m_contextSensesEnabled = m_settings.value("contextSensesEnabled", true).toBool();
+    m_touchReactionsEnabled = m_settings.value("touchReactions", true).toBool();
     m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
     m_ttsEnabled = m_settings.value("tts/enabled", false).toBool();
@@ -243,6 +244,7 @@ void ConfigManager::flush()
     m_settings.setValue("globalShortcutEnabled", m_globalShortcutEnabled);
     m_settings.setValue("gamingMode", m_gamingModeEnabled);
     m_settings.setValue("contextSensesEnabled", m_contextSensesEnabled);
+    m_settings.setValue("touchReactions", m_touchReactionsEnabled);
     m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
     m_settings.setValue("tts/enabled", m_ttsEnabled);
     m_settings.setValue("tts/activeProvider", m_ttsActiveProvider);
@@ -382,6 +384,14 @@ void ConfigManager::setContextSensesEnabled(bool enabled)
     m_contextSensesEnabled = enabled;
     save();
     emit contextSensesEnabledChanged(enabled);
+}
+
+void ConfigManager::setTouchReactionsEnabled(bool enabled)
+{
+    if (m_touchReactionsEnabled == enabled) return;
+    m_touchReactionsEnabled = enabled;
+    save();
+    emit touchReactionsEnabledChanged(enabled);
 }
 
 void ConfigManager::setTipBubblesEnabled(bool enabled)

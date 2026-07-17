@@ -81,6 +81,10 @@ public:
     bool contextSensesEnabled() const { return m_contextSensesEnabled; }
     void setContextSensesEnabled(bool enabled);
 
+    /** Whether TouchReactions mouse gestures (pet/grab/toss/hover) are active. Default true. */
+    bool touchReactionsEnabled() const { return m_touchReactionsEnabled; }
+    void setTouchReactionsEnabled(bool enabled);
+
     /** Whether tip bubbles surface above the pet. Default true. */
     bool tipBubblesEnabled() const { return m_tipBubblesEnabled; }
     void setTipBubblesEnabled(bool enabled);
@@ -144,6 +148,7 @@ signals:
     void globalShortcutChanged(const QString &shortcut);
     void gamingModeEnabledChanged(bool enabled);
     void contextSensesEnabledChanged(bool enabled);
+    void touchReactionsEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
     void ttsEnabledChanged(bool enabled);
     void ttsActiveProviderChanged(const QString &stableId);
@@ -171,6 +176,7 @@ private:
     bool m_globalShortcutEnabled = true;
     bool m_gamingModeEnabled = false;
     bool m_contextSensesEnabled = true;
+    bool m_touchReactionsEnabled = true;
     bool m_tipBubblesEnabled = true;
     bool m_ttsEnabled = false;
     QString m_ttsActiveProvider = QStringLiteral("stepfun");
