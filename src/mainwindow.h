@@ -131,6 +131,8 @@ private:
     void setupWindowFlags();
     void reloadTranslator(const QString &lang);
     void showRandomGreeting();
+    /// Random canned line for a touch gesture ("pet"/"toss") via TipsCatalog.
+    void showTouchBubble(const QString &gesture);
     void tryRecordPoke();
     /// Spec 3: one pet pulse from the StrokeDetector. Task 5 fires the FSM
     /// overlay; Task 6 adds memory + canned lines.
@@ -213,6 +215,8 @@ private:
     qint64 m_sessionStartMs = 0;
     int    m_sessionEventCount = 0;
     qint64 m_lastPokeWriteMs = 0;   // shared throttle across click + dblclick
+    qint64 m_lastPetWriteMs = 0;    // pet affection throttle (2s, spec §3)
+    qint64 m_lastHoverWriteMs = 0;  // hover affection throttle (60s, spec §3)
     // Connect-once guard for the EventRouter → onEventForMemory wiring.
     // See wireMemoryEventConnect(); lambdas can't rely on Qt::UniqueConnection.
     bool m_memoryEventWired = false;

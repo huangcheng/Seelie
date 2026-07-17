@@ -447,6 +447,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
                 if (m_stateMachine) {
                     m_stateMachine->onSyntheticEvent(QStringLiteral("user.grab"));
                 }
+                if (m_memory && m_memory->isValid()) {
+                    m_memory->increment(QStringLiteral("stats.grabs"));
+                }
                 // Only sprite packs ship a 'gesture_down' animation (unchanged).
                 if (m_engine->hasAnimations()) {
                     m_engine->playAnimation("gesture_down", SpriteAnimationEngine::HighPriority);
@@ -507,6 +510,14 @@ void MainWindow::enterEvent(QEnterEvent *event)
 #endif
     if (m_stateMachine) {
         m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverEnter"));
+    }
+    if (m_config->touchReactionsEnabled()) {
+        const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+        if (m_memory && m_memory->isValid() && nowMs - m_lastHoverWriteMs >= 60000) {
+            m_lastHoverWriteMs = nowMs;
+            m_memory->increment(QStringLiteral("stats.hover"));
+            m_memory->addAffection(1);
+        }
     }
     QWidget::enterEvent(event);
 }
@@ -1069,6 +1080,21 @@ void MainWindow::onPetStroke()
     if (m_stateMachine) {
         m_stateMachine->onSyntheticEvent(QStringLiteral("user.pet"));
     }
+
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (m_memory && m_memory->isValid() && nowMs - m_lastPetWriteMs >= 2000) {
+        m_lastPetWriteMs = nowMs;
+        m_memory->increment(QStringLiteral("stats.pets"));
+        m_memory->addAffection(2);
+        m_memory->checkMilestone(QStringLiteral("first_pet"),
+            tr("First pet!"),
+            tr("You petted Seelie for the first time."));
+    }
+
+    // Spam control: bubble on ~1 of 3 strokes (spec §4).
+    if (QRandomGenerator::global()->bounded(3) == 0) {
+        showTouchBubble(QStringLiteral("pet"));
+    }
 }
 
 void MainWindow::onTossDetected()
@@ -1076,6 +1102,13 @@ void MainWindow::onTossDetected()
     if (m_stateMachine) {
         m_stateMachine->onSyntheticEvent(QStringLiteral("user.toss"));
     }
+    if (m_memory && m_memory->isValid()) {
+        m_memory->increment(QStringLiteral("stats.tosses"));
+        m_memory->checkMilestone(QStringLiteral("first_toss"),
+            tr("First toss!"),
+            tr("You threw Seelie across the screen."));
+    }
+    showTouchBubble(QStringLiteral("toss"));  // always (spec §4)
 }
 
 void MainWindow::onEventForMemory(const QString &eventName)
@@ -1343,4 +1376,12 @@ void MainWindow::showRandomGreeting()
     }
 
     m_tipWidget->showBubble(title, body, TipWidget::TipBubble);
+}
+
+void MainWindow::showTouchBubble(const QString &gesture)
+{
+    if (!m_tipWidget) return;
+    const auto tip = TipsCatalog::instance().touchLine(gesture);
+    if (tip.title.isEmpty()) return;
+    m_tipWidget->showBubble(tip.title, tip.body, TipWidget::TipBubble);
 }
