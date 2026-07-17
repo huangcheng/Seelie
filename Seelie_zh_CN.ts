@@ -252,7 +252,7 @@ Please restart Seelie for changes to take full effect.</source>
     </message>
     <message>
         <source>First toss!</source>
-        <translation>第一次抛接！</translation>
+        <translation>第一次抛出！</translation>
     </message>
     <message>
         <source>You threw Seelie across the screen.</source>
