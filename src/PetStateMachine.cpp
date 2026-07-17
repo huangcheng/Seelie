@@ -305,11 +305,14 @@ void PetStateMachine::enterOneShot(State s, int durationMs)
 }
 void PetStateMachine::enterSustainedOverlay(State s)
 {
-    // Sustained overlay: enterOneShot's save/emit shape without the timer --
-    // the caller exits explicitly (user.grabEnd -> onOneShotFinished).
+    // Sustained overlay: enterOneShot's save/emit shape without a timer of
+    // its own -- and it must CANCEL any running one-shot from a prior overlay
+    // (e.g. Petted still showing when the grab starts): the shared timer
+    // would otherwise fire mid-drag and clear this overlay early.
     if (m_overlayState == State::Idle) {
         m_savedSustained = m_baseState;
     }
+    m_oneShotTimer.stop();
     m_overlayState = s;
     emit stateChanged(activeState());
     emitChainFor(s, HighPriority);

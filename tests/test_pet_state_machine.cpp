@@ -42,6 +42,7 @@ private slots:
     void testTossOneShot();
     void testPetOverlayFromWorkingRestoresWorking();
     void testTouchChainsResolveFallback();
+    void testGrabDuringOneShotCancelsTimer();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -362,6 +363,20 @@ void TestPetStateMachine::testTouchChainsResolveFallback()
     QVERIFY(!chain.isEmpty());
     // Default chain ends with the idle fallback appended by emitChainFor.
     QCOMPARE(chain.last(), QStringLiteral("idle"));
+}
+
+void TestPetStateMachine::testGrabDuringOneShotCancelsTimer()
+{
+    initFsm();
+    m_fsm->onSyntheticEvent("user.pet");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Petted);
+    QTest::qWait(500);
+    m_fsm->onSyntheticEvent("user.grab");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Grabbed);
+    QTest::qWait(2000);  // the original Petted timer would have fired by now
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Grabbed);  // still held
+    m_fsm->onSyntheticEvent("user.grabEnd");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
 }
 
 QTEST_MAIN(TestPetStateMachine)
