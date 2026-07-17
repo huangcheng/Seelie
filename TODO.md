@@ -88,7 +88,7 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   never compiled/run — verify on a Linux machine (X11 session); Wayland stays a
   documented no-op.
 
-**Suite status:** 17/17 green on macOS as of 2026-07-17 (was 15/17).
+**Suite status:** 18/18 green on macOS as of 2026-07-17 (was 15/17 before ContextSenses).
 
 ---
 
