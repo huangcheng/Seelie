@@ -91,15 +91,21 @@ mirroring `TipsEngine`'s `m_cooldownMinMs` / `m_lastTriggered` pattern
 
 ## 3. Presentation & i18n
 
-- `EventAction` entries for all 7 events: tip + animation for each; effects only
-  for latenight / longsession / lowbattery.
 - Tip text added to `assets/i18n/tips.en.json` and `assets/i18n/tips.zh_CN.json`
   (the JSON catalog path used by TipsCatalog — **not** the `.ts` file, which is
-  for UI strings).
-- One master config toggle `contextSenses` (default **on**) in ConfigManager.
-  Per-event toggles: YAGNI. Gaming keeps its existing `gamingMode` toggle.
-- Persona/pool lines for context events are **Spec 4** territory; this spec only
-  ensures the events exist and route.
+  for UI strings). `context.timeofday` gets an intentionally **empty** entry
+  (like `session.idle`) — it is an enrichment event for Spec 4 prompts, not a
+  bubble. Empty entry ⇒ `EventRouter` skips the bubble (`tip.title.isEmpty()`).
+- **Animations/persona lines for context events are NOT in this spec.** Planning
+  discovered the "EventAction animation table" from CLAUDE.md no longer exists —
+  animations are driven by PetStateMachine states and TipsEngine patterns, and no
+  fitting FSM state exists for latenight/longsession/etc. Context events deliver
+  tip bubbles + memory stats here; Spec 4 already owns persona-pool lines and can
+  decide on animations then.
+- One master config toggle `contextSensesEnabled` (default **on**) in
+  ConfigManager, with a live `contextSensesEnabledChanged` signal (mirrors the
+  gamingMode pattern). Settings-panel UI checkbox: YAGNI (INI-editable; add when
+  Spec 4 lands). Gaming keeps its existing `gamingMode` toggle.
 
 ## 4. Error Handling
 
@@ -138,10 +144,13 @@ mirroring `TipsEngine`'s `m_cooldownMinMs` / `m_lastTriggered` pattern
 - **New:** `src/SystemContextEngine.h`, `src/SystemContextEngine.cpp`,
   `tests/test_system_context.cpp`
 - **Modified:** `src/CanonicalEvents.h`, `src/EventRouter.cpp` (valid set),
-  `src/EventRouter.cpp`/EventAction table (7 entries), `src/FullscreenWatcher.cpp`
-  (X11 impl), `src/ConfigManager.h/.cpp` (`contextSenses` key),
-  `src/MainWindow.cpp` + `src/main.cpp` (wiring), `assets/i18n/tips.en.json`,
-  `assets/i18n/tips.zh_CN.json`, `tests/CMakeLists.txt`, `TODO.md` (status)
+  `src/FullscreenWatcher.cpp`
+  (X11 impl), `src/ConfigManager.h/.cpp` (`contextSensesEnabled` key),
+  `src/mainwindow.h` (fullscreenWatcher getter) + `src/main.cpp` (wiring),
+  `assets/i18n/tips.en.json`,
+  `assets/i18n/tips.zh_CN.json`, `CMakeLists.txt` (engine sources, IOKit/X11
+  linkage), `tests/CMakeLists.txt` (engine lib sources, new test, tips
+  resources), `TODO.md` (status)
 
 ## Constraints
 
@@ -166,6 +175,11 @@ mirroring `TipsEngine`'s `m_cooldownMinMs` / `m_lastTriggered` pattern
 - 2026-07-17 — Time-of-day is a synthetic follow-up event (`context.timeofday`),
   not a payload mutation of `session.start`.
 - 2026-07-17 — Linux fullscreen: X11-only; Wayland stubbed with documentation.
+- 2026-07-17 — Planning discovery: the "EventAction animation table" described
+  in CLAUDE.md no longer exists (EventRouter routes tips via TipsCatalog JSON;
+  animations via PetStateMachine/TipsEngine). Presentation scope reduced to
+  tip bubbles + stats; animations/persona deferred to Spec 4. `context.timeofday`
+  carries an empty tip entry by design.
 
 ## Out of Scope
 
