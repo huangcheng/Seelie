@@ -414,6 +414,8 @@ qt_add_executable(Seelie
     src/GlobalShortcutManager.h
     src/FullscreenWatcher.cpp
     src/FullscreenWatcher.h
+    src/SystemContextEngine.cpp
+    src/SystemContextEngine.h
     src/llm/LLMProfile.h
     src/llm/LLMProvider.h
     src/llm/LLMProvider.cpp

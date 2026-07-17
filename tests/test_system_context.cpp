@@ -16,10 +16,12 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QFile>
+#include <QDateTime>
 
 #include "EventRouter.h"
 #include "ConfigManager.h"
 #include "FullscreenWatcher.h"
+#include "SystemContextEngine.h"
 
 static bool jsonHasEventKeys(const QString &path, const QStringList &keys)
 {
@@ -52,6 +54,11 @@ private slots:
     void testContextSensesDefaultTrue();
     void testContextSensesRoundTrip();
     void testContextSensesSignal();
+
+    // Task 4: skeleton
+    void testEngineEmitsThroughRouter();
+    void testCooldownSuppressesSecondEmit();
+    void testStoppedEngineIsSilent();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -155,6 +162,52 @@ void TestSystemContext::testContextSensesSignal()
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.takeFirst().at(0).toBool(), false);
     cfg.setContextSensesEnabled(true);
+}
+
+void TestSystemContext::testEngineEmitsThroughRouter()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(12, 0)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    QVERIFY(engine.isRunning());
+    engine.emitContextForTest(QStringLiteral("context.latenight"));
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("context.latenight"));
+}
+
+void TestSystemContext::testCooldownSuppressesSecondEmit()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    qint64 fakeNow = QDateTime(QDate(2026, 7, 17), QTime(23, 15)).toMSecsSinceEpoch();
+    engine.setNowFn([&fakeNow] { return fakeNow; });
+    engine.start();
+    engine.emitContextForTest(QStringLiteral("context.latenight"));  // 20h cooldown
+    QCOMPARE(spy.count(), 1);
+    fakeNow += 60LL * 60 * 1000;  // +1h — still inside cooldown
+    engine.emitContextForTest(QStringLiteral("context.latenight"));
+    QCOMPARE(spy.count(), 1);     // suppressed
+    fakeNow += 20LL * 60 * 60 * 1000;  // past the 20h cooldown
+    engine.emitContextForTest(QStringLiteral("context.latenight"));
+    QCOMPARE(spy.count(), 2);     // fires again
+}
+
+void TestSystemContext::testStoppedEngineIsSilent()
+{
+    EventRouter router;
+    ConfigManager cfg; cfg.load();
+    SystemContextEngine engine(&router, &cfg);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    // Never start() — detectors must not fire.
+    engine.clockTick();
+    engine.sharedTick();
+    QCOMPARE(spy.count(), 0);
 }
 
 QTEST_MAIN(TestSystemContext)
