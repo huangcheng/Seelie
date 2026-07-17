@@ -48,6 +48,11 @@ private slots:
     void testTipsJsonEntriesEn();
     void testTipsJsonEntriesZhCn();
 
+    // Task 3: config key
+    void testContextSensesDefaultTrue();
+    void testContextSensesRoundTrip();
+    void testContextSensesSignal();
+
 private:
     QTemporaryDir m_tmpDir;
 };
@@ -110,6 +115,46 @@ void TestSystemContext::testTipsJsonEntriesZhCn()
         QStringLiteral("context.timeofday"),
     };
     QVERIFY(jsonHasEventKeys(QStringLiteral(SOURCE_DIR) + QStringLiteral("/assets/i18n/tips.zh_CN.json"), keys));
+}
+
+void TestSystemContext::testContextSensesDefaultTrue()
+{
+    ConfigManager cfg;
+    cfg.load();
+    QCOMPARE(cfg.contextSensesEnabled(), true);
+}
+
+void TestSystemContext::testContextSensesRoundTrip()
+{
+    // Mirror test_gaming_mode: nested scopes so each ConfigManager's
+    // destructor flushes its debounced save() before the next one loads.
+    {
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setContextSensesEnabled(false);
+    }
+    {
+        ConfigManager cfg2;
+        cfg2.load();
+        QCOMPARE(cfg2.contextSensesEnabled(), false);
+    }
+    // Restore default for any test that runs after this one.
+    {
+        ConfigManager cfg3;
+        cfg3.load();
+        cfg3.setContextSensesEnabled(true);
+    }
+}
+
+void TestSystemContext::testContextSensesSignal()
+{
+    ConfigManager cfg;
+    cfg.load();
+    QSignalSpy spy(&cfg, &ConfigManager::contextSensesEnabledChanged);
+    cfg.setContextSensesEnabled(false);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toBool(), false);
+    cfg.setContextSensesEnabled(true);
 }
 
 QTEST_MAIN(TestSystemContext)

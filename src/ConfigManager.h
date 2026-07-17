@@ -77,6 +77,10 @@ public:
     bool gamingModeEnabled() const { return m_gamingModeEnabled; }
     void setGamingModeEnabled(bool enabled);
 
+    /** Whether ContextSenses synthetic context events are emitted. Default true. */
+    bool contextSensesEnabled() const { return m_contextSensesEnabled; }
+    void setContextSensesEnabled(bool enabled);
+
     /** Whether tip bubbles surface above the pet. Default true. */
     bool tipBubblesEnabled() const { return m_tipBubblesEnabled; }
     void setTipBubblesEnabled(bool enabled);
@@ -139,6 +143,7 @@ signals:
     void displayModeChanged(DisplayMode mode);
     void globalShortcutChanged(const QString &shortcut);
     void gamingModeEnabledChanged(bool enabled);
+    void contextSensesEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
     void ttsEnabledChanged(bool enabled);
     void ttsActiveProviderChanged(const QString &stableId);
@@ -165,6 +170,7 @@ private:
     QString m_globalShortcut = QStringLiteral("Ctrl+Shift+O");
     bool m_globalShortcutEnabled = true;
     bool m_gamingModeEnabled = false;
+    bool m_contextSensesEnabled = true;
     bool m_tipBubblesEnabled = true;
     bool m_ttsEnabled = false;
     QString m_ttsActiveProvider = QStringLiteral("stepfun");
