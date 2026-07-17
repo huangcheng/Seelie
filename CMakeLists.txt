@@ -416,6 +416,8 @@ qt_add_executable(Seelie
     src/FullscreenWatcher.h
     src/SystemContextEngine.cpp
     src/SystemContextEngine.h
+    src/StrokeDetector.cpp
+    src/StrokeDetector.h
     src/llm/LLMProfile.h
     src/llm/LLMProvider.h
     src/llm/LLMProvider.cpp
