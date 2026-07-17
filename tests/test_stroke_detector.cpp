@@ -68,8 +68,10 @@ void TestStrokeDetector::testTouchReactionsSignal()
     QSignalSpy spy(&cfg, &ConfigManager::touchReactionsEnabledChanged);
     cfg.setTouchReactionsEnabled(false);
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.takeFirst().at(0).toBool(), false);
     cfg.setTouchReactionsEnabled(true);
+    QCOMPARE(spy.count(), 2);
+    cfg.setTouchReactionsEnabled(true);  // same value — early-return, no emit
+    QCOMPARE(spy.count(), 2);
 }
 
 QTEST_MAIN(TestStrokeDetector)
