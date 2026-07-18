@@ -167,6 +167,10 @@ void RecallDialog::onFallbackTimeout()
 
 void RecallDialog::onQueryEmbeddingReady(const QString &key, const QVector<float> &vec)
 {
+    // Free the stored copy on delivery — the vector arrived in the signal, so
+    // MemoryManager's m_queryEmbeds entry is redundant from here on (stale or
+    // not). Without this, every semantic search leaks ~6KB for the app's life.
+    if (m_memory) m_memory->clearQueryEmbedding(key);
     if (key != m_currentQueryKey) return;   // stale query — a newer one is pending
     m_fallback->stop();
     if (!m_memory || !m_memory->isValid() || vec.isEmpty()) return;
