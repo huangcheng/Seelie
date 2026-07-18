@@ -36,6 +36,7 @@ class EmbeddingService;
 class QTranslator;
 class SystemTray;
 class StatisticsDialog;
+class RecallDialog;
 
 class MainWindow : public QWidget
 {
@@ -117,6 +118,7 @@ private slots:
     void toggleVisibility();
     void openSettings();
     void onShowStatistics();
+    void showRecallDialog();
     void onExportConfig();
     void onImportConfig();
     void onActivePackChanged();
@@ -185,6 +187,7 @@ private:
     // overwrite the summary's requestId + text. Reset on session.start.
     bool m_summaryShownThisSessionEnd = false;
     QPointer<StatisticsDialog> m_statsDialog;
+    QPointer<RecallDialog> m_recallDialog;   // raise-or-create singleton (recall UI)
 
     // Gaming Mode
     FullscreenWatcher *m_fullscreenWatcher = nullptr;

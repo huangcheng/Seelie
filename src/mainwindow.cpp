@@ -24,6 +24,7 @@
 #include "PersonaEngine.h"
 #include "EmbeddingService.h"
 #include "StatisticsDialog.h"
+#include "RecallDialog.h"
 #include "ConfigExporter.h"
 #include "ConfigImporter.h"
 #include "ExportManifest.h"
@@ -634,6 +635,9 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
     QAction *settingsAction = menu.addAction(tr("Settings"));
     connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
 
+    QAction *recallAction = menu.addAction(tr("What do you remember?"));
+    connect(recallAction, &QAction::triggered, this, &MainWindow::showRecallDialog);
+
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
         const auto t = TipsCatalog::instance().message(QStringLiteral("about"));
@@ -768,6 +772,8 @@ void MainWindow::setSystemTray(SystemTray *tray)
         }
         connect(m_systemTray, &SystemTray::statisticsTriggered,
                 this, &MainWindow::onShowStatistics);
+        connect(m_systemTray, &SystemTray::recallTriggered,
+                this, &MainWindow::showRecallDialog);
         connect(m_systemTray, &SystemTray::exportConfigTriggered,
                 this, &MainWindow::onExportConfig);
         connect(m_systemTray, &SystemTray::importConfigTriggered,
@@ -792,6 +798,20 @@ void MainWindow::onShowStatistics()
                                          m_personaEngine, this);
     m_statsDialog->setAttribute(Qt::WA_DeleteOnClose);
     m_statsDialog->show();
+}
+
+void MainWindow::showRecallDialog()
+{
+    if (m_recallDialog) {
+        m_recallDialog->raise();
+        m_recallDialog->activateWindow();
+        return;
+    }
+    m_recallDialog = new RecallDialog(m_memory, m_embeddingService,
+                                      m_config ? m_config->language() : QStringLiteral("en"),
+                                      this);
+    m_recallDialog->setAttribute(Qt::WA_DeleteOnClose);
+    m_recallDialog->show();
 }
 
 void MainWindow::onExportConfig()

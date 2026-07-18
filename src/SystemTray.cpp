@@ -141,6 +141,10 @@ void SystemTray::setupMenu()
     m_statsAction = m_trayMenu->addAction(tr("Statistics..."));
     connect(m_statsAction, &QAction::triggered, this, &SystemTray::statisticsTriggered);
 
+    // Recall UI ("What do you remember?")
+    m_recallAction = m_trayMenu->addAction(tr("What do you remember?"));
+    connect(m_recallAction, &QAction::triggered, this, &SystemTray::recallTriggered);
+
     // Config submenu (Export / Import)
     m_configMenu = m_trayMenu->addMenu(tr("Config"));
     m_configMenu->setFont(menuFont);
@@ -405,6 +409,9 @@ void SystemTray::retranslateUi()
     }
     if (m_statsAction) {
         m_statsAction->setText(tr("Statistics..."));
+    }
+    if (m_recallAction) {
+        m_recallAction->setText(tr("What do you remember?"));
     }
     if (m_configMenu) {
         m_configMenu->setTitle(tr("Config"));

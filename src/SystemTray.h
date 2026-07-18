@@ -43,6 +43,7 @@ public:
 
 signals:
     void statisticsTriggered();
+    void recallTriggered();
     void exportConfigTriggered();
     void importConfigTriggered();
 
@@ -69,6 +70,7 @@ private:
     QAction *m_checkUpdateAction = nullptr;
     QAction *m_manageModelsAction = nullptr;
     QAction *m_statsAction = nullptr;
+    QAction *m_recallAction = nullptr;
     QMenu   *m_configMenu = nullptr;
     QAction *m_exportConfigAction = nullptr;
     QAction *m_importConfigAction = nullptr;

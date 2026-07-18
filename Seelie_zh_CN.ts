@@ -258,6 +258,10 @@ Please restart Seelie for changes to take full effect.</source>
         <source>You threw Seelie across the screen.</source>
         <translation>你把 Seelie 扔了出去。</translation>
     </message>
+    <message>
+        <source>What do you remember?</source>
+        <translation>你还记得吗？</translation>
+    </message>
 </context>
 <context>
     <name>PackCategories</name>
@@ -785,6 +789,41 @@ Path: %2</source>
     </message>
 </context>
 <context>
+    <name>RecallDialog</name>
+    <message>
+        <source>What do you remember?</source>
+        <translation>你还记得吗？</translation>
+    </message>
+    <message>
+        <source>Search memories…</source>
+        <translation>搜索回忆…</translation>
+    </message>
+    <message>
+        <source>Searching…</source>
+        <translation>正在搜索…</translation>
+    </message>
+    <message>
+        <source>Bond L%1 · Affection %2/100 · %3 memories</source>
+        <translation>羁绊 L%1 · 好感 %2/100 · %3 条回忆</translation>
+    </message>
+    <message>
+        <source>Known %1 for %2 days · Bond L%3 · Affection %4/100 · %5 memories</source>
+        <translation>认识 %1 已经 %2 天 · 羁绊 L%3 · 好感 %4/100 · %5 条回忆</translation>
+    </message>
+    <message>
+        <source>Memory unavailable.</source>
+        <translation>记忆不可用。</translation>
+    </message>
+    <message>
+        <source>No memories yet — chat with me more!</source>
+        <translation>还没有回忆，多陪我聊聊吧！</translation>
+    </message>
+    <message>
+        <source>Nothing like that yet.</source>
+        <translation>还没有相关的回忆。</translation>
+    </message>
+</context>
+<context>
     <name>StyledAlertWidget</name>
     <message>
         <source>OK</source>
@@ -872,6 +911,10 @@ Path: %2</source>
     <message>
         <source>Could not check for updates: %1</source>
         <translation>无法检查更新：%1</translation>
+    </message>
+    <message>
+        <source>What do you remember?</source>
+        <translation>你还记得吗？</translation>
     </message>
 </context>
 <context>
