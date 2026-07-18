@@ -48,10 +48,17 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/SystemContextEngine.h
     ${CMAKE_SOURCE_DIR}/src/StrokeDetector.cpp
     ${CMAKE_SOURCE_DIR}/src/StrokeDetector.h
+    ${CMAKE_SOURCE_DIR}/src/RecallDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/RecallDialog.h
+    ${CMAKE_SOURCE_DIR}/src/RecallFilter.h
+    ${CMAKE_SOURCE_DIR}/src/PersonaDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/PersonaDialog.h
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.cpp
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.h
     ${CMAKE_SOURCE_DIR}/src/MemoryManager.cpp
     ${CMAKE_SOURCE_DIR}/src/MemoryManager.h
+    ${CMAKE_SOURCE_DIR}/src/EmbeddingService.cpp
+    ${CMAKE_SOURCE_DIR}/src/EmbeddingService.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
     ${CMAKE_SOURCE_DIR}/src/tts/ITTSProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/ProviderConfig.h

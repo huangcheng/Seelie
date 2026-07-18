@@ -10,7 +10,11 @@
 #include <QTest>
 #include <QTemporaryDir>
 #include <QSettings>
+#include <QLabel>
+#include <QListWidget>
 
+#include "MemoryManager.h"
+#include "RecallDialog.h"
 #include "RecallFilter.h"
 
 class TestRecallDialog : public QObject
@@ -32,6 +36,10 @@ private slots:
     void testRelativeTimeChinese();
     void testRelativeTimeBoundaries();
     void testContainsEmptyEpisodeList();
+
+    // Task 3: dialog smoke
+    void testDialogShowsHeaderAndEpisodes();
+    void testDialogEmptyState();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -138,6 +146,36 @@ void TestRecallDialog::testRelativeTimeBoundaries()
 void TestRecallDialog::testContainsEmptyEpisodeList()
 {
     QVERIFY(RecallFilter::contains({}, QStringLiteral("query")).isEmpty());
+}
+
+void TestRecallDialog::testDialogShowsHeaderAndEpisodes()
+{
+    MemoryManager mm(":memory:");
+    QVERIFY(mm.isValid());
+    QVERIFY(mm.recordEpisode(QStringLiteral("session"), QStringLiteral("2h 5m, 42 events")) >= 0);
+    QVERIFY(mm.recordEpisode(QStringLiteral("poke"), QStringLiteral("Poked!")) >= 0);
+
+    RecallDialog dlg(&mm, nullptr, QStringLiteral("en"));
+    auto *header = dlg.findChild<QLabel*>(QStringLiteral("recallHeader"));
+    QVERIFY(header);
+    QVERIFY(header->text().contains(QStringLiteral("Bond L")));
+    QVERIFY(header->text().contains(QStringLiteral("memories")));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    QVERIFY(list);
+    QCOMPARE(list->count(), 2);
+    QVERIFY(list->item(0)->text().contains(QStringLiteral("Poked!")));  // newest first
+    QVERIFY(list->item(0)->text().contains(QStringLiteral("[poke]")));
+}
+
+void TestRecallDialog::testDialogEmptyState()
+{
+    MemoryManager mm(":memory:");
+    QVERIFY(mm.isValid());
+    RecallDialog dlg(&mm, nullptr, QStringLiteral("en"));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    QVERIFY(list);
+    QCOMPARE(list->count(), 1);
+    QVERIFY(list->item(0)->text().contains(QStringLiteral("No memories yet")));
 }
 
 QTEST_MAIN(TestRecallDialog)

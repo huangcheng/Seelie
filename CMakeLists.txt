@@ -418,6 +418,9 @@ qt_add_executable(Seelie
     src/SystemContextEngine.h
     src/StrokeDetector.cpp
     src/StrokeDetector.h
+    src/RecallDialog.cpp
+    src/RecallDialog.h
+    src/RecallFilter.h
     src/llm/LLMProfile.h
     src/llm/LLMProvider.h
     src/llm/LLMProvider.cpp
