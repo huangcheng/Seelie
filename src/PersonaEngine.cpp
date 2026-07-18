@@ -15,6 +15,13 @@ const QSet<QString> &poolTierEvents()
         QStringLiteral("file.edited"), QStringLiteral("file.watched"),
         QStringLiteral("prompt.submitted"), QStringLiteral("todo.updated"),
         QStringLiteral("notification.sent"), QStringLiteral("permission.response"),
+        // Spec 4: context senses + touch reactions get pool-tier canned lines
+        // (auto-seeded via generateBatch on first low-water access).
+        QStringLiteral("context.latenight"), QStringLiteral("context.longsession"),
+        QStringLiteral("context.idle"), QStringLiteral("context.away"),
+        QStringLiteral("context.gaming"), QStringLiteral("context.lowbattery"),
+        QStringLiteral("context.timeofday"),
+        QStringLiteral("user.pet"), QStringLiteral("user.toss"),
     };
     return s;
 }

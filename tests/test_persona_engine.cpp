@@ -75,6 +75,15 @@ private slots:
         QVERIFY(PersonaEngine::tierFor("milestone.gaming_mode") == PersonaEngine::Tier::OnDemand);
         // Unknown event defaults to OnDemand (forward compat).
         QVERIFY(PersonaEngine::tierFor("future.unknown") == PersonaEngine::Tier::OnDemand);
+        // Spec 4: context.* and user.pet/toss are pool-tier (auto-seeded).
+        for (const char *name : {"context.latenight", "context.longsession",
+                                 "context.idle", "context.away", "context.gaming",
+                                 "context.lowbattery", "context.timeofday",
+                                 "user.pet", "user.toss"}) {
+            QVERIFY(PersonaEngine::tierFor(name) == PersonaEngine::Tier::Pool);
+        }
+        // hover stays out of the bubble pipeline entirely.
+        QVERIFY(PersonaEngine::tierFor("user.hover") == PersonaEngine::Tier::OnDemand);
     }
 
     void testFallbackTouchEventsUseTouchPool()
