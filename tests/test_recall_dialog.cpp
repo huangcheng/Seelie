@@ -30,6 +30,8 @@ private slots:
     void testRelativeTimeAbsoluteFallback();
     void testRelativeTimeFutureClamp();
     void testRelativeTimeChinese();
+    void testRelativeTimeBoundaries();
+    void testContainsEmptyEpisodeList();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -117,6 +119,25 @@ void TestRecallDialog::testRelativeTimeChinese()
              QStringLiteral("3 小时前"));
     QCOMPARE(RecallFilter::relativeTime(0, 2 * 86'400'000, QStringLiteral("zh_CN")),
              QStringLiteral("2 天前"));
+}
+
+void TestRecallDialog::testRelativeTimeBoundaries()
+{
+    // Exactly 60 min → rolls up to "1h ago", not "60m ago"
+    QCOMPARE(RecallFilter::relativeTime(0, 60 * 60'000, QStringLiteral("en")),
+             QStringLiteral("1h ago"));
+    // Exactly 24h → rolls up to "1d ago"
+    QCOMPARE(RecallFilter::relativeTime(0, 24 * 3'600'000, QStringLiteral("en")),
+             QStringLiteral("1d ago"));
+    // Exactly 7d → ISO-date fallback (not "7d ago")
+    const qint64 ts7 = QDateTime(QDate(2026, 6, 1), QTime(12, 0)).toMSecsSinceEpoch();
+    QCOMPARE(RecallFilter::relativeTime(ts7, ts7 + 7LL * 86'400'000, QStringLiteral("en")),
+             QStringLiteral("2026-06-01"));
+}
+
+void TestRecallDialog::testContainsEmptyEpisodeList()
+{
+    QVERIFY(RecallFilter::contains({}, QStringLiteral("query")).isEmpty());
 }
 
 QTEST_MAIN(TestRecallDialog)
