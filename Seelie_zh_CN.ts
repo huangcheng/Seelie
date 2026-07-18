@@ -795,6 +795,10 @@ Path: %2</source>
         <translation>你还记得吗？</translation>
     </message>
     <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
         <source>Search memories…</source>
         <translation>搜索回忆…</translation>
     </message>
