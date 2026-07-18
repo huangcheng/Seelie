@@ -1418,6 +1418,9 @@ void MainWindow::showTouchBubble(const QString &gesture)
     QString body = canned.body;
     quint64 requestId = 0;
     if (m_personaEngine && m_config && m_config->personaEnabled()) {
+        // user.pet/toss are pool-tier → requestId is always 0 today; the
+        // activeBubble registration below is kept for forward compat in case
+        // touch events ever move to the OnDemand (LLM-upgraded) tier.
         PersonaEngine::Resolved r = m_personaEngine->resolve(
             QStringLiteral("user.") + gesture, QJsonObject{});
         if (!r.text.isEmpty()) body = r.text;
