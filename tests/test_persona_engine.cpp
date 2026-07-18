@@ -78,10 +78,12 @@ private slots:
         // Spec 4: context.* and user.pet/toss are pool-tier (auto-seeded).
         for (const char *name : {"context.latenight", "context.longsession",
                                  "context.idle", "context.away", "context.gaming",
-                                 "context.lowbattery", "context.timeofday",
+                                 "context.lowbattery",
                                  "user.pet", "user.toss"}) {
             QVERIFY(PersonaEngine::tierFor(name) == PersonaEngine::Tier::Pool);
         }
+        // Enrichment-only, never bubbles → NOT pool-tier (review: wasted refill).
+        QVERIFY(PersonaEngine::tierFor("context.timeofday") == PersonaEngine::Tier::OnDemand);
         // hover stays out of the bubble pipeline entirely.
         QVERIFY(PersonaEngine::tierFor("user.hover") == PersonaEngine::Tier::OnDemand);
     }
