@@ -93,6 +93,7 @@ QString PersonaEngine::fallbackTip(const QString &eventName) const
     if (eventName == QLatin1String("user.toss")) {
         return TipsCatalog::instance().touchLine(QStringLiteral("toss")).body;
     }
+    // user.hover intentionally has no catalog entry — hover never bubbles.
     return TipsCatalog::instance().eventTip(eventName).body;
 }
 
