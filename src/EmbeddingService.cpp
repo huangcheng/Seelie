@@ -45,8 +45,11 @@ EmbeddingService::EmbeddingService(MemoryManager *memory, EmbedFn fn, QObject *p
     connect(m_worker, &EmbeddingWorker::embedded, this, [this](qint64 id, const QVector<float> &vec) {
         if (m_pending > 0) --m_pending;
         if (id < 0) {
-            // Query job: resolve the caller's storage key (digest for id -1).
-            const QString key = m_queryKeys.take(id);
+            // Query job: resolve the caller's storage key. -1 (the digest
+            // query) is permanently reserved — read it, never consume it;
+            // synthetic query ids (≤ -2) are one-shot (take).
+            const QString key = (id == -1) ? m_queryKeys.value(id)
+                                           : m_queryKeys.take(id);
             if (!key.isEmpty()) {
                 if (m_memory)
                     m_memory->setQueryEmbedding(key, vec);
@@ -62,7 +65,9 @@ EmbeddingService::EmbeddingService(MemoryManager *memory, EmbedFn fn, QObject *p
     });
     connect(m_worker, &EmbeddingWorker::failed, this, [this](qint64 id) {
         if (m_pending > 0) --m_pending;
-        if (id < 0) m_queryKeys.remove(id);  // no unbounded growth on failures
+        // Never remove the reserved -1 (digest) key — a later digest call
+        // must still resolve. Synthetic query ids (≤ -2) are one-shot.
+        if (id < 0 && id != -1) m_queryKeys.remove(id);
         // Silent: row keeps NULL embedding / query key never lands.
     });
 

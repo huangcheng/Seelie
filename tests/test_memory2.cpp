@@ -422,6 +422,21 @@ private slots:
         QCOMPARE(genericSpy.first().at(0).toString(), MemoryManager::kDigestQueryKey);
     }
 
+    // Regression: take(-1) used to consume the reserved digest key — the
+    // second digest embedding was silently dropped. The -1 mapping must be
+    // permanent; only synthetic query ids (≤ -2) are one-shot.
+    void testDigestEmbeddingTwiceKeepsWorking() {
+        MemoryManager mem(freshDb());
+        EmbeddingService svc(&mem, [](const QString &, QString *) {
+            return QVector<float>{0.5f};
+        });
+        QSignalSpy legacySpy(&svc, &EmbeddingService::digestEmbeddingReady);
+        svc.requestDigestEmbedding(QStringLiteral("first"));
+        svc.requestDigestEmbedding(QStringLiteral("second"));
+        QTRY_VERIFY_WITH_TIMEOUT(legacySpy.count() == 2, 5000);
+        QCOMPARE(legacySpy.count(), 2);
+    }
+
 private:
     static QByteArray packVec(std::initializer_list<float> f) {
         QByteArray b; b.resize(int(f.size() * sizeof(float)));
