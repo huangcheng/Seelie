@@ -34,6 +34,9 @@ EmbeddingService::EmbeddingService(MemoryManager *memory, EmbedFn fn, QObject *p
     m_worker = new EmbeddingWorker(std::move(fn));
     m_worker->moveToThread(&m_thread);
 
+    // -1 is the digest-query job id; keep requestDigestEmbedding() working.
+    m_queryKeys.insert(-1, MemoryManager::kDigestQueryKey);
+
     // main -> worker (auto => queued across threads)
     connect(this, &EmbeddingService::jobRequested, m_worker, &EmbeddingWorker::onJob);
 
@@ -42,18 +45,25 @@ EmbeddingService::EmbeddingService(MemoryManager *memory, EmbedFn fn, QObject *p
     connect(m_worker, &EmbeddingWorker::embedded, this, [this](qint64 id, const QVector<float> &vec) {
         if (m_pending > 0) --m_pending;
         if (id < 0) {
-            // Digest-query job: store under the shared key and notify.
-            if (m_memory)
-                m_memory->setQueryEmbedding(MemoryManager::kDigestQueryKey, vec);
-            emit digestEmbeddingReady(vec);
+            // Query job: resolve the caller's storage key (digest for id -1).
+            const QString key = m_queryKeys.take(id);
+            if (!key.isEmpty()) {
+                if (m_memory)
+                    m_memory->setQueryEmbedding(key, vec);
+                emit queryEmbeddingReady(key, vec);
+                if (key == MemoryManager::kDigestQueryKey) {
+                    emit digestEmbeddingReady(vec);  // back-compat
+                }
+            }
         } else {
             if (m_memory)
                 m_memory->setEpisodeEmbedding(id, vec);
         }
     });
-    connect(m_worker, &EmbeddingWorker::failed, this, [this](qint64) {
+    connect(m_worker, &EmbeddingWorker::failed, this, [this](qint64 id) {
         if (m_pending > 0) --m_pending;
-        // Silent: row keeps NULL embedding.
+        if (id < 0) m_queryKeys.remove(id);  // no unbounded growth on failures
+        // Silent: row keeps NULL embedding / query key never lands.
     });
 
     m_thread.start();
@@ -87,4 +97,12 @@ void EmbeddingService::requestDigestEmbedding(const QString &contextText)
 {
     // id < 0 marks this as a digest-query job in the main-thread apply handler.
     enqueueEpisode(-1, contextText);
+}
+
+void EmbeddingService::enqueueQuery(const QString &key, const QString &text)
+{
+    if (key.isEmpty() || text.isEmpty()) return;
+    m_queryKeys.insert(m_nextQueryId, key);
+    enqueueEpisode(m_nextQueryId, text);
+    --m_nextQueryId;
 }

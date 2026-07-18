@@ -388,6 +388,40 @@ private slots:
         QVERIFY(d.contains(QStringLiteral("related memory")));
     }
 
+    // Generic query-embedding path (recall UI): enqueueQuery(key, text) lands
+    // the result under the caller's key in MemoryManager and emits
+    // queryEmbeddingReady(key, vec) on the main thread.
+    void testEnqueueQueryEmitsKeyAndStores() {
+        MemoryManager mem(freshDb());
+        EmbeddingService svc(&mem, [](const QString &, QString *) {
+            return QVector<float>{0.1f, 0.2f, 0.3f};
+        });
+        QSignalSpy spy(&svc, &EmbeddingService::queryEmbeddingReady);
+        svc.enqueueQuery(QStringLiteral("recall-test"), QStringLiteral("hello world"));
+        QTRY_VERIFY_WITH_TIMEOUT(spy.count() == 1, 5000);
+        const QList<QVariant> args = spy.takeFirst();
+        QCOMPARE(args.at(0).toString(), QStringLiteral("recall-test"));
+        // QVERIFY: QVector<float> has no QTEST_COMPARE helper toString.
+        const auto vec = args.at(1).value<QVector<float>>();
+        QVERIFY(vec == (QVector<float>{0.1f, 0.2f, 0.3f}));
+    }
+
+    // Back-compat: the digest path now emits BOTH queryEmbeddingReady
+    // (key == kDigestQueryKey) and digestEmbeddingReady.
+    void testDigestEmbeddingStillEmitsLegacySignal() {
+        MemoryManager mem(freshDb());
+        EmbeddingService svc(&mem, [](const QString &, QString *) {
+            return QVector<float>{0.5f};
+        });
+        QSignalSpy legacySpy(&svc, &EmbeddingService::digestEmbeddingReady);
+        QSignalSpy genericSpy(&svc, &EmbeddingService::queryEmbeddingReady);
+        svc.requestDigestEmbedding(QStringLiteral("digest context"));
+        QTRY_VERIFY_WITH_TIMEOUT(legacySpy.count() == 1, 5000);
+        QCOMPARE(legacySpy.count(), 1);
+        QCOMPARE(genericSpy.count(), 1);  // generic signal fires too
+        QCOMPARE(genericSpy.first().at(0).toString(), MemoryManager::kDigestQueryKey);
+    }
+
 private:
     static QByteArray packVec(std::initializer_list<float> f) {
         QByteArray b; b.resize(int(f.size() * sizeof(float)));

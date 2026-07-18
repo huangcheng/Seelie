@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QThread>
 #include <QVector>
+#include <QHash>
 #include <QString>
 #include <functional>
 
@@ -67,10 +68,20 @@ public:
     /// Convenience: request an embedding for the digest query text.
     void requestDigestEmbedding(const QString &contextText);
 
+    /// Generic query embedding (Spec: recall UI). The result is stored in
+    /// MemoryManager under `key` and re-emitted as queryEmbeddingReady(key,…).
+    /// requestDigestEmbedding() is the special case key == kDigestQueryKey.
+    void enqueueQuery(const QString &key, const QString &text);
+
 signals:
     /// Emitted on the main thread when a digest-query embedding (id < 0)
     /// completes successfully. Episode-row jobs do not emit this.
     void digestEmbeddingReady(const QVector<float> &vec);
+
+    /// Emitted on the main thread when a query embedding completes. The digest
+    /// path emits BOTH this (key == kDigestQueryKey) and digestEmbeddingReady
+    /// for back-compat.
+    void queryEmbeddingReady(const QString &key, const QVector<float> &vec);
 
     // Internal cross-thread signal: main -> worker. Not for outside use.
     void jobRequested(qint64 episodeId, const QString &text);
@@ -84,6 +95,11 @@ private:
     // main thread only (enqueue increments, embedded/failed decrements).
     int m_pending = 0;
     static constexpr int kMaxQueue = 100;
+
+    // Query-job key registry: synthetic negative ids map to caller-supplied
+    // storage keys. -1 is permanently reserved for the digest query.
+    QHash<qint64, QString> m_queryKeys;
+    qint64 m_nextQueryId = -2;
 };
 
 #endif // EMBEDDING_SERVICE_H
