@@ -173,8 +173,6 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
     Q_UNUSED(payload);
     if (!m_provider.isConfigured()) return { fallbackTip(eventName), 0 };
 
-    const quint64 requestId = m_nextRequestId++;
-
     // Build context for the prompt
     // Privacy: only include recent event history when the user opted in to
     // sharing memory with the AI.  The rolling window reveals workflow
@@ -225,6 +223,42 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
         }
     }
 
+    return { fallbackTip(eventName), fireOnDemand(systemPrompt, userPrompt) };
+}
+
+quint64 PersonaEngine::requestSessionSummary(const QString &statsLine)
+{
+    if (!m_config || !m_config->personaEnabled()
+        || m_config->personaProfile().isEmpty() || !m_provider.isConfigured()) {
+        return 0;
+    }
+    const QString lang = localeToHuman(m_config->language());
+    QString userPrompt = QStringLiteral("Session: %1\n").arg(statsLine);
+    if (m_config->shareMemoryWithAi()) {
+        QStringList recent;
+        for (const QString &e : m_eventWindow) recent << e;
+        if (!recent.isEmpty()) {
+            userPrompt += QStringLiteral("Recent events: %1\n")
+                              .arg(recent.join(QStringLiteral(", ")));
+        }
+        if (m_memory && m_memory->isValid()) {
+            const QString digest = m_memory->memoryDigest();
+            if (!digest.isEmpty()) {
+                userPrompt += QStringLiteral("Memory:\n%1\n").arg(digest);
+            }
+        }
+    }
+    userPrompt += QStringLiteral("Summarize this work session in-character.");
+    const QString systemPrompt = QStringLiteral(
+        "You are a desktop pet companion to a software developer. "
+        "Reply with ONE short sentence in %1. Do not add quotes, "
+        "translation, or commentary — just the sentence itself.").arg(lang);
+    return fireOnDemand(systemPrompt, userPrompt);
+}
+
+quint64 PersonaEngine::fireOnDemand(const QString &systemPrompt, const QString &userPrompt)
+{
+    const quint64 requestId = m_nextRequestId++;
     // Capture current pack/hash by value so we can detect stale callbacks
     // if the user switches packs while the LLM request is in flight.
     const QString capturedPackId = m_activePackId;
@@ -259,7 +293,7 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
             emit tipUpgraded(requestId, t);
         });
 
-    return { fallbackTip(eventName), requestId };
+    return requestId;
 }
 
 void PersonaEngine::loadStats(const QString &configDir)

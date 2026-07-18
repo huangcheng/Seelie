@@ -53,6 +53,11 @@ public:
     /// no fallback is available).
     Resolved resolve(const QString &eventName, const QJsonObject &payload);
 
+    /// Spec 4: fire an LLM session summary. Returns requestId (tipUpgraded
+    /// will carry it), or 0 when persona/provider is off (caller shows the
+    /// deterministic template instead).
+    quint64 requestSessionSummary(const QString &statsLine);
+
     /// Test seam — expose internal pool for seeding.
     PersonaPool &pool() { return m_pool; }
 
@@ -75,6 +80,10 @@ signals:
 private:
     Resolved resolvePool(const QString &eventName);
     Resolved resolveOnDemand(const QString &eventName, const QJsonObject &payload);
+    /// Shared OnDemand lifecycle: requestId allocation, generate call, and
+    /// the stale/fail/truncate callback. Used by resolveOnDemand and
+    /// requestSessionSummary (Spec 4 dedup).
+    quint64 fireOnDemand(const QString &systemPrompt, const QString &userPrompt);
     QString fallbackTip(const QString &eventName) const;
     /// Re-resolve m_provider from the current ConfigManager state. Called from
     /// the ctor and whenever ConfigManager::personaProfileChanged or

@@ -43,7 +43,8 @@
     "pack.install_failed": {"title": "安装失败",   "body": "角色包安装失败。"},
     "update.available":    {"title": "有新版本",   "body": "Seelie {latest} 已发布，当前版本是 {current}。"},
     "update.none":         {"title": "已是最新",   "body": "Seelie {current} 已经是最新版本。"},
-    "update.failed":       {"title": "检查更新失败", "body": "无法检查更新：{error}"}
+    "update.failed":       {"title": "检查更新失败", "body": "无法检查更新：{error}"},
+    "session.summary":     {"title": "会话结束",             "body": "本次会话：{summary}"}
   },
   "touch": {
     "pet": [

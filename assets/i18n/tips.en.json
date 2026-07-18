@@ -43,7 +43,8 @@
     "pack.install_failed": {"title": "Installation Failed",  "body": "Failed to install sprite pack."},
     "update.available":    {"title": "Update Available",     "body": "Seelie {latest} is available. You're on {current}."},
     "update.none":         {"title": "You're up to date",    "body": "Seelie {current} is the latest version."},
-    "update.failed":       {"title": "Update Check Failed",  "body": "Could not check for updates: {error}"}
+    "update.failed":       {"title": "Update Check Failed",  "body": "Could not check for updates: {error}"},
+    "session.summary":     {"title": "Session ended",       "body": "Session wrapped: {summary}"}
   },
   "touch": {
     "pet": [

@@ -213,7 +213,61 @@ private slots:
         QVERIFY(spy.wait(3000));
         QVERIFY(!capturedBody.contains("episodetext-xyz"));
     }
+
+    void testSessionSummaryPromptAndUpgrade()
+    {
+        QByteArray capturedBody;
+        QHttpServer server;
+        server.route("/chat/completions", [&capturedBody](const QHttpServerRequest &req) {
+            capturedBody = req.body();
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                R"({"choices":[{"message":{"content":"2 hours, 42 edits, one heroic save."}}],"usage":{"prompt_tokens":1,"completion_tokens":1}})").object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        MemoryManager mm(":memory:");
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(true);
+        cfg.setShareMemoryWithAi(false);   // summary must not require memory sharing
+        cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
+                               QStringLiteral("http://127.0.0.1:%1").arg(port), "k", "m" } });
+        cfg.setPersonaProfile("p");
+        PersonaEngine engine(&mm, &cfg);
+        engine.setActivePackId("pack");
+        engine.setPersonaHash("h");
+
+        QSignalSpy spy(&engine, &PersonaEngine::tipUpgraded);
+        const quint64 id = engine.requestSessionSummary(QStringLiteral("2h 5m, 42 events"));
+        QVERIFY(id != 0);
+        QVERIFY(spy.wait(3000));
+        QVERIFY(capturedBody.contains("2h 5m, 42 events"));
+        QVERIFY(capturedBody.contains("Summarize"));
+        QCOMPARE(spy.first()[0].value<quint64>(), id);
+        QCOMPARE(spy.first()[1].toString(), QString("2 hours, 42 edits, one heroic save."));
+    }
+
+    void testSessionSummaryOfflineReturnsZero()
+    {
+        MemoryManager mm(":memory:");
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(false);   // persona off → no LLM call, id 0
+        PersonaEngine engine(&mm, &cfg);
+        QCOMPARE(engine.requestSessionSummary(QStringLiteral("2h 5m, 42 events")), quint64(0));
+    }
 #endif
+
+    void testSessionSummaryCatalogEntry()
+    {
+        // The offline template must exist in the bundled catalog.
+        const auto tip = TipsCatalog::instance().message(QStringLiteral("session.summary"));
+        QVERIFY(!tip.title.isEmpty());
+        QVERIFY(tip.body.contains(QStringLiteral("{summary}")));
+    }
 };
 
 QTEST_MAIN(TestPersonaEngine)

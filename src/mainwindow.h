@@ -133,6 +133,9 @@ private:
     void showRandomGreeting();
     /// Random canned line for a touch gesture ("pet"/"toss") via TipsCatalog.
     void showTouchBubble(const QString &gesture);
+    /// Spec 4: session-end bubble — template body now; LLM summary upgrades
+    /// it via the activeBubble machinery when persona is configured.
+    void showSessionSummaryBubble(const QString &statsLine);
     void tryRecordPoke();
     /// Spec 3: one pet pulse from the StrokeDetector. Task 5 fires the FSM
     /// overlay; Task 6 adds memory + canned lines.

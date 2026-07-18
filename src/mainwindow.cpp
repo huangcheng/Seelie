@@ -1146,6 +1146,14 @@ void MainWindow::onEventForMemory(const QString &eventName)
             const QString text = tr("%1h %2m, %3 events").arg(h).arg(m).arg(m_sessionEventCount);
             const qint64 id = m_memory->recordEpisode(QStringLiteral("session"), text);
             if (m_embeddingService && id >= 0) m_embeddingService->enqueueEpisode(id, text);
+            // Spec 4: spoken session summary — deterministic template now,
+            // LLM upgrade async; plus one digest embedding so FUTURE
+            // memoryDigest() calls rank episodes by similarity to this one.
+            showSessionSummaryBubble(text);
+            if (m_embeddingService) {
+                m_embeddingService->requestDigestEmbedding(
+                    text + QLatin1Char('\n') + m_memory->memoryDigest());
+            }
         }
         m_sessionStartMs = 0;
     }
@@ -1397,4 +1405,33 @@ void MainWindow::showTouchBubble(const QString &gesture)
     const auto tip = TipsCatalog::instance().touchLine(gesture);
     if (tip.title.isEmpty()) return;
     m_tipWidget->showBubble(tip.title, tip.body, TipWidget::TipBubble);
+}
+
+void MainWindow::showSessionSummaryBubble(const QString &statsLine)
+{
+    if (!m_tipWidget) return;
+    const auto entry = TipsCatalog::instance().message(QStringLiteral("session.summary"));
+    QString body = entry.body;
+    if (body.isEmpty()) {
+        body = QStringLiteral("Session wrapped: {summary}");  // catalog-missing fallback
+    }
+    body.replace(QStringLiteral("{summary}"), statsLine);
+    const QString title = entry.title.isEmpty()
+        ? QStringLiteral("Session ended") : entry.title;
+
+    quint64 requestId = 0;
+    if (m_personaEngine && m_config && m_config->personaEnabled()) {
+        requestId = m_personaEngine->requestSessionSummary(statsLine);
+    }
+    m_activeBubbleRequestId = requestId;
+    m_activeBubbleFallbackBody = body;
+    m_tipWidget->showBubble(title, body, TipWidget::TipBubble);
+
+    // TTS policy mirrors the event-route listener: speak now only when no
+    // upgrade is in flight; otherwise onTipUpgraded/Failed handles it.
+    const bool ttsReady = m_ttsEngine && m_config && m_config->ttsEnabled()
+        && m_config->displayMode() != ConfigManager::DisplayMode::Ecg;
+    if (ttsReady && requestId == 0) {
+        m_ttsEngine->speak(body);
+    }
 }
