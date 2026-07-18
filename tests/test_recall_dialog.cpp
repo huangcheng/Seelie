@@ -209,8 +209,9 @@ void TestRecallDialog::testSubstringSearchFiltersList()
     auto *search = dlg.findChild<QLineEdit*>(QStringLiteral("recallSearch"));
     auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
     search->setText(QStringLiteral("ipc"));
-    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 1, 1500);   // debounce 400ms
-    QVERIFY(list->item(0)->text().contains(QStringLiteral("IPC server")));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        list->count() == 1 && list->item(0)->text().contains(QStringLiteral("IPC server")),
+        1500);   // debounce 400ms; content predicate skips the transient "Searching…" row
 }
 
 void TestRecallDialog::testEmptySearchRestoresDefault()
@@ -239,8 +240,10 @@ void TestRecallDialog::testNoResultsState()
     auto *search = dlg.findChild<QLineEdit*>(QStringLiteral("recallSearch"));
     auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
     search->setText(QStringLiteral("zzz"));
-    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 1, 1500);
-    QVERIFY(list->item(0)->text().contains(QStringLiteral("Nothing like that yet")));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        list->count() == 1
+            && list->item(0)->text().contains(QStringLiteral("Nothing like that yet")),
+        1500);
 }
 
 QTEST_MAIN(TestRecallDialog)

@@ -122,12 +122,15 @@ void RecallDialog::renderEmpty(const QString &text)
 void RecallDialog::onSearchTextChanged(const QString &text)
 {
     m_pendingQuery = text.trimmed();
-    // Drop stale rows the moment the user starts typing — otherwise a search
-    // that yields the same row count as the default view (e.g. one episode,
-    // zero hits → one empty-state row) would be indistinguishable from the
-    // pre-search state, racing QTRY_VERIFY in tests and confusing users.
-    if (!m_pendingQuery.isEmpty()) {
-        m_list->clear();
+    if (m_pendingQuery.isEmpty()) {
+        // Close the stale-result window immediately: without this, a late
+        // queryEmbeddingReady with the still-current key could render stale
+        // results into an empty-search UI before the debounce fires.
+        m_currentQueryKey.clear();
+    } else {
+        // Placeholder, not blank — eliminates the 400ms flash while keeping
+        // the row count deterministic (1) so content-based QTRYs are stable.
+        renderEmpty(tr("Searching…"));
     }
     m_fallback->stop();
     m_debounce->start();   // restart-on-typing debounce
