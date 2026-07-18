@@ -77,6 +77,22 @@ private slots:
         QVERIFY(PersonaEngine::tierFor("future.unknown") == PersonaEngine::Tier::OnDemand);
     }
 
+    void testFallbackTouchEventsUseTouchPool()
+    {
+        // Persona disabled → resolve() returns {fallbackTip, 0}; user.* touch
+        // events must fall back to the Spec-3 touch line pools (qrc-bundled).
+        MemoryManager mm(":memory:");
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(false);
+        PersonaEngine engine(&mm, &cfg);
+
+        QVERIFY(!engine.resolve("user.pet", {}).text.isEmpty());
+        QVERIFY(!engine.resolve("user.toss", {}).text.isEmpty());
+        // hover stays silent (spec: hover never bubbles)
+        QVERIFY(engine.resolve("user.hover", {}).text.isEmpty());
+    }
+
 #ifdef SEELIE_HAS_QHTTPSERVER
     void testOnDemandUpgrade()
     {

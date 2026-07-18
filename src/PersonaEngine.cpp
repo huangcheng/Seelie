@@ -85,6 +85,14 @@ PersonaEngine::Tier PersonaEngine::tierFor(const QString &eventName)
 
 QString PersonaEngine::fallbackTip(const QString &eventName) const
 {
+    // Spec 4: touch events fall back to the Spec-3 canned touch pools
+    // (gesture key = event name suffix). Everything else uses event tips.
+    if (eventName == QLatin1String("user.pet")) {
+        return TipsCatalog::instance().touchLine(QStringLiteral("pet")).body;
+    }
+    if (eventName == QLatin1String("user.toss")) {
+        return TipsCatalog::instance().touchLine(QStringLiteral("toss")).body;
+    }
     return TipsCatalog::instance().eventTip(eventName).body;
 }
 
