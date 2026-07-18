@@ -79,6 +79,14 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   consumers win the bubble). Program memory→senses→touch→commentary COMPLETE.
   Parked: recall UI, habit learning, RemoteMemoryBackend, momentum glide,
   real-endpoint smoke.
+- [x] **Recall UI ("What do you remember?")** — SHIPPED 2026-07-18 on branch
+  `recall-ui` (pending merge). PersonaDialog-based recall window: relationship
+  header (days/bond/affection/count), latest-100 episode list with kind tags +
+  locale-aware relative times, dual search (substring always; embedding recall
+  via new generic `EmbeddingService::enqueueQuery` when persona+shareMemory on,
+  with timed substring fallback + "Searching…" placeholder). Entries in pet
+  context menu + tray menu. 14 new tests (filter/time/dialog/search); suite
+  20/20 green. Read-only v1 (no editing/deleting).
 - [ ] **(Parked, future)** `RemoteMemoryBackend` (Mem0/Zep-class managed memory adapter) —
   interface seam reserved as `MemoryRecallBackend`; local SQLite stays source of truth.
   LLM-summarized episode rollups. Habit learning (active-hours patterns). Per-pack bonds.
