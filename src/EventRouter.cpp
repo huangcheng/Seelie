@@ -64,9 +64,9 @@ void EventRouter::routeEvent(const QJsonObject &event)
     // Catalog tip shown BEFORE eventProcessed: downstream consumers (memory
     // milestones, the Spec-4 session summary) run inside eventProcessed and
     // must be able to overwrite the catalog bubble — emitting eventProcessed
-    // first means the catalog clobbers them. (Also fixes a latent
-    // milestone-text clobber: MemoryManager::milestoneReached → PersonaEngine
-    // resolve ran before the catalog showBubble and was overwritten.)
+    // first means the catalog clobbers them. Note: milestones triggered from
+    // TipsEngine::processEvent above are still overwritten by the catalog
+    // bubble — a separate fix, out of scope here.
     const TipsCatalog::Tip tip = TipsCatalog::instance().eventTip(eventName);
     if (!tip.title.isEmpty() && m_tipWidget) {
         m_tipWidget->showBubble(tip.title, tip.body, TipWidget::TipBubble, sourceLabel);
