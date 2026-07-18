@@ -40,6 +40,7 @@ private slots:
     // Task 3: dialog smoke
     void testDialogShowsHeaderAndEpisodes();
     void testDialogEmptyState();
+    void testDialogNullMemory();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -176,6 +177,19 @@ void TestRecallDialog::testDialogEmptyState()
     QVERIFY(list);
     QCOMPARE(list->count(), 1);
     QVERIFY(list->item(0)->text().contains(QStringLiteral("No memories yet")));
+}
+
+void TestRecallDialog::testDialogNullMemory()
+{
+    // Defensive path: dialog constructed with no MemoryManager must not crash
+    // and shows the unavailable variant instead of relationship stats.
+    RecallDialog dlg(nullptr, nullptr, QStringLiteral("en"));
+    auto *header = dlg.findChild<QLabel*>(QStringLiteral("recallHeader"));
+    QVERIFY(header);
+    QVERIFY(header->text().contains(QStringLiteral("Memory unavailable")));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    QVERIFY(list);
+    QCOMPARE(list->count(), 1);  // empty-state row, not episode rows
 }
 
 QTEST_MAIN(TestRecallDialog)
