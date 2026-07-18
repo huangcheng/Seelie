@@ -878,7 +878,7 @@ void SettingsPanelWidget::setupUi()
         privLayout->setContentsMargins(0, 8, 0, 0);
         privLayout->setSpacing(8);
         m_shareMemoryCheck = new CheckMarkBox(tr("Share memory with AI"), privacyGroup);
-        m_shareMemoryCheck->setToolTip(tr("Sends your name, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
+        m_shareMemoryCheck->setToolTip(tr("Sends your name, profile bio, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
         m_shareMemoryCheck->setStyleSheet(m_autoStartCheck->styleSheet());
         privLayout->addWidget(m_shareMemoryCheck);
         llmLayout->addWidget(privacyGroup);
@@ -1535,7 +1535,7 @@ void SettingsPanelWidget::retranslateUi()
     }
     if (m_shareMemoryCheck) {
         m_shareMemoryCheck->setText(tr("Share memory with AI"));
-        m_shareMemoryCheck->setToolTip(tr("Sends your name, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
+        m_shareMemoryCheck->setToolTip(tr("Sends your name, profile bio, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
     }
     if (m_regenPoolBtn) {
         m_regenPoolBtn->setText(tr("Regenerate pool"));

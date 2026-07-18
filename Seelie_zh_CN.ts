@@ -557,8 +557,8 @@ Path: %2</source>
         <translation>与 AI 共享记忆</translation>
     </message>
     <message>
-        <source>Sends your name, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event.</source>
-        <translation>每次响应事件时，向 AI 服务商发送你的名字、关系数据（羁绊、好感、会话数）和近期活动摘要。</translation>
+        <source>Sends your name, profile bio, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event.</source>
+        <translation>每次响应事件时，向 AI 服务商发送你的名字、个人简介、关系数据（羁绊、好感、会话数）和近期活动摘要。</translation>
     </message>
     <message>
         <source>Regenerate pool</source>

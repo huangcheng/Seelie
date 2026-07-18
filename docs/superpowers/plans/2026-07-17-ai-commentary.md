@@ -603,5 +603,13 @@ Issues found by the per-task review loops; all fixed in code. Per precedent.
    callback moved verbatim into a shared helper used by requestSessionSummary;
    requestId allocation moved with it (single allocation site). Existing
    upgrade tests unchanged (`3eac893`).
+6. **Language hint lives in the system prompt, not the user prompt** (deviation
+   from spec §4 text): format constraints belong in the system role — better
+   prompt engineering; tests pin the behavior.
+7. **Catalog-missing fallback string is English-only** (`mainwindow.cpp`
+   showSessionSummaryBubble hardcoded `"Session wrapped: {summary}"`): accepted
+   risk — the catalog is qrc-bundled, so the fallback only fires on corruption.
+8. **Tooltip bio mention** (final-review catch): the re-scoped tooltip now also
+   lists the profile bio in the disclosure (`f4dda94` follow-up commit).
 
 **Final state:** 11 commits on `ai-commentary`, suite 19/19, reviews all green.
