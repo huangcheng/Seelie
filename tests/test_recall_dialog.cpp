@@ -11,6 +11,7 @@
 #include <QTemporaryDir>
 #include <QSettings>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 
 #include "MemoryManager.h"
@@ -41,6 +42,11 @@ private slots:
     void testDialogShowsHeaderAndEpisodes();
     void testDialogEmptyState();
     void testDialogNullMemory();
+
+    // Task 4: search
+    void testSubstringSearchFiltersList();
+    void testEmptySearchRestoresDefault();
+    void testNoResultsState();
 
 private:
     QTemporaryDir m_tmpDir;
@@ -190,6 +196,51 @@ void TestRecallDialog::testDialogNullMemory()
     auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
     QVERIFY(list);
     QCOMPARE(list->count(), 1);  // empty-state row, not episode rows
+}
+
+void TestRecallDialog::testSubstringSearchFiltersList()
+{
+    MemoryManager mm(":memory:");
+    QVERIFY(mm.isValid());
+    mm.recordEpisode(QStringLiteral("session"), QStringLiteral("Fixed the IPC server"));
+    mm.recordEpisode(QStringLiteral("session"), QStringLiteral("lunch break"));
+
+    RecallDialog dlg(&mm, nullptr, QStringLiteral("en"));   // no embed → substring path
+    auto *search = dlg.findChild<QLineEdit*>(QStringLiteral("recallSearch"));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    search->setText(QStringLiteral("ipc"));
+    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 1, 1500);   // debounce 400ms
+    QVERIFY(list->item(0)->text().contains(QStringLiteral("IPC server")));
+}
+
+void TestRecallDialog::testEmptySearchRestoresDefault()
+{
+    MemoryManager mm(":memory:");
+    QVERIFY(mm.isValid());
+    mm.recordEpisode(QStringLiteral("session"), QStringLiteral("a"));
+    mm.recordEpisode(QStringLiteral("session"), QStringLiteral("b"));
+
+    RecallDialog dlg(&mm, nullptr, QStringLiteral("en"));
+    auto *search = dlg.findChild<QLineEdit*>(QStringLiteral("recallSearch"));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    search->setText(QStringLiteral("zzz"));
+    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 1, 1500);   // no-results row
+    search->clear();
+    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 2, 1500);   // default restored
+}
+
+void TestRecallDialog::testNoResultsState()
+{
+    MemoryManager mm(":memory:");
+    QVERIFY(mm.isValid());
+    mm.recordEpisode(QStringLiteral("session"), QStringLiteral("a"));
+
+    RecallDialog dlg(&mm, nullptr, QStringLiteral("en"));
+    auto *search = dlg.findChild<QLineEdit*>(QStringLiteral("recallSearch"));
+    auto *list = dlg.findChild<QListWidget*>(QStringLiteral("recallList"));
+    search->setText(QStringLiteral("zzz"));
+    QTRY_VERIFY_WITH_TIMEOUT(list->count() == 1, 1500);
+    QVERIFY(list->item(0)->text().contains(QStringLiteral("Nothing like that yet")));
 }
 
 QTEST_MAIN(TestRecallDialog)

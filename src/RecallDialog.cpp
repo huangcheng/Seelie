@@ -119,8 +119,71 @@ void RecallDialog::renderEmpty(const QString &text)
 }
 
 // Task 4 fills these in (search wiring).
-void RecallDialog::onSearchTextChanged(const QString &) {}
-void RecallDialog::onDebounceTimeout() {}
-void RecallDialog::onFallbackTimeout() {}
-void RecallDialog::onQueryEmbeddingReady(const QString &, const QVector<float> &) {}
-void RecallDialog::runSubstringSearch(const QString &) {}
+void RecallDialog::onSearchTextChanged(const QString &text)
+{
+    m_pendingQuery = text.trimmed();
+    // Drop stale rows the moment the user starts typing — otherwise a search
+    // that yields the same row count as the default view (e.g. one episode,
+    // zero hits → one empty-state row) would be indistinguishable from the
+    // pre-search state, racing QTRY_VERIFY in tests and confusing users.
+    if (!m_pendingQuery.isEmpty()) {
+        m_list->clear();
+    }
+    m_fallback->stop();
+    m_debounce->start();   // restart-on-typing debounce
+}
+
+void RecallDialog::onDebounceTimeout()
+{
+    const QString query = m_pendingQuery;
+    if (query.isEmpty()) {
+        m_currentQueryKey.clear();
+        renderDefault();
+        return;
+    }
+    if (m_embed) {
+        // Semantic path: embed the query, render on queryEmbeddingReady.
+        // The fallback timer covers slow/failed embeds with substring results.
+        ++m_querySeq;
+        m_currentQueryKey = QStringLiteral("recall-%1").arg(m_querySeq);
+        m_embed->enqueueQuery(m_currentQueryKey, query);
+        m_fallback->start();
+        return;
+    }
+    runSubstringSearch(query);
+}
+
+void RecallDialog::onFallbackTimeout()
+{
+    // Semantic path didn't answer in time — show substring results now; a
+    // late queryEmbeddingReady still upgrades the list to semantic ranking.
+    if (!m_pendingQuery.isEmpty()) {
+        runSubstringSearch(m_pendingQuery);
+    }
+}
+
+void RecallDialog::onQueryEmbeddingReady(const QString &key, const QVector<float> &vec)
+{
+    if (key != m_currentQueryKey) return;   // stale query — a newer one is pending
+    m_fallback->stop();
+    if (!m_memory || !m_memory->isValid() || vec.isEmpty()) return;
+    const auto results = m_memory->recallByVector(vec, RESULT_LIMIT);
+    if (results.isEmpty()) {
+        renderEmpty(tr("Nothing like that yet."));
+        return;
+    }
+    renderEpisodes(results);
+}
+
+void RecallDialog::runSubstringSearch(const QString &query)
+{
+    if (!m_memory || !m_memory->isValid()) return;
+    const auto pool = m_memory->recentEpisodes(SUBSTRING_POOL);
+    const auto hits = RecallFilter::contains(pool, query);
+    const auto capped = hits.mid(0, RESULT_LIMIT);
+    if (capped.isEmpty()) {
+        renderEmpty(tr("Nothing like that yet."));
+        return;
+    }
+    renderEpisodes(capped);
+}
