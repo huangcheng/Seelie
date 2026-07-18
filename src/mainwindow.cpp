@@ -993,6 +993,11 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
     if (m_eventRouter) {
         connect(m_eventRouter, &EventRouter::eventProcessed,
                 this, [this](const QString &name, const QJsonObject &payload) {
+            // Spec 4: when the session summary bubble is up, don't fire a
+            // second OnDemand resolve for session.end — it would overwrite
+            // the summary's requestId and clobber its text (quality review).
+            // Short sessions (<30min, no summary) keep the classic upgrade.
+            if (name == QLatin1String("session.end") && m_summaryShownThisSessionEnd) return;
             if (!m_personaEngine) return;
             PersonaEngine::Resolved r = m_personaEngine->resolve(name, payload);
             if (r.text.isEmpty()) return;
@@ -1131,6 +1136,8 @@ void MainWindow::onEventForMemory(const QString &eventName)
     if (eventName == QLatin1String("session.start")) {
         m_sessionStartMs = QDateTime::currentMSecsSinceEpoch();
         m_sessionEventCount = 0;
+        // Clear the session-end summary guard for the new session.
+        m_summaryShownThisSessionEnd = false;
         // Daily login reward (once per calendar day)
         const QString today = QDate::currentDate().toString(Qt::ISODate);
         if (m_memory->value(QStringLiteral("rel.last_seen_day")) != today) {
@@ -1148,7 +1155,10 @@ void MainWindow::onEventForMemory(const QString &eventName)
             if (m_embeddingService && id >= 0) m_embeddingService->enqueueEpisode(id, text);
             // Spec 4: spoken session summary — deterministic template now,
             // LLM upgrade async; plus one digest embedding so FUTURE
-            // memoryDigest() calls rank episodes by similarity to this one.
+            // memoryDigest() calls rank episodes by similarity. The embedded
+            // text is a composite (stats line + current digest), i.e. "memory
+            // state at end of session" — richer than the sparse stats line
+            // alone for similarity matching.
             showSessionSummaryBubble(text);
             if (m_embeddingService) {
                 m_embeddingService->requestDigestEmbedding(
@@ -1425,6 +1435,9 @@ void MainWindow::showSessionSummaryBubble(const QString &statsLine)
     }
     m_activeBubbleRequestId = requestId;
     m_activeBubbleFallbackBody = body;
+    // Mark the summary as shown so the queued (a) persona connect skips its
+    // redundant session.end resolve (which would overwrite this requestId).
+    m_summaryShownThisSessionEnd = true;
     m_tipWidget->showBubble(title, body, TipWidget::TipBubble);
 
     // TTS policy mirrors the event-route listener: speak now only when no

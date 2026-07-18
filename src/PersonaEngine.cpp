@@ -246,6 +246,12 @@ quint64 PersonaEngine::requestSessionSummary(const QString &statsLine)
             if (!digest.isEmpty()) {
                 userPrompt += QStringLiteral("Memory:\n%1\n").arg(digest);
             }
+            const QString name = m_memory->effectiveName();
+            if (!name.isEmpty()) userPrompt += QStringLiteral("User name: %1\n").arg(name);
+            const QString bio = m_memory->userBio().trimmed();
+            if (!bio.isEmpty()) {
+                userPrompt += QStringLiteral("User bio (markdown):\n%1\n").arg(bio);
+            }
         }
     }
     userPrompt += QStringLiteral("Summarize this work session in-character.");

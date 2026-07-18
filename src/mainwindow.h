@@ -179,6 +179,11 @@ private:
     // time so we don't have to re-derive it from the (possibly already
     // overwritten) bubble widget.
     QString m_activeBubbleFallbackBody;
+    // Spec 4 (quality review): true between session.end's summary bubble
+    // and the next session.start. Gates the (a) persona connect so it does
+    // NOT fire a second OnDemand resolve for session.end that would
+    // overwrite the summary's requestId + text. Reset on session.start.
+    bool m_summaryShownThisSessionEnd = false;
     QPointer<StatisticsDialog> m_statsDialog;
 
     // Gaming Mode
