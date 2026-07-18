@@ -573,3 +573,35 @@ git commit -m "docs: mark Spec 4 (AI commentary) shipped — program complete"
 - **Type consistency:** `PersonaEngine::Resolved{text, requestId}` reused; `fireOnDemand` returns quint64 requestId; `requestSessionSummary(const QString &) -> quint64`; `showSessionSummaryBubble(const QString &)`; `showTouchBubble(const QString &)` unchanged signature.
 - **Deliberate deviations from spec text:** (a) fireOnDemand extraction added for DRY (spec didn't name it; the generate+callback would otherwise be duplicated); (b) summary TTS policy mirrors the event-route listener exactly (spec said "like any other tip upgrade" — this is the concrete shape); (c) digest-embedding context text = episode stats line + current digest (spec §5 said statsLine + memoryDigest()).
 - **Known untested-by-automation areas:** MainWindow bubble wiring (T4/T5 widget-level; persona-engine level covered by QHttpServer tests).
+
+---
+
+## Execution Errata (recorded 2026-07-17, after subagent-driven execution)
+
+Issues found by the per-task review loops; all fixed in code. Per precedent.
+
+1. **T2 — context.timeofday pool-tier wasted an LLM batch per session.** The
+   event's catalog tip is intentionally empty (enrichment-only, never bubbles),
+   but pool membership would auto-seed 20 lines on every session.start. Excluded
+   from the pool set; test pins OnDemand (`ce8bc0e`).
+2. **T3 — privacy tooltip understated the disclosure.** "name and milestones" →
+   actually name + relationship stats + activity summaries. Tooltip + zh
+   re-scoped (`f4dda94`); both call sites (constructor + retranslate) updated.
+3. **T4 — bubble lifetime race made the summary invisible (critical).**
+   EventRouter emitted eventProcessed BEFORE showing the catalog tip, so the
+   catalog clobbered the summary bubble; the queued (a) connect then fired a
+   redundant session.end resolve, overwriting the summary's requestId and
+   dropping its LLM upgrade. Fixed by swapping catalog-before-emit in
+   EventRouter (better for ALL events) + a `m_summaryShownThisSessionEnd` flag
+   that skips the duplicate resolve while preserving short-session upgrades
+   (`d8927e0`). *Lesson: signal ordering IS the feature when multiple writers
+   share one bubble.*
+4. **T5 — dead OnDemand registration.** user.pet/toss are pool-tier → requestId
+   always 0; the activeBubble registration can never receive an upgrade today.
+   Kept for forward compat, documented in code (`bff1987`).
+5. **fireOnDemand extraction** (planned DRY): resolveOnDemand's generate +
+   callback moved verbatim into a shared helper used by requestSessionSummary;
+   requestId allocation moved with it (single allocation site). Existing
+   upgrade tests unchanged (`3eac893`).
+
+**Final state:** 11 commits on `ai-commentary`, suite 19/19, reviews all green.

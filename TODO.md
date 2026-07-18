@@ -35,6 +35,8 @@ wiring (sessions/daily-login/pokes/milestones/level-up bubbles), zh_CN i18n.
 - [ ] **(Low) Smoke-test real embeddings once** — `embedTextSync` is untested network glue.
   With an OpenAI profile + `shareMemoryWithAi` on: record an episode, confirm its
   `embedding` BLOB fills and `memoryDigest()` switches to similarity mode.
+  (Note: Spec 4 wired requestDigestEmbedding into session.end — the production smoke
+  now covers both episode and digest-embedding paths when run.)
 - [x] **(Low) `~MemoryManager` "connection still in use" warning** — DONE 2026-07-17
   (`0a0f872`): `m_db` released before `removeDatabase`; warning confirmed gone
   from `test_memory2` output.
@@ -64,12 +66,19 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   milestones, canned touch bubbles (tips JSON "touch" pools, en+zh_CN), master
   toggle `touchReactionsEnabled` (default on) + Settings → Interaction checkbox.
   12 detector tests + 7 FSM touch tests; suite green. Parked: momentum glide physics.
-- [ ] **Spec 4 — AI-native commentary**: PersonaEngine prompt builder gains the memory
-  digest (`MemoryManager::memoryDigest()`, behind `shareMemoryWithAi`) + context injection;
-  new persona-pool event names for context/touch events; LLM-generated `session.end`
-  summary lines ("3h, 42 edits, one heroic save"); canned random-sayings become the
-  offline fallback. Also wire production `requestDigestEmbedding()` calls (currently
-  nothing calls it — this spec owns that).
+- [x] **Spec 4 — AI-native commentary** — SHIPPED 2026-07-17 on branch
+  `ai-commentary` (pending merge). Persona prompts gain `memoryDigest()` +
+  user name/bio behind `shareMemoryWithAi` (privacy tooltip re-scoped to match);
+  pool-tier canned lines for 6 context events + user.pet/toss (auto-seeded;
+  context.timeofday excluded — never bubbles); touch bubble bodies resolve via
+  the persona pool with Spec-3 canned fallback; session.end fires an LLM summary
+  ("2h, 42 edits, one heroic save") for ≥30min sessions with a deterministic
+  template fallback; one digest embedding per qualifying session seeds future
+  similarity recall (requestDigestEmbedding wired). Fixed en route: EventRouter
+  now shows the catalog tip BEFORE emitting eventProcessed (downstream
+  consumers win the bubble). Program memory→senses→touch→commentary COMPLETE.
+  Parked: recall UI, habit learning, RemoteMemoryBackend, momentum glide,
+  real-endpoint smoke.
 - [ ] **(Parked, future)** `RemoteMemoryBackend` (Mem0/Zep-class managed memory adapter) —
   interface seam reserved as `MemoryRecallBackend`; local SQLite stays source of truth.
   LLM-summarized episode rollups. Habit learning (active-hours patterns). Per-pack bonds.
