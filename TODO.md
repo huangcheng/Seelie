@@ -85,7 +85,7 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
   locale-aware relative times, dual search (substring always; embedding recall
   via new generic `EmbeddingService::enqueueQuery` when persona+shareMemory on,
   with timed substring fallback + "Searching…" placeholder). Entries in pet
-  context menu + tray menu. 14 new tests (filter/time/dialog/search); suite
+  context menu + tray menu. 17 new tests (filter/time/dialog/search); suite
   20/20 green. Read-only v1 (no editing/deleting).
 - [ ] **(Parked, future)** `RemoteMemoryBackend` (Mem0/Zep-class managed memory adapter) —
   interface seam reserved as `MemoryRecallBackend`; local SQLite stays source of truth.
