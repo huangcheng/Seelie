@@ -102,6 +102,12 @@ Agreed program: memory → senses → touch → AI commentary. Memory is done.
 - [ ] Linux X11 `FullscreenWatcher` + Xss idle probe: implemented (Spec 2 T9) but
   never compiled/run — verify on a Linux machine (X11 session); Wayland stays a
   documented no-op.
+- [ ] **TipsEngine-triggered bubbles are overwritten by the catalog event tip** —
+  pre-existing: `TipsEngine::processEvent` runs before the catalog `showBubble`
+  in `EventRouter::routeEvent`, so pattern-matched tip bubbles (incl. milestones
+  fired from TipsEngine) get clobbered by the event's catalog tip. Surfaced by the
+  Spec 4 emit-order review (noted in `EventRouter.cpp`). Needs a priority
+  decision (catalog tip vs TipsEngine tip — which voice wins?), then a fix.
 
 **Suite status:** 19/19 green on macOS as of 2026-07-17 (was 15/17 before ContextSenses).
 
