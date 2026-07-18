@@ -171,6 +171,48 @@ private slots:
 
         QTRY_VERIFY_WITH_TIMEOUT(engine.pool().size("pack","tool.before") >= 3, 3000);
     }
+
+    void testDigestInjectionInOnDemandPrompt()
+    {
+        QByteArray capturedBody;
+        QHttpServer server;
+        server.route("/chat/completions", [&capturedBody](const QHttpServerRequest &req) {
+            capturedBody = req.body();
+            return QHttpServerResponse(QJsonDocument::fromJson(
+                R"({"choices":[{"message":{"content":"ok"}}],"usage":{"prompt_tokens":1,"completion_tokens":1}})").object());
+        });
+        auto tcp = std::make_unique<QTcpServer>();
+        QVERIFY(tcp->listen(QHostAddress::LocalHost, 0));
+        const quint16 port = tcp->serverPort();
+        QVERIFY(server.bind(tcp.release()));
+
+        MemoryManager mm(":memory:");
+        QVERIFY(mm.isValid());
+        QVERIFY(mm.recordEpisode(QStringLiteral("session"), QStringLiteral("episodetext-xyz")) >= 0);
+
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setPersonaEnabled(true);
+        cfg.setShareMemoryWithAi(true);
+        cfg.setLLMProfiles({ { "p", LLMProfile::Protocol::OpenAIChat,
+                               QStringLiteral("http://127.0.0.1:%1").arg(port), "k", "m" } });
+        cfg.setPersonaProfile("p");
+        PersonaEngine engine(&mm, &cfg);
+        engine.setActivePackId("pack");
+        engine.setPersonaHash("h");
+
+        QSignalSpy spy(&engine, &PersonaEngine::tipUpgraded);
+        engine.resolve("session.start", {});
+        QVERIFY(spy.wait(3000));
+        QVERIFY(capturedBody.contains("episodetext-xyz"));   // digest made it into the prompt
+
+        // Gate off: digest must NOT be sent.
+        capturedBody.clear();
+        cfg.setShareMemoryWithAi(false);
+        engine.resolve("session.start", {});
+        QVERIFY(spy.wait(3000));
+        QVERIFY(!capturedBody.contains("episodetext-xyz"));
+    }
 #endif
 };
 

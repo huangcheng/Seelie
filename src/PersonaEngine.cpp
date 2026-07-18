@@ -214,6 +214,15 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
         if (!bio.isEmpty()) {
             userPrompt += QStringLiteral("\nUser bio (markdown):\n%1").arg(bio);
         }
+
+        // Spec 4: the pet's memory digest (bond, affection, similarity-ranked
+        // episodes) joins the prompt behind the same opt-in gate.
+        if (m_memory->isValid()) {
+            const QString digest = m_memory->memoryDigest();
+            if (!digest.isEmpty()) {
+                userPrompt += QStringLiteral("\nMemory:\n%1").arg(digest);
+            }
+        }
     }
 
     // Capture current pack/hash by value so we can detect stale callbacks
