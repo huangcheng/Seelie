@@ -1412,9 +1412,27 @@ void MainWindow::showRandomGreeting()
 void MainWindow::showTouchBubble(const QString &gesture)
 {
     if (!m_tipWidget) return;
-    const auto tip = TipsCatalog::instance().touchLine(gesture);
-    if (tip.title.isEmpty()) return;
-    m_tipWidget->showBubble(tip.title, tip.body, TipWidget::TipBubble);
+    // Title stays from the canned pool (per-gesture flavor); body prefers a
+    // persona-resolved line (pool hit) or an OnDemand upgrade in flight.
+    const auto canned = TipsCatalog::instance().touchLine(gesture);
+    QString body = canned.body;
+    quint64 requestId = 0;
+    if (m_personaEngine && m_config && m_config->personaEnabled()) {
+        PersonaEngine::Resolved r = m_personaEngine->resolve(
+            QStringLiteral("user.") + gesture, QJsonObject{});
+        if (!r.text.isEmpty()) body = r.text;
+        requestId = r.requestId;
+    }
+    if (body.isEmpty()) return;
+    m_activeBubbleRequestId = requestId;
+    m_activeBubbleFallbackBody = body;
+    m_tipWidget->showBubble(canned.title, body, TipWidget::TipBubble);
+
+    const bool ttsReady = m_ttsEngine && m_config && m_config->ttsEnabled()
+        && m_config->displayMode() != ConfigManager::DisplayMode::Ecg;
+    if (ttsReady && requestId == 0) {
+        m_ttsEngine->speak(body);
+    }
 }
 
 void MainWindow::showSessionSummaryBubble(const QString &statsLine)
