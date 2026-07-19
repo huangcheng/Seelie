@@ -210,8 +210,13 @@ bool MoodEngine::emitMood(const QString &name, const QJsonObject &payload)
         {QStringLiteral("mood.missed_you"),   20LL * 60 * 60 * 1000},
         // mood.stage_up: milestone-guarded, no time cooldown
     };
-    // Global 1/hour cap on all proactive bubbles (incl. stage_up).
-    if (now - m_lastProactiveMs < GLOBAL_PROACTIVE_COOLDOWN_MS) return false;
+    // Global 1/hour cap on all proactive bubbles EXCEPT mood.stage_up.
+    // stage_up is milestone-guarded per bond level (fires ≤5 times ever),
+    // and a cap-blocked stage-up would be lost forever — bondLevelChanged
+    // never refires for the same level. stage_up still stamps
+    // m_lastProactiveMs on success so later proactives yield to it.
+    if (name != QLatin1String("mood.stage_up")
+        && now - m_lastProactiveMs < GLOBAL_PROACTIVE_COOLDOWN_MS) return false;
     const qint64 cd = cooldowns.value(name, 0);
     if (cd > 0 && m_lastFired.contains(name)
         && now - m_lastFired.value(name) < cd) return false;

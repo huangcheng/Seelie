@@ -37,6 +37,7 @@ private slots:
     void globalProactiveCap();
     void persistsAcrossReload();
     void corruptJsonRecovers();
+    void stageUpExemptFromGlobalCap();
     void moodEventsHaveCatalogFallback();
 };
 
@@ -379,6 +380,32 @@ void TestMoodEngine::moodEventsHaveCatalogFallback()
         const auto tip = TipsCatalog::instance().eventTip(QString::fromLatin1(name));
         QVERIFY2(!tip.body.isEmpty(), name);
     }
+}
+
+void TestMoodEngine::stageUpExemptFromGlobalCap()
+{
+    EventRouter router;
+    QTemporaryDir tmp;
+    MemoryManager memory(tmp.filePath(QStringLiteral("m.db")));
+    MoodEngine mood(&router, &memory);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T09:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+
+    // Arm the global cap with a greeting.
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+    bool greetingFired = false;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.greeting")) greetingFired = true;
+    QVERIFY(greetingFired);
+
+    // Within the same hour, a bond level-up must STILL emit mood.stage_up.
+    memory.addBondXP(100);   // crosses L0→L1 (threshold 50)
+    bool stageUpFired = false;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.stage_up")) stageUpFired = true;
+    QVERIFY(stageUpFired);
 }
 
 QTEST_GUILESS_MAIN(TestMoodEngine)
