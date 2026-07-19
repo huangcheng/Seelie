@@ -1,12 +1,9 @@
 #include "MoodEngine.h"
-#include "CanonicalEvents.h"
 #include "EventRouter.h"
 #include "MemoryManager.h"
 #include "StatisticsPersistence.h"
 #include <QDateTime>
 #include <QTimer>
-
-namespace CE = CanonicalEvents;
 
 MoodEngine::MoodEngine(EventRouter *router, MemoryManager *memory, QObject *parent)
     : QObject(parent)
