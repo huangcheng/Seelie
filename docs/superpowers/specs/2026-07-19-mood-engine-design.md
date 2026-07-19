@@ -142,7 +142,7 @@ No new pack-authoring requirement in this spec.
 persona. JSON blob: `valence`, `energy`, `lonely` flag, `lastSeenEpoch`,
 `lastGreetingDate`, per-type cooldown timestamps.
 
-- Saved on exit and every 5 min (mirrors existing component cadence).
+- Saved on exit and every 60 s (mirrors the existing `startAutoSave` cadence).
 - On launch: elapsed = now − `lastSeenEpoch`; apply absence effects
   (valence/energy → 0, affection decay already lives in MemoryManager,
   set Lonely when > 24 h).
