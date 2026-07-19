@@ -170,16 +170,17 @@ void MoodEngine::checkProactive()
     const QString today = local.toString(QStringLiteral("yyyy-MM-dd"));
     const int hour = local.time().hour();
 
-    // Missed-you: session.start after > 24 h absence.
+    // Missed-you: fresh session.start (within this second) after > 24 h absence.
     // Checked BEFORE greeting (rarer, more important moment) so that a
     // first-session-of-the-day after a long absence reports missed-you
     // rather than being eaten by the once-per-day greeting.
-    if (m_sessionStartMs == now && m_lastSeenMs > 0
-        && now - m_lastSeenMs > MISS_ABSENCE_MS) {
-        emitMood(QStringLiteral("mood.missed_you"),
-                 {{QStringLiteral("hoursAbsent"),
-                   static_cast<int>((now - m_lastSeenMs) / (60LL * 60 * 1000))}});
-        return;   // one proactive per check pass
+    if (m_sessionStartMs > 0 && now - m_sessionStartMs < 1000
+        && m_lastSeenMs > 0 && now - m_lastSeenMs > MISS_ABSENCE_MS) {
+        if (emitMood(QStringLiteral("mood.missed_you"),
+                     {{QStringLiteral("hoursAbsent"),
+                       static_cast<int>((now - m_lastSeenMs) / (60LL * 60 * 1000))}}))
+            return;   // one proactive per check pass on successful emission
+        // cap/cooldown blocked: fall through so greeting can still try
     }
 
     // Morning greeting: first session.start of a new local date, after 06:00.
@@ -230,10 +231,13 @@ void MoodEngine::onBondLevelChanged(int newLevel)
     if (!m_memory) return;
     const QString key = QStringLiteral("mood.stage_up.L%1").arg(newLevel);
     if (m_memory->hasMilestone(key)) return;
-    m_memory->setMilestone(key);
-    emitMood(QStringLiteral("mood.stage_up"),
-             {{QStringLiteral("bondLevel"), newLevel},
-              {QStringLiteral("stage"), stageName()}});
+    // Mark delivered only on successful emission — a cap-blocked stage-up
+    // must be retried on the next bondLevelChanged, not lost forever.
+    if (emitMood(QStringLiteral("mood.stage_up"),
+                 {{QStringLiteral("bondLevel"), newLevel},
+                  {QStringLiteral("stage"), stageName()}})) {
+        m_memory->setMilestone(key);
+    }
 }
 
 void MoodEngine::loadStats(const QString &configDir)

@@ -286,6 +286,19 @@ void TestMoodEngine::longSessionNudgeNeedsLowEnergy()
     for (int i = 0; i < spy.count(); ++i)
         if (spy.at(i).at(0).toString() == QLatin1String("mood.long_session")) fired = true;
     QVERIFY(fired);
+
+    // High energy at the same session age: no nudge.
+    MoodEngine fresh(&router, nullptr);
+    qint64 now2 = fakeNow;   // reuse clock variable; keep lambda mutable
+    fresh.setNowFn([&]() { return now2; });
+    QSignalSpy spy2(&router, &EventRouter::eventProcessed);
+    spy2.clear();
+    fresh.onEventProcessed(QStringLiteral("session.start"), {});
+    now2 += 160LL * 60 * 1000;
+    fresh.setVectorForTest(0.5, 0.5);
+    fresh.tickForTest();
+    for (int i = 0; i < spy2.count(); ++i)
+        QVERIFY(spy2.at(i).at(0).toString() != QLatin1String("mood.long_session"));
 }
 
 void TestMoodEngine::globalProactiveCap()
@@ -304,6 +317,13 @@ void TestMoodEngine::globalProactiveCap()
                       {{QStringLiteral("lastSeenMs"), fakeNow - 30LL * 60 * 60 * 1000}});
     }
     mood.loadStats(tmp.path());
+
+    // Pass 1: missed_you fires (checked first in checkProactive).
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+    // Pass 2, +30 min (still inside the 1h global cap): a fresh
+    // session.start would qualify for greeting, but the cap blocks it.
+    fakeNow += 30LL * 60 * 1000;
+    mood.onEventProcessed(QStringLiteral("session.end"), {});
     mood.onEventProcessed(QStringLiteral("session.start"), {});
 
     int proactive = 0;
@@ -311,7 +331,7 @@ void TestMoodEngine::globalProactiveCap()
         const QString n = spy.at(i).at(0).toString();
         if (n.startsWith(QLatin1String("mood."))) ++proactive;
     }
-    QCOMPARE(proactive, 1);   // greeting won; missed_you suppressed this hour
+    QCOMPARE(proactive, 1);   // global 1/hour cap blocked the second bubble
 }
 
 void TestMoodEngine::persistsAcrossReload()
