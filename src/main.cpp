@@ -630,7 +630,8 @@ int main(int argc, char *argv[])
     // of the defaults. StatisticsManager::loadAll() re-loads later — the call
     // is idempotent (overwrites in-memory state with the same on-disk values)
     // and no events can flow between the two because the event loop isn't
-    // running yet. Mirrors the personaEngine pattern.
+    // running yet. Unique to MoodEngine: other components load only via
+    // loadAll(), but the peek text must be correct before first paint.
     moodEngine.loadStats(configDir());
     moodEngine.start();
 
