@@ -57,6 +57,7 @@ public:
 
 public slots:
     void onEventProcessed(const QString &eventName, const QJsonObject &payload);
+    void onBondLevelChanged(int newLevel);
 
 signals:
     void moodTierChanged(MoodEngine::Tier tier);

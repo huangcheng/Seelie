@@ -10,6 +10,10 @@ MoodEngine::MoodEngine(EventRouter *router, MemoryManager *memory, QObject *pare
     , m_router(router)
     , m_memory(memory)
 {
+    if (m_memory) {
+        connect(m_memory, &MemoryManager::bondLevelChanged,
+                this, &MoodEngine::onBondLevelChanged);
+    }
 }
 
 QString MoodEngine::tierName(Tier t)
@@ -160,7 +164,40 @@ void MoodEngine::onEventProcessed(const QString &eventName, const QJsonObject &p
 }
 
 void MoodEngine::checkProactive()   { /* Task 4 */ }
-bool MoodEngine::emitMood(const QString &, const QJsonObject &) { return false; /* Task 4 */ }
 
-void MoodEngine::loadStats(const QString &)  { /* Task 4 */ }
+bool MoodEngine::emitMood(const QString &name, const QJsonObject &payload)
+{
+    if (!m_router) return false;
+    QJsonObject ev = payload;
+    ev.insert(QStringLiteral("type"), QStringLiteral("event"));
+    ev.insert(QStringLiteral("source"), QStringLiteral("system"));
+    ev.insert(QStringLiteral("event"), name);
+    m_router->routeEvent(ev);
+    return true;
+}
+
+void MoodEngine::onBondLevelChanged(int newLevel)
+{
+    if (!m_memory) return;
+    const QString key = QStringLiteral("mood.stage_up.L%1").arg(newLevel);
+    if (m_memory->hasMilestone(key)) return;
+    m_memory->setMilestone(key);
+    emitMood(QStringLiteral("mood.stage_up"),
+             {{QStringLiteral("bondLevel"), newLevel},
+              {QStringLiteral("stage"), stageName()}});
+}
+
+void MoodEngine::loadStats(const QString &configDir)
+{
+    StatisticsPersistence p(configDir);
+    const QJsonObject o = p.loadSection(QStringLiteral("mood"));
+    m_lastSeenMs = static_cast<qint64>(o.value(QStringLiteral("lastSeenMs")).toDouble());
+    if (m_lastSeenMs > 0 && nowMs() - m_lastSeenMs > MISS_ABSENCE_MS) {
+        m_lonely = true;
+        m_valence = 0.0;
+        m_energy = 0.0;
+    }
+    updateTier();
+}
+
 void MoodEngine::saveStats(const QString &)  { /* Task 4 */ }

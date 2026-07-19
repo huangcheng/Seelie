@@ -9,9 +9,12 @@
 
 #include <QTest>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 
 #include "EventRouter.h"
 #include "MoodEngine.h"
+#include "MemoryManager.h"
+#include "StatisticsPersistence.h"
 
 class TestMoodEngine : public QObject
 {
@@ -24,6 +27,9 @@ private slots:
     void tierHysteresis();
     void toolFailedBurst();
     void moodEventsValidate();
+    void stageUpOncePerLevel();
+    void lonelySetOnLongAbsence();
+    void moodEventsValidateAllFour();
 };
 
 void TestMoodEngine::deltasApplyAndClamp()
@@ -148,6 +154,66 @@ void TestMoodEngine::moodEventsValidate()
                        {QStringLiteral("event"), QStringLiteral("mood.greeting")}});
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.first().at(0).toString(), QStringLiteral("mood.greeting"));
+}
+
+void TestMoodEngine::stageUpOncePerLevel()
+{
+    EventRouter router;
+    QTemporaryDir tmp;
+    MemoryManager memory(tmp.filePath(QStringLiteral("m.db")));
+    MoodEngine mood(&router, &memory);
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+
+    memory.addBondXP(100000);   // enough to cross several levels
+    int stageUps = 0;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.stage_up")) ++stageUps;
+    QVERIFY(stageUps >= 1);
+    const int lvl = memory.bondLevel();
+
+    // Re-delivering the same level must NOT refire (milestone guard).
+    spy.clear();
+    mood.onBondLevelChanged(lvl);
+    for (int i = 0; i < spy.count(); ++i)
+        QVERIFY(spy.at(i).at(0).toString() != QLatin1String("mood.stage_up"));
+}
+
+void TestMoodEngine::lonelySetOnLongAbsence()
+{
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T14:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+
+    QTemporaryDir tmp;
+    {
+        StatisticsPersistence p(tmp.path());
+        p.saveSection(QStringLiteral("mood"),
+                      {{QStringLiteral("lastSeenMs"), fakeNow - 30LL * 60 * 60 * 1000}});
+    }
+    mood.loadStats(tmp.path());
+    QVERIFY(mood.isLonely());
+    QCOMPARE(mood.tier(), MoodEngine::Tier::Lonely);
+
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+    QVERIFY(!mood.isLonely());
+    QVERIFY(mood.valence() > 0.0);
+}
+
+void TestMoodEngine::moodEventsValidateAllFour()
+{
+    // Hardening from Task 2 review: all four mood.* names must validate.
+    EventRouter router;
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    for (const char *name : {"mood.greeting", "mood.long_session",
+                             "mood.missed_you", "mood.stage_up"}) {
+        spy.clear();
+        router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                           {QStringLiteral("source"), QStringLiteral("system")},
+                           {QStringLiteral("event"), QString::fromLatin1(name)}});
+        QCOMPARE(spy.count(), 1);
+    }
 }
 
 QTEST_GUILESS_MAIN(TestMoodEngine)
