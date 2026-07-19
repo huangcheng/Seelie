@@ -143,6 +143,32 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
     if (flushImmediately) logFile->flush();
 }
 
+namespace {
+// Static lookup helpers for the mood peek text. Replaces the former dynamic
+// tr(qPrintable(...)) call which lupdate cannot statically scan — mirrors the
+// labelForField pattern in SettingsPanelWidget.cpp. The stage banding MUST
+// match MoodEngine::stageName() (L0-1 Stranger, L2-3 Companion, L4-5 Partner);
+// the tier names MUST match MoodEngine::tierName().
+QString trMoodTier(MoodEngine::Tier t)
+{
+    switch (t) {
+    case MoodEngine::Tier::Excited: return QObject::tr("excited");
+    case MoodEngine::Tier::Tense:   return QObject::tr("tense");
+    case MoodEngine::Tier::Tired:   return QObject::tr("tired");
+    case MoodEngine::Tier::Lonely:  return QObject::tr("lonely");
+    case MoodEngine::Tier::Content: break;
+    }
+    return QObject::tr("content");
+}
+
+QString trBondStage(int bondLevel)
+{
+    if (bondLevel >= 4) return QObject::tr("Partner");
+    if (bondLevel >= 2) return QObject::tr("Companion");
+    return QObject::tr("Stranger");
+}
+}  // namespace
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -599,14 +625,20 @@ int main(int argc, char *argv[])
     MoodEngine moodEngine(&eventRouter, &memory);
     QObject::connect(&eventRouter, &EventRouter::eventProcessed,
                      &moodEngine, &MoodEngine::onEventProcessed);
+    // Explicit load BEFORE w.show() so refreshMoodPeek/applyMoodIdle (called
+    // below) see persisted tier/stage state on the very first paint instead
+    // of the defaults. StatisticsManager::loadAll() re-loads later — the call
+    // is idempotent (overwrites in-memory state with the same on-disk values)
+    // and no events can flow between the two because the event loop isn't
+    // running yet. Mirrors the personaEngine pattern.
     moodEngine.loadStats(configDir());
     moodEngine.start();
 
     // Peek: tray line + hover tooltip, refreshed on tier/bond/language changes.
     auto refreshMoodPeek = [&]() {
         const QString text = QObject::tr("Seelie feels %1 · %2")
-            .arg(QObject::tr(qPrintable(MoodEngine::tierName(moodEngine.tier()))),
-                 QObject::tr(qPrintable(moodEngine.stageName())));
+            .arg(trMoodTier(moodEngine.tier()),
+                 trBondStage(memory.bondLevel()));
         w.setMoodPeekText(text);
         tray.setMoodStatus(text);
     };
