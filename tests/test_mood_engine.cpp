@@ -30,6 +30,12 @@ private slots:
     void stageUpOncePerLevel();
     void lonelySetOnLongAbsence();
     void moodEventsValidateAllFour();
+    void greetingOncePerDay();
+    void missedYouAfter24h();
+    void longSessionNudgeNeedsLowEnergy();
+    void globalProactiveCap();
+    void persistsAcrossReload();
+    void corruptJsonRecovers();
 };
 
 void TestMoodEngine::deltasApplyAndClamp()
@@ -214,6 +220,130 @@ void TestMoodEngine::moodEventsValidateAllFour()
                            {QStringLiteral("event"), QString::fromLatin1(name)}});
         QCOMPARE(spy.count(), 1);
     }
+}
+
+void TestMoodEngine::greetingOncePerDay()
+{
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T09:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+    fakeNow += 3600LL * 1000;   // +1 h: second session same day
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+
+    int greetings = 0;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.greeting")) ++greetings;
+    QCOMPARE(greetings, 1);
+}
+
+void TestMoodEngine::missedYouAfter24h()
+{
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T14:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+    QTemporaryDir tmp;
+    {
+        StatisticsPersistence p(tmp.path());
+        p.saveSection(QStringLiteral("mood"),
+                      {{QStringLiteral("lastSeenMs"), fakeNow - 30LL * 60 * 60 * 1000}});
+    }
+    mood.loadStats(tmp.path());
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+
+    bool fired = false;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.missed_you")) {
+            fired = true;
+            QCOMPARE(spy.at(i).at(1).toJsonObject()
+                         .value(QStringLiteral("hoursAbsent")).toInt(), 30);
+        }
+    QVERIFY(fired);
+}
+
+void TestMoodEngine::longSessionNudgeNeedsLowEnergy()
+{
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T14:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+    fakeNow += 160LL * 60 * 1000;   // +2 h 40 m continuous session
+    mood.setVectorForTest(0.0, -0.5);   // tired
+    mood.tickForTest();
+
+    bool fired = false;
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).at(0).toString() == QLatin1String("mood.long_session")) fired = true;
+    QVERIFY(fired);
+}
+
+void TestMoodEngine::globalProactiveCap()
+{
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T09:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    mood.setNowFn([&]() { return fakeNow; });
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+
+    QTemporaryDir tmp;
+    {
+        StatisticsPersistence p(tmp.path());
+        p.saveSection(QStringLiteral("mood"),
+                      {{QStringLiteral("lastSeenMs"), fakeNow - 30LL * 60 * 60 * 1000}});
+    }
+    mood.loadStats(tmp.path());
+    mood.onEventProcessed(QStringLiteral("session.start"), {});
+
+    int proactive = 0;
+    for (int i = 0; i < spy.count(); ++i) {
+        const QString n = spy.at(i).at(0).toString();
+        if (n.startsWith(QLatin1String("mood."))) ++proactive;
+    }
+    QCOMPARE(proactive, 1);   // greeting won; missed_you suppressed this hour
+}
+
+void TestMoodEngine::persistsAcrossReload()
+{
+    QTemporaryDir tmp;
+    EventRouter router;
+    qint64 fakeNow = QDateTime::fromString(QStringLiteral("2026-07-19T14:00:00"),
+                                           Qt::ISODate).toMSecsSinceEpoch();
+    {
+        MoodEngine mood(&router, nullptr);
+        mood.setNowFn([&]() { return fakeNow; });
+        mood.setVectorForTest(0.42, -0.17);
+        mood.saveStats(tmp.path());
+    }
+    MoodEngine mood2(&router, nullptr);
+    mood2.setNowFn([&]() { return fakeNow; });
+    mood2.loadStats(tmp.path());
+    QVERIFY(qAbs(mood2.valence() - 0.42) < 0.001);
+    QVERIFY(qAbs(mood2.energy() + 0.17) < 0.001);
+}
+
+void TestMoodEngine::corruptJsonRecovers()
+{
+    QTemporaryDir tmp;
+    StatisticsPersistence p(tmp.path());
+    p.saveSection(QStringLiteral("mood"),
+                  {{QStringLiteral("valence"), QStringLiteral("garbage")}});
+    EventRouter router;
+    MoodEngine mood(&router, nullptr);
+    mood.loadStats(tmp.path());   // must not crash
+    QCOMPARE(mood.valence(), 0.0);
+    QCOMPARE(mood.tier(), MoodEngine::Tier::Content);
 }
 
 QTEST_GUILESS_MAIN(TestMoodEngine)

@@ -163,11 +163,60 @@ void MoodEngine::onEventProcessed(const QString &eventName, const QJsonObject &p
     }
 }
 
-void MoodEngine::checkProactive()   { /* Task 4 */ }
+void MoodEngine::checkProactive()
+{
+    const qint64 now = nowMs();
+    const QDateTime local = QDateTime::fromMSecsSinceEpoch(now);
+    const QString today = local.toString(QStringLiteral("yyyy-MM-dd"));
+    const int hour = local.time().hour();
+
+    // Missed-you: session.start after > 24 h absence.
+    // Checked BEFORE greeting (rarer, more important moment) so that a
+    // first-session-of-the-day after a long absence reports missed-you
+    // rather than being eaten by the once-per-day greeting.
+    if (m_sessionStartMs == now && m_lastSeenMs > 0
+        && now - m_lastSeenMs > MISS_ABSENCE_MS) {
+        emitMood(QStringLiteral("mood.missed_you"),
+                 {{QStringLiteral("hoursAbsent"),
+                   static_cast<int>((now - m_lastSeenMs) / (60LL * 60 * 1000))}});
+        return;   // one proactive per check pass
+    }
+
+    // Morning greeting: first session.start of a new local date, after 06:00.
+    if (m_sessionStartMs > 0 && hour >= 6 && m_lastGreetingDate != today) {
+        if (emitMood(QStringLiteral("mood.greeting"), {}))
+            m_lastGreetingDate = today;
+        return;   // one proactive per check pass
+    }
+
+    // Long-session nudge: > 2.5 h continuous AND low energy.
+    if (m_sessionStartMs > 0 && now - m_sessionStartMs >= NUDGE_SESSION_AGE_MS
+        && m_energy < -0.3) {
+        emitMood(QStringLiteral("mood.long_session"),
+                 {{QStringLiteral("hours"),
+                   (now - m_sessionStartMs) / (60LL * 60 * 1000)}});
+    }
+}
 
 bool MoodEngine::emitMood(const QString &name, const QJsonObject &payload)
 {
     if (!m_router) return false;
+    const qint64 now = nowMs();
+
+    static const QHash<QString, qint64> cooldowns = {
+        {QStringLiteral("mood.greeting"),     20LL * 60 * 60 * 1000},
+        {QStringLiteral("mood.long_session"),  3LL * 60 * 60 * 1000},
+        {QStringLiteral("mood.missed_you"),   20LL * 60 * 60 * 1000},
+        // mood.stage_up: milestone-guarded, no time cooldown
+    };
+    // Global 1/hour cap on all proactive bubbles (incl. stage_up).
+    if (now - m_lastProactiveMs < GLOBAL_PROACTIVE_COOLDOWN_MS) return false;
+    const qint64 cd = cooldowns.value(name, 0);
+    if (cd > 0 && m_lastFired.contains(name)
+        && now - m_lastFired.value(name) < cd) return false;
+
+    m_lastFired.insert(name, now);
+    m_lastProactiveMs = now;
     QJsonObject ev = payload;
     ev.insert(QStringLiteral("type"), QStringLiteral("event"));
     ev.insert(QStringLiteral("source"), QStringLiteral("system"));
@@ -191,13 +240,38 @@ void MoodEngine::loadStats(const QString &configDir)
 {
     StatisticsPersistence p(configDir);
     const QJsonObject o = p.loadSection(QStringLiteral("mood"));
-    m_lastSeenMs = static_cast<qint64>(o.value(QStringLiteral("lastSeenMs")).toDouble());
+    m_valence = qBound(-1.0, o.value(QStringLiteral("valence")).toDouble(0.0), 1.0);
+    m_energy  = qBound(-1.0, o.value(QStringLiteral("energy")).toDouble(0.0), 1.0);
+    m_lastGreetingDate = o.value(QStringLiteral("lastGreetingDate")).toString();
+    m_lastProactiveMs = static_cast<qint64>(
+        o.value(QStringLiteral("lastProactiveMs")).toDouble());
+    const QJsonObject fired = o.value(QStringLiteral("lastFired")).toObject();
+    for (auto it = fired.begin(); it != fired.end(); ++it)
+        m_lastFired.insert(it.key(), static_cast<qint64>(it.value().toDouble()));
+
+    m_lastSeenMs = static_cast<qint64>(
+        o.value(QStringLiteral("lastSeenMs")).toDouble());
     if (m_lastSeenMs > 0 && nowMs() - m_lastSeenMs > MISS_ABSENCE_MS) {
-        m_lonely = true;
+        m_lonely = true;          // cleared by first session.start
         m_valence = 0.0;
         m_energy = 0.0;
     }
     updateTier();
 }
 
-void MoodEngine::saveStats(const QString &)  { /* Task 4 */ }
+void MoodEngine::saveStats(const QString &configDir)
+{
+    StatisticsPersistence p(configDir);
+    QJsonObject fired;
+    for (auto it = m_lastFired.begin(); it != m_lastFired.end(); ++it)
+        fired.insert(it.key(), static_cast<double>(it.value()));
+    p.saveSection(QStringLiteral("mood"),
+                  {{QStringLiteral("valence"), m_valence},
+                   {QStringLiteral("energy"), m_energy},
+                   {QStringLiteral("lastGreetingDate"), m_lastGreetingDate},
+                   {QStringLiteral("lastProactiveMs"),
+                    static_cast<double>(m_lastProactiveMs)},
+                   {QStringLiteral("lastFired"), fired},
+                   {QStringLiteral("lastSeenMs"),
+                    static_cast<double>(nowMs())}});
+}
