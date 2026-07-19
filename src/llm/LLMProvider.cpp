@@ -119,6 +119,14 @@ QNetworkReply *LLMProvider::sendOpenAiChat(const QString &system, const QString 
     msgs.append(QJsonObject{ {"role","system"}, {"content", system} });
     msgs.append(QJsonObject{ {"role","user"},   {"content", user} });
     body["messages"] = msgs;
+    // DashScope qwen3 hybrid models default to chain-of-thought "thinking":
+    // a one-line persona reply becomes ~30 s / 1500+ tokens and blows the
+    // request timeout (measured 2026-07-19: thinking on = 31 s / 1631 tok,
+    // off = 1.4 s / 12 tok). compatible-mode accepts enable_thinking:false.
+    // Host-gated: OpenAI proper 400s on unknown request fields.
+    if (m_profile.baseUrl.contains(QStringLiteral("dashscope"), Qt::CaseInsensitive)) {
+        body[QStringLiteral("enable_thinking")] = false;
+    }
 
     return m_nam->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }

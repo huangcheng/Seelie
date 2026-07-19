@@ -296,6 +296,8 @@ quint64 PersonaEngine::fireOnDemand(const QString &systemPrompt, const QString &
             if (!r.ok || r.text.trimmed().isEmpty()) {
                 ++m_stats.ondemandFail;
                 m_stats.lastError = r.error;
+                qWarning() << "PersonaEngine: on-demand failed, ok=" << r.ok
+                           << "error=" << r.error << "textLen=" << r.text.size();
                 if (m_memory) m_memory->increment(QStringLiteral("stats.persona.ondemand.fail"));
                 emit tipUpgradeFailed(requestId);
                 return;

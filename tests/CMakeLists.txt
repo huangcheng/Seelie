@@ -108,6 +108,28 @@ if(APPLE)
     target_link_libraries(test_tts_live PRIVATE "-framework AppKit" "-framework CoreGraphics")
 endif()
 
+# Manual live LLM probe. Compiled by `cmake --build . --target test_llm_live`
+# but not added to ctest — requires real credentials and network.
+qt_add_executable(test_llm_live
+    manual/test_llm_live.cpp
+    ${SEELIEPET_LIB_SOURCES}
+)
+target_link_libraries(test_llm_live PRIVATE
+    Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Sql Qt::Test rlottie::rlottie)
+target_include_directories(test_llm_live PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${rlottie_SOURCE_DIR}/inc)
+target_compile_definitions(test_llm_live PRIVATE
+    SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    PROJECT_VERSION="${PROJECT_VERSION}"
+    SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}")
+if(WIN32)
+    target_link_libraries(test_llm_live PRIVATE dwmapi)
+endif()
+if(APPLE)
+    target_link_libraries(test_llm_live PRIVATE "-framework AppKit" "-framework CoreGraphics")
+endif()
+
 set(TEST_SOURCES
     test_ipc_animations.cpp
     test_ecg.cpp

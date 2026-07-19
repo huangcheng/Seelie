@@ -48,7 +48,9 @@ public:
     /// (possibly empty on JSON parse failure — caller handles).
     void generateBatch(const QString &system, const QString &user, int n, BatchCallback callback);
 
-    /// Test seam: change the per-request timeout. Default 5000 ms.
+    /// Test seam: change the per-request timeout. Default 20000 ms (raised
+    /// from 5 s: reasoning models like qwen3.7-plus routinely take ~6 s for
+    /// a one-line reply; 5 s caused timeout cascades + circuit-breaker trips).
     void setTimeoutMs(int ms) { m_timeoutMs = ms; }
 
     /// Cooldown window after 3 consecutive failures. Default 60000 ms.
@@ -79,7 +81,7 @@ private:
 
     LLMProfile m_profile;
     QNetworkAccessManager *m_nam = nullptr;
-    int m_timeoutMs = 5000;
+    int m_timeoutMs = 20000;
     int m_consecutiveFailures = 0;
     qint64 m_cooldownUntilMs = 0;     // 0 = no cooldown active
     int m_cooldownMs = 60000;
