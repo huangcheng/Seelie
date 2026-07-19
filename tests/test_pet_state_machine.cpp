@@ -43,6 +43,7 @@ private slots:
     void testPetOverlayFromWorkingRestoresWorking();
     void testTouchChainsResolveFallback();
     void testGrabDuringOneShotCancelsTimer();
+    void moodIdleBiasReplacesIdleTail();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -377,6 +378,47 @@ void TestPetStateMachine::testGrabDuringOneShotCancelsTimer()
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Grabbed);  // still held
     m_fsm->onSyntheticEvent("user.grabEnd");
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::moodIdleBiasReplacesIdleTail()
+{
+    // Task 7 (MoodEngine): setMoodIdleBias overrides the idle tail appended
+    // to every emitted chain. Clearing it restores the pack's idle fallback.
+    //
+    // Both halves use onSyntheticEvent("user.pet") because enterBase early-
+    // returns when the target state already matches the current base (so re-
+    // firing e.g. tool.before would not re-emit, leaving spy.last() stale).
+    // user.pet routes through enterOneShot, which unconditionally emits
+    // animationRequested on every call — making it a safe re-trigger for
+    // before/after comparisons regardless of current state.
+    initFsm();
+    m_fsm->rebuildChainsFromNameMap({{QStringLiteral("idle"), QStringLiteral("idle_anim")}});
+    // m_idleFallback is now "idle_anim" (rebuild maps the canonical "idle").
+
+    QSignalSpy spy(m_fsm, &PetStateMachine::animationRequested);
+
+    // 1. With bias set: emitted chain must include the bias, and either lack
+    //    the pack idle or have the bias land before it.
+    m_fsm->setMoodIdleBias(QStringLiteral("sleepy_anim"));
+    const int beforeBias = spy.count();
+    m_fsm->onSyntheticEvent("user.pet");
+    QVERIFY2(spy.count() > beforeBias, "user.pet must emit a chain");
+    const QStringList biased = spy.last().at(0).toStringList();
+    QVERIFY(biased.contains(QStringLiteral("sleepy_anim")));
+    QVERIFY(!biased.contains(QStringLiteral("idle_anim"))
+            || biased.indexOf(QStringLiteral("sleepy_anim"))
+               < biased.indexOf(QStringLiteral("idle_anim")));
+
+    // 2. Clear bias and force a SECOND guaranteed emission. enterOneShot has
+    //    no early-return, so re-firing user.pet always emits a fresh chain
+    //    carrying the now-default idle tail.
+    m_fsm->setMoodIdleBias(QString());
+    const int beforeClear = spy.count();
+    m_fsm->onSyntheticEvent("user.pet");
+    QVERIFY2(spy.count() > beforeClear, "second user.pet must emit a chain");
+    const QStringList cleared = spy.last().at(0).toStringList();
+    QVERIFY(cleared.contains(QStringLiteral("idle_anim")));
+    QVERIFY(!cleared.contains(QStringLiteral("sleepy_anim")));
 }
 
 QTEST_MAIN(TestPetStateMachine)

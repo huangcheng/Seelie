@@ -54,6 +54,11 @@ public:
     State baseState() const { return m_baseState; }
     State activeState() const;  // overlay if set, else baseState
 
+    /// Mood engine hook: when non-empty, appended to emitted chains in place
+    /// of m_idleFallback. Caller guarantees the name exists in the active
+    /// pack's nameMap. Empty restores the default idle tail.
+    void setMoodIdleBias(const QString &animName) { m_moodIdleBias = animName; }
+
 public slots:
     void onCanonicalEvent(const QString &eventName, const QJsonObject &payload = {});
     void onSyntheticEvent(const QString &eventName);
@@ -113,6 +118,7 @@ private:
     QMap<State, QStringList> m_chains;
     QMap<State, QStringList> m_engineDefaultChains;  // M6: immutable defaults
     QString m_idleFallback = QStringLiteral("idle");
+    QString m_moodIdleBias;   // MoodEngine override for the idle tail
 
     static constexpr int WORKING_GRACE_MS = 1500;
     static constexpr int THINKING_TIMEOUT_MS = 15000;

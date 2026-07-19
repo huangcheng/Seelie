@@ -48,6 +48,7 @@
 #include "llm/LLMProvider.h"
 #include "llm/LLMProfile.h"
 #include "SettingsPanelWidget.h"
+#include "MoodEngine.h"
 
 static QString configDir() {
     // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
@@ -590,6 +591,50 @@ int main(int argc, char *argv[])
         w.dispatchAnimationChain(chain, p);
     });
 
+    // --- Mood engine ---------------------------------------------------------
+    // Owns the pet's valence/energy vector and quantizes it into tiers
+    // (Content/Excited/Tense/Tired/Lonely). Reads bond state from MemoryManager,
+    // never duplicates it. Emits moodTierChanged when the band shifts, which
+    // refreshes both the tray status line / hover peek and the idle bias.
+    MoodEngine moodEngine(&eventRouter, &memory);
+    QObject::connect(&eventRouter, &EventRouter::eventProcessed,
+                     &moodEngine, &MoodEngine::onEventProcessed);
+    moodEngine.loadStats(configDir());
+    moodEngine.start();
+
+    // Peek: tray line + hover tooltip, refreshed on tier/bond/language changes.
+    auto refreshMoodPeek = [&]() {
+        const QString text = QObject::tr("Seelie feels %1 · %2")
+            .arg(QObject::tr(qPrintable(MoodEngine::tierName(moodEngine.tier()))),
+                 QObject::tr(qPrintable(moodEngine.stageName())));
+        w.setMoodPeekText(text);
+        tray.setMoodStatus(text);
+    };
+    QObject::connect(&moodEngine, &MoodEngine::moodTierChanged,
+                     &w, refreshMoodPeek);
+    QObject::connect(&memory, &MemoryManager::bondLevelChanged,
+                     &w, refreshMoodPeek);
+    // Task 6 review M-1: language switch refreshes the peek text immediately.
+    QObject::connect(&config, &ConfigManager::languageChanged,
+                     &w, refreshMoodPeek);
+    refreshMoodPeek();
+
+    // Idle animation bias: only when the active pack actually has the variant.
+    // The pack's nameMap is the source of truth — we don't synthesize names
+    // that don't resolve to a real animation.
+    auto applyMoodIdle = [&]() {
+        const CharacterPack *pack = packManager.activePack();
+        const QString want = QStringLiteral("idle_")
+            + MoodEngine::tierName(moodEngine.tier());
+        stateMachine.setMoodIdleBias(
+            pack ? pack->nameMap().value(want) : QString());
+    };
+    QObject::connect(&moodEngine, &MoodEngine::moodTierChanged,
+                     &w, applyMoodIdle);
+    QObject::connect(&packManager, &CharacterPackManager::activePackChanged,
+                     &w, applyMoodIdle);
+    applyMoodIdle();
+
     if (config.displayMode() == ConfigManager::DisplayMode::Character) {
         w.show();
         w.raise();
@@ -615,6 +660,9 @@ int main(int argc, char *argv[])
     StatisticsManager::instance()->registerComponent("ipc",
         [&]() { ipcServer.loadStats(statsDir); },
         [&]() { ipcServer.saveStats(statsDir); });
+    StatisticsManager::instance()->registerComponent("mood",
+        [&]() { moodEngine.loadStats(statsDir); },
+        [&]() { moodEngine.saveStats(statsDir); });
 #ifdef SEELIE_TTS_ENABLED
     StatisticsManager::instance()->registerComponent("tts",
         [&]() { if (w.ttsEngine()) w.ttsEngine()->loadStats(statsDir); },

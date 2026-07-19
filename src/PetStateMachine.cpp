@@ -189,8 +189,9 @@ void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newP
     QStringList chain;
     chain << ((dir == WalkDir::Right) ? "running-right" : "running-left");
     chain << "walk" << "Walk";
-    if (!chain.contains(m_idleFallback)) {
-        chain.append(m_idleFallback);
+    const QString tail = m_moodIdleBias.isEmpty() ? m_idleFallback : m_moodIdleBias;
+    if (!tail.isEmpty() && !chain.contains(tail)) {
+        chain.append(tail);
     }
     emit animationRequested(chain, static_cast<int>(HighPriority));
 
@@ -320,8 +321,9 @@ void PetStateMachine::enterSustainedOverlay(State s)
 void PetStateMachine::emitChainFor(State s, Priority priority)
 {
     QStringList chain = resolveChain(s);
-    if (!m_idleFallback.isEmpty() && !chain.contains(m_idleFallback)) {
-        chain.append(m_idleFallback);
+    const QString tail = m_moodIdleBias.isEmpty() ? m_idleFallback : m_moodIdleBias;
+    if (!tail.isEmpty() && !chain.contains(tail)) {
+        chain.append(tail);
     }
     emit animationRequested(chain, static_cast<int>(priority));
 }
