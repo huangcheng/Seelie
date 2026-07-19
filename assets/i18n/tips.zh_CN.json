@@ -23,7 +23,11 @@
     "context.away":         {"title": "欢迎回来！",     "body": "休息好了吗？继续加油吧！"},
     "context.gaming":       {"title": "欢迎回来！",     "body": "游戏打得怎么样？欢迎回来！"},
     "context.lowbattery":   {"title": "电量不足",      "body": "电池快没电了，记得插上电源。"},
-    "context.timeofday":    {"title": "",          "body": ""}
+    "context.timeofday":    {"title": "",          "body": ""},
+    "mood.greeting":     {"title": "早上好",       "body": "新的一天，开始写代码吧！"},
+    "mood.long_session": {"title": "休息一下？",   "body": "你已经忙了很久了，起来活动一下吧？"},
+    "mood.missed_you":   {"title": "欢迎回来",     "body": "好想你！今天做点什么？"},
+    "mood.stage_up":     {"title": "更亲近了",     "body": "感觉我们越来越有默契了。"}
   },
   "greetings": [
     {"title": "你好呀，{name}！",   "body": "今天需要点什么帮助吗？"},

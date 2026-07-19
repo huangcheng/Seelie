@@ -15,6 +15,7 @@
 #include "MoodEngine.h"
 #include "MemoryManager.h"
 #include "StatisticsPersistence.h"
+#include "TipsCatalog.h"
 
 class TestMoodEngine : public QObject
 {
@@ -36,6 +37,7 @@ private slots:
     void globalProactiveCap();
     void persistsAcrossReload();
     void corruptJsonRecovers();
+    void moodEventsHaveCatalogFallback();
 };
 
 void TestMoodEngine::deltasApplyAndClamp()
@@ -364,6 +366,19 @@ void TestMoodEngine::corruptJsonRecovers()
     mood.loadStats(tmp.path());   // must not crash
     QCOMPARE(mood.valence(), 0.0);
     QCOMPARE(mood.tier(), MoodEngine::Tier::Content);
+}
+
+void TestMoodEngine::moodEventsHaveCatalogFallback()
+{
+    // PersonaEngine::fallbackTip resolves mood.* through TipsCatalog::eventTip;
+    // a missing JSON entry yields an empty body. Pin that all four exist.
+    // TipsCatalog pre-loads the "en" bundle in its constructor, so the
+    // default locale is already English here.
+    for (const char *name : {"mood.greeting", "mood.long_session",
+                             "mood.missed_you", "mood.stage_up"}) {
+        const auto tip = TipsCatalog::instance().eventTip(QString::fromLatin1(name));
+        QVERIFY2(!tip.body.isEmpty(), name);
+    }
 }
 
 QTEST_GUILESS_MAIN(TestMoodEngine)

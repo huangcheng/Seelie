@@ -24,6 +24,9 @@ const QSet<QString> &poolTierEvents()
         QStringLiteral("context.idle"), QStringLiteral("context.away"),
         QStringLiteral("context.gaming"), QStringLiteral("context.lowbattery"),
         QStringLiteral("user.pet"), QStringLiteral("user.toss"),
+        // Mood engine: routine proactive bubbles are pool-tier; stage_up and
+        // missed_you stay on-demand (rare, context-dependent moments).
+        QStringLiteral("mood.greeting"), QStringLiteral("mood.long_session"),
     };
     return s;
 }
@@ -170,7 +173,17 @@ PersonaEngine::Resolved PersonaEngine::resolvePool(const QString &eventName)
 PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
                                                        const QJsonObject &payload)
 {
-    Q_UNUSED(payload);
+    // Mood milestones carry tier/stage context for the prompt.
+    QString moodLine;
+    if (eventName.startsWith(QLatin1String("mood."))) {
+        const QString stage = payload.value(QStringLiteral("stage")).toString();
+        const int hoursAbsent = payload.value(QStringLiteral("hoursAbsent")).toInt();
+        if (!stage.isEmpty())
+            moodLine = QStringLiteral("\nRelationship stage: %1").arg(stage);
+        if (hoursAbsent > 0)
+            moodLine += QStringLiteral("\nHours since user was last seen: %1")
+                            .arg(hoursAbsent);
+    }
     if (!m_provider.isConfigured()) return { fallbackTip(eventName), 0 };
 
     // Build context for the prompt
@@ -199,6 +212,8 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
     } else {
         userPrompt = QStringLiteral("Event: %1\nReact in-character.").arg(eventName);
     }
+
+    if (!moodLine.isEmpty()) userPrompt += moodLine;
 
     // Privacy: only attach memory snapshot if user opted in.
     if (shareMemory && m_memory) {

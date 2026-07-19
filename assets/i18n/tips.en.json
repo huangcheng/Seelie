@@ -23,7 +23,11 @@
     "context.away":         {"title": "Welcome back!",        "body": "Hope you had a good break!"},
     "context.gaming":       {"title": "Welcome back!",        "body": "GG! Hope the session went well."},
     "context.lowbattery":   {"title": "Low battery",          "body": "Battery is running low — time to plug in."},
-    "context.timeofday":    {"title": "",                     "body": ""}
+    "context.timeofday":    {"title": "",                     "body": ""},
+    "mood.greeting":     {"title": "Good morning",       "body": "New day, new bugs. Let's go!"},
+    "mood.long_session": {"title": "Break time?",        "body": "You've been at this a while — stretch a little?"},
+    "mood.missed_you":   {"title": "Welcome back",       "body": "I missed you! What are we building today?"},
+    "mood.stage_up":     {"title": "We're closer now",   "body": "It feels like we really know each other now."}
   },
   "greetings": [
     {"title": "Hi there, {name}!",   "body": "Need any help today?"},
