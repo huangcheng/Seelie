@@ -416,6 +416,7 @@ qt_add_executable(Seelie
     src/FullscreenWatcher.h
     src/SystemContextEngine.cpp
     src/SystemContextEngine.h
+    src/MoodEngine.cpp
     src/StrokeDetector.cpp
     src/StrokeDetector.h
     src/RecallDialog.cpp

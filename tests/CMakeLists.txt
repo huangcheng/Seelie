@@ -46,6 +46,8 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.h
     ${CMAKE_SOURCE_DIR}/src/SystemContextEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/SystemContextEngine.h
+    ${CMAKE_SOURCE_DIR}/src/MoodEngine.cpp
+    ${CMAKE_SOURCE_DIR}/src/MoodEngine.h
     ${CMAKE_SOURCE_DIR}/src/StrokeDetector.cpp
     ${CMAKE_SOURCE_DIR}/src/StrokeDetector.h
     ${CMAKE_SOURCE_DIR}/src/RecallDialog.cpp
@@ -111,6 +113,7 @@ set(TEST_SOURCES
     test_ecg.cpp
     test_gaming_mode.cpp
     test_system_context.cpp
+    test_mood_engine.cpp
     test_stroke_detector.cpp
     test_recall_dialog.cpp
     test_pet_state_machine.cpp
