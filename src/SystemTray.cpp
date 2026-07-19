@@ -98,6 +98,14 @@ void SystemTray::setupMenu()
     m_trayMenu = new QMenu();
     m_trayMenu->setFont(menuFont);
 
+    // Ambient peek: disabled, non-clickable status line shown at the top
+    // of the menu. Hidden until setMoodStatus() pushes the first text
+    // (Task 7 wiring refreshes it on tier/bond changes).
+    m_moodStatusAction = m_trayMenu->addAction(QString());
+    m_moodStatusAction->setEnabled(false);   // informational, not clickable
+    m_moodStatusAction->setVisible(false);   // shown once mood text arrives
+    m_trayMenu->addSeparator();
+
     m_toggleAction = m_trayMenu->addAction(tr("Show/Hide"));
     connect(m_toggleAction, &QAction::triggered, this, [this]() {
         if (m_mainWindow) {
@@ -437,4 +445,11 @@ void SystemTray::onManageModelsClicked()
     QTimer::singleShot(50, m_packManagerDialog, [this]() {
         m_packManagerDialog->showAnimated();
     });
+}
+
+void SystemTray::setMoodStatus(const QString &text)
+{
+    if (!m_moodStatusAction) return;
+    m_moodStatusAction->setText(text);
+    m_moodStatusAction->setVisible(!text.isEmpty());
 }

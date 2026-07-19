@@ -447,6 +447,42 @@ Path: %2</source>
         <source>Seelie feels closer to you (Lv %1).</source>
         <translation>Seelie 感觉和你更亲近了（Lv %1）。</translation>
     </message>
+    <message>
+        <source>Seelie feels %1 · %2</source>
+        <translation>Seelie 现在%1 · %2</translation>
+    </message>
+    <message>
+        <source>content</source>
+        <translation>心情不错</translation>
+    </message>
+    <message>
+        <source>excited</source>
+        <translation>很兴奋</translation>
+    </message>
+    <message>
+        <source>tense</source>
+        <translation>有点烦躁</translation>
+    </message>
+    <message>
+        <source>tired</source>
+        <translation>有点累</translation>
+    </message>
+    <message>
+        <source>lonely</source>
+        <translation>有点孤单</translation>
+    </message>
+    <message>
+        <source>Stranger</source>
+        <translation>初识</translation>
+    </message>
+    <message>
+        <source>Companion</source>
+        <translation>伙伴</translation>
+    </message>
+    <message>
+        <source>Partner</source>
+        <translation>挚友</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPanelWidget</name>

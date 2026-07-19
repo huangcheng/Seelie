@@ -781,6 +781,11 @@ void MainWindow::setSystemTray(SystemTray *tray)
     }
 }
 
+void MainWindow::setMoodPeekText(const QString &text)
+{
+    setToolTip(text);   // empty string clears — Qt hides empty tooltips
+}
+
 void MainWindow::onShowStatistics()
 {
     if (m_statsDialog) {

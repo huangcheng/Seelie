@@ -41,6 +41,9 @@ public:
     // already wires TipWidget::bubbleRequested into TTSEngine::speak.
     void setTipWidget(TipWidget *tipWidget);
 
+    /// Ambient peek: disabled menu line showing current mood + stage.
+    void setMoodStatus(const QString &text);
+
 signals:
     void statisticsTriggered();
     void recallTriggered();
@@ -67,6 +70,7 @@ private:
     QAction *m_toggleAction = nullptr;
     QAction *m_gamingModeAction = nullptr;
     QAction *m_quitAction = nullptr;
+    QAction *m_moodStatusAction = nullptr;
     QAction *m_checkUpdateAction = nullptr;
     QAction *m_manageModelsAction = nullptr;
     QAction *m_statsAction = nullptr;

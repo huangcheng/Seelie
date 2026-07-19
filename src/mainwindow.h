@@ -73,6 +73,9 @@ public:
     void setPersonaEngine(PersonaEngine *engine);
     void setEmbeddingService(EmbeddingService *s);
 
+    /// Ambient peek: hover tooltip mirroring the tray mood line.
+    void setMoodPeekText(const QString &text);
+
     /// Fan out a named animation through Live2D > Lottie > Sprite engines.
     void dispatchAnimation(const QString &anim,
                            AnimationEngine::Priority priority = AnimationEngine::NormalPriority);
