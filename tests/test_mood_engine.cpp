@@ -23,6 +23,7 @@ private slots:
     void tierQuantization();
     void tierHysteresis();
     void toolFailedBurst();
+    void moodEventsValidate();
 };
 
 void TestMoodEngine::deltasApplyAndClamp()
@@ -136,6 +137,17 @@ void TestMoodEngine::toolFailedBurst()
     mood.onEventProcessed(QStringLiteral("tool.failed"), {});
     mood.onEventProcessed(QStringLiteral("tool.failed"), {});
     QVERIFY(qAbs(mood.valence() - (-0.30)) < 1e-9);
+}
+
+void TestMoodEngine::moodEventsValidate()
+{
+    EventRouter router;
+    QSignalSpy spy(&router, &EventRouter::eventProcessed);
+    router.routeEvent({{QStringLiteral("type"), QStringLiteral("event")},
+                       {QStringLiteral("source"), QStringLiteral("system")},
+                       {QStringLiteral("event"), QStringLiteral("mood.greeting")}});
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.first().at(0).toString(), QStringLiteral("mood.greeting"));
 }
 
 QTEST_GUILESS_MAIN(TestMoodEngine)

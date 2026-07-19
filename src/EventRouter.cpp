@@ -27,7 +27,10 @@ const QSet<QString> EventRouter::s_validEvents = {
     CE::ContextLateNight, CE::ContextLongSession,
     CE::ContextIdle, CE::ContextAway,
     CE::ContextGaming, CE::ContextLowBattery,
-    CE::ContextTimeOfDay
+    CE::ContextTimeOfDay,
+    // Mood engine proactive events (Spec: 2026-07-19 mood-engine).
+    CE::MoodGreeting, CE::MoodLongSession,
+    CE::MoodMissedYou, CE::MoodStageUp
 };
 
 const QSet<QString> EventRouter::s_validSources = {

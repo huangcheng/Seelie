@@ -51,6 +51,12 @@ inline constexpr const char *ContextGaming        = "context.gaming";
 inline constexpr const char *ContextLowBattery    = "context.lowbattery";
 inline constexpr const char *ContextTimeOfDay     = "context.timeofday";
 
+// Mood engine proactive events (Spec: 2026-07-19 mood-engine).
+inline constexpr const char *MoodGreeting    = "mood.greeting";
+inline constexpr const char *MoodLongSession = "mood.long_session";
+inline constexpr const char *MoodMissedYou   = "mood.missed_you";
+inline constexpr const char *MoodStageUp     = "mood.stage_up";
+
 } // namespace CanonicalEvents
 
 #endif // SEELIE_CANONICALEVENTS_H
