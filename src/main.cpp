@@ -44,6 +44,7 @@
 #include "TipsCatalog.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
+#include "IdleBehaviorEngine.h"
 #include "EmbeddingService.h"
 #include "llm/LLMProvider.h"
 #include "llm/LLMProfile.h"
@@ -336,6 +337,14 @@ int main(int argc, char *argv[])
     // --- Persona engine ------------------------------------------------------
     PersonaEngine personaEngine(&memory, &config);
 
+    // --- Idle behavior engine ------------------------------------------------
+    // Stack-owned alongside personaEngine/config; both outlive the window
+    // and the QEventLoop. loadSayings/applyConfig are idempotent and safe
+    // to call before the engine is wired into MainWindow.
+    IdleBehaviorEngine idleEngine(&config, &personaEngine);
+    idleEngine.loadSayings(config.language());
+    idleEngine.applyConfig();
+
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
     w.setMemoryManager(&memory);
@@ -433,6 +442,7 @@ int main(int argc, char *argv[])
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
     w.setPersonaEngine(&personaEngine);
+    w.setIdleBehaviorEngine(&idleEngine);
     if (w.settingsPanel()) w.settingsPanel()->setPersonaEngine(&personaEngine);
 
     // --- System context engine (ContextSenses, Spec 2) -----------------------

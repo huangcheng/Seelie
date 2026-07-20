@@ -20,6 +20,7 @@
 #include "TipsCatalog.h"
 #include "FullscreenWatcher.h"
 #include "PetStateMachine.h"
+#include "IdleBehaviorEngine.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
 #include "EmbeddingService.h"
@@ -1095,6 +1096,52 @@ void MainWindow::setPersonaEngine(PersonaEngine *engine)
     //     in (a) for why we deferred speaking in the first place.
     connect(m_personaEngine, &PersonaEngine::tipUpgradeFailed,
             this, &MainWindow::onTipUpgradeFailed);
+}
+
+void MainWindow::setIdleBehaviorEngine(IdleBehaviorEngine *engine)
+{
+    m_idleEngine = engine;
+    if (!m_idleEngine) return;
+
+    // Saying gate: pet truly idle and bubble-free. Sayings are the lowest
+    // bubble priority — any event bubble wins by last-write-wins.
+    m_idleEngine->setCanShowGate([this] {
+        if (!isVisible()) return false;
+        if (m_tipWidget
+            && (m_tipWidget->isVisible() || m_tipWidget->isSuppressed())) return false;
+        if (m_stateMachine
+            && m_stateMachine->activeState() != PetStateMachine::State::Idle) return false;
+        return true;
+    });
+
+    if (m_eventRouter) {
+        connect(m_eventRouter, &EventRouter::eventProcessed,
+                m_idleEngine, [this](const QString &, const QJsonObject &) {
+            if (m_idleEngine) m_idleEngine->onEventProcessed();
+        });
+    }
+
+    connect(m_idleEngine, &IdleBehaviorEngine::sayingReady,
+            this, [this](const QString &title, const QString &body) {
+        if (!m_tipWidget) return;
+        // StatusBubble: 6s auto-dismiss — ambient speech shouldn't linger
+        // as long as actionable tips (12s).
+        m_tipWidget->showBubble(title, body, TipWidget::StatusBubble);
+    });
+
+    if (m_config) {
+        connect(m_config, &ConfigManager::sayingFrequencyChanged,
+                m_idleEngine, [this](ConfigManager::SayingFrequency) {
+            if (m_idleEngine) m_idleEngine->applyConfig();
+        });
+        connect(m_config, &ConfigManager::languageChanged,
+                m_idleEngine, [this](const QString &lang) {
+            if (m_idleEngine) {
+                m_idleEngine->loadSayings(lang);
+                m_idleEngine->applyConfig();
+            }
+        });
+    }
 }
 
 void MainWindow::tryRecordPoke()

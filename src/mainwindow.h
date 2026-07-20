@@ -29,6 +29,7 @@ class EventRouter;
 class FullscreenWatcher;
 class IPCServer;
 class PetStateMachine;
+class IdleBehaviorEngine;
 class GlobalShortcutManager;
 class PersonaEngine;
 class EmbeddingService;
@@ -69,6 +70,7 @@ public:
     void setEventRouter(EventRouter *router);
     void setIPCServer(IPCServer *ipc) { m_ipcServer = ipc; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
+    void setIdleBehaviorEngine(IdleBehaviorEngine *engine);
     void setMemoryManager(MemoryManager *memory);
     void setPersonaEngine(PersonaEngine *engine);
     void setEmbeddingService(EmbeddingService *s);
@@ -174,6 +176,7 @@ private:
     EventRouter *m_eventRouter = nullptr;
     IPCServer *m_ipcServer = nullptr;
     PetStateMachine *m_stateMachine = nullptr;
+    IdleBehaviorEngine *m_idleEngine = nullptr;
     GlobalShortcutManager *m_shortcutManager = nullptr;
     MemoryManager *m_memory = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
