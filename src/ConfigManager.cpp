@@ -520,7 +520,7 @@ void ConfigManager::setSayingFrequency(SayingFrequency freq)
     save();
 }
 
-void ConfigManager::setLlmIdleQuipsEnabled(bool enabled)
+void ConfigManager::setLLMIdleQuipsEnabled(bool enabled)
 {
     if (m_llmIdleQuipsEnabled == enabled) return;
     m_llmIdleQuipsEnabled = enabled;

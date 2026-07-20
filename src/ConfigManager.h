@@ -128,7 +128,7 @@ public:
 
     /** Whether idle sayings may occasionally be LLM-generated. Default false (cost opt-in). */
     bool llmIdleQuipsEnabled() const { return m_llmIdleQuipsEnabled; }
-    void setLlmIdleQuipsEnabled(bool enabled);
+    void setLLMIdleQuipsEnabled(bool enabled);
 
     /**
      * Returns the UDP endpoint for the version-check / update server.

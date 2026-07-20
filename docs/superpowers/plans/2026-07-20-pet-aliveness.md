@@ -494,7 +494,7 @@ void TestIdleBehavior::config_roundTrip()
         ConfigManager cfg;
         cfg.load();
         cfg.setSayingFrequency(ConfigManager::SayingFrequency::Often);
-        cfg.setLlmIdleQuipsEnabled(true);
+        cfg.setLLMIdleQuipsEnabled(true);
         cfg.flush();
     }
     {
@@ -529,7 +529,7 @@ After the `shareMemoryWithAi` accessors (lines 120-121):
 
     /** Whether idle sayings may occasionally be LLM-generated. Default false (cost opt-in). */
     bool llmIdleQuipsEnabled() const { return m_llmIdleQuipsEnabled; }
-    void setLlmIdleQuipsEnabled(bool enabled);
+    void setLLMIdleQuipsEnabled(bool enabled);
 ```
 
 In the `signals:` block, after `shareMemoryWithAiChanged`:
@@ -576,7 +576,7 @@ void ConfigManager::setSayingFrequency(SayingFrequency freq)
     save();
 }
 
-void ConfigManager::setLlmIdleQuipsEnabled(bool enabled)
+void ConfigManager::setLLMIdleQuipsEnabled(bool enabled)
 {
     if (m_llmIdleQuipsEnabled == enabled) return;
     m_llmIdleQuipsEnabled = enabled;
@@ -1494,7 +1494,7 @@ In `src/SettingsPanelWidget.cpp`, immediately after `privLayout->addWidget(m_sha
         m_llmIdleQuipsCheck->setChecked(m_config->llmIdleQuipsEnabled());
         privLayout->addWidget(m_llmIdleQuipsCheck);
         connect(m_llmIdleQuipsCheck, &QCheckBox::toggled,
-                this, [this](bool on) { m_config->setLlmIdleQuipsEnabled(on); });
+                this, [this](bool on) { m_config->setLLMIdleQuipsEnabled(on); });
         connect(m_config, &ConfigManager::llmIdleQuipsEnabledChanged,
                 this, [this](bool on) {
             QSignalBlocker blocker(m_llmIdleQuipsCheck);

@@ -127,7 +127,7 @@ void TestIdleBehavior::config_roundTrip()
         ConfigManager cfg;
         cfg.load();
         cfg.setSayingFrequency(ConfigManager::SayingFrequency::Often);
-        cfg.setLlmIdleQuipsEnabled(true);
+        cfg.setLLMIdleQuipsEnabled(true);
         cfg.flush();
     }
     {
