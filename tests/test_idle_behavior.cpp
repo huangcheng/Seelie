@@ -44,7 +44,8 @@ void TestIdleBehavior::pickWeighted_zeroWeightsReturnMinus1()
 void TestIdleBehavior::idleTimeoutMs_bounds()
 {
     QCOMPARE(IdlePicker::idleTimeoutMs(0.0), 1000);
-    QVERIFY(IdlePicker::idleTimeoutMs(0.999999) <= 4000);
+    QCOMPARE(IdlePicker::idleTimeoutMs(0.999999), 4000);
+    QCOMPARE(IdlePicker::idleTimeoutMs(1.0), 4000);
     for (double r = 0.0; r < 1.0; r += 0.01) {
         const int t = IdlePicker::idleTimeoutMs(r);
         QVERIFY2(t >= 1000 && t <= 4000, qPrintable(QString::number(t)));
