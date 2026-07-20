@@ -8,6 +8,9 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -27,6 +30,9 @@ private slots:
     void sayingPool_fallsBackToEn();
     void sayingPool_antiRepeat();
     void sayingPool_emptyIsSafe();
+    void sayingPool_externalFileWins();
+    void sayingPool_externalFallbackToQrc();
+    void sayingPool_externalEnFallback();
     // --- ConfigManager keys ---
     void config_defaults();
     void config_roundTrip();
@@ -144,6 +150,77 @@ void TestIdleBehavior::sayingPool_emptyIsSafe()
     QVERIFY(pool.isEmpty());
     const SayingPool::Saying s = pool.pick();   // must not crash
     QVERIFY(s.body.isEmpty());
+}
+
+void TestIdleBehavior::sayingPool_externalFileWins()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    // External file in the bare categories-object format. One category,
+    // two sayings — both bodies are unique sentinel strings that cannot
+    // appear in the qrc en bundle, so we can prove the override won.
+    const QString body1 = QStringLiteral("EXTERNAL_HUMOR_BODY_A_SENTINEL");
+    const QString body2 = QStringLiteral("EXTERNAL_HUMOR_BODY_B_SENTINEL");
+    QJsonObject root;
+    QJsonArray arr;
+    arr.append(QJsonObject{{QStringLiteral("title"), QStringLiteral("t1")},
+                           {QStringLiteral("body"), body1}});
+    arr.append(QJsonObject{{QStringLiteral("title"), QStringLiteral("t2")},
+                           {QStringLiteral("body"), body2}});
+    root.insert(QStringLiteral("humor"), arr);
+    const QString path = QDir(tmp.path()).absoluteFilePath(QStringLiteral("sayings.en.json"));
+    {
+        QFile f(path);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(QJsonDocument(root).toJson());
+    }
+
+    SayingPool pool;
+    QVERIFY2(pool.load(QStringLiteral("en"), tmp.path()),
+             "External override should load successfully");
+    QCOMPARE(pool.size(), 2);
+    // Sample several picks to make sure we never see a bundled body.
+    for (int i = 0; i < 8; ++i) {
+        const SayingPool::Saying s = pool.pick();
+        QVERIFY2(s.body == body1 || s.body == body2,
+                 qPrintable(QStringLiteral("Unexpected body from external file: ") + s.body));
+    }
+}
+
+void TestIdleBehavior::sayingPool_externalFallbackToQrc()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    // Empty override dir → must fall through to the qrc en bundle.
+    SayingPool pool;
+    QVERIFY(pool.load(QStringLiteral("en"), tmp.path()));
+    QCOMPARE(pool.size(), 20);
+}
+
+void TestIdleBehavior::sayingPool_externalEnFallback()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    // Only an en override exists. Asking for zh_CN must still pick the
+    // external en file (chain step 2) BEFORE the qrc zh_CN bundle.
+    const QString body = QStringLiteral("EXTERNAL_EN_ONLY_SENTINEL_BODY");
+    QJsonObject root;
+    QJsonArray arr;
+    arr.append(QJsonObject{{QStringLiteral("title"), QStringLiteral("t")},
+                           {QStringLiteral("body"), body}});
+    root.insert(QStringLiteral("observation"), arr);
+    const QString path = QDir(tmp.path()).absoluteFilePath(QStringLiteral("sayings.en.json"));
+    {
+        QFile f(path);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(QJsonDocument(root).toJson());
+    }
+
+    SayingPool pool;
+    QVERIFY(pool.load(QStringLiteral("zh_CN"), tmp.path()));
+    QCOMPARE(pool.size(), 1);
+    const SayingPool::Saying s = pool.pick();
+    QCOMPARE(s.body, body);
 }
 
 void TestIdleBehavior::config_defaults()

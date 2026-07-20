@@ -1059,7 +1059,7 @@ Path: %2</source>
         <location filename="src/SettingsPanelWidget.cpp" line="910"/>
         <location filename="src/SettingsPanelWidget.cpp" line="1579"/>
         <source>When the pet is idle, it may occasionally send a short prompt (plus your memory digest if &apos;Share memory with AI&apos; is on) to the configured AI provider to generate a fresh quip.</source>
-        <translation>宠物空闲时,可能会偶尔向已配置的 AI 服务商发送一条短提示(若开启了"与 AI 共享记忆"还会附带记忆摘要),用于生成一句新的闲聊。</translation>
+        <translation>宠物空闲时，可能会偶尔向已配置的 AI 服务商发送一条短提示(若开启了"与 AI 共享记忆"还会附带记忆摘要)，用于生成一句新的闲聊。</translation>
     </message>
     <message>
         <location filename="src/SettingsPanelWidget.cpp" line="924"/>

@@ -5,10 +5,20 @@
 #include <QVector>
 #include <functional>
 
-// Categorized canned idle sayings, loaded from the "sayings" section of the
-// existing i18n tip bundles (:/i18n/i18n/tips.<locale>.json). Weighted
-// category draw + per-category anti-repeat. Locale files that lack the
-// "sayings" key fall back to the en bundle.
+// Categorized canned idle sayings. Loading tries, in order, the first source
+// that yields >=1 saying (no merging):
+//   1. <overrideDir>/sayings.<locale>.json   (external override, bare format)
+//   2. <overrideDir>/sayings.en.json         (external en fallback)
+//   3. :/i18n/i18n/tips.<locale>.json        (qrc bundle, "sayings" key)
+//   4. :/i18n/i18n/tips.en.json              (qrc en fallback, "sayings" key)
+//
+// External override files use the friendlier BARE categories format:
+//   { "humor": [{"title": "...", "body": "..."}, ...], ... }
+// qrc bundles use the full tips document with a top-level "sayings" key.
+// The parser auto-detects: if the JSON root contains a "sayings" key, it
+// parses inside it; otherwise the root itself is treated as the categories
+// map. Weighted category draw + per-category anti-repeat. Files that yield
+// zero sayings fall through to the next source.
 class SayingPool
 {
 public:
@@ -16,8 +26,10 @@ public:
 
     SayingPool();
 
-    // Returns true when at least one saying was loaded.
-    bool load(const QString &locale);
+    // Loads per the chain above. When overrideDir is empty, steps 1-2 are
+    // skipped (qrc-only — the historical behaviour). Returns true when at
+    // least one saying was loaded.
+    bool load(const QString &locale, const QString &overrideDir = QString());
 
     bool isEmpty() const;
     int size() const;   // total sayings across categories

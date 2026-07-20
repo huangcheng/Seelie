@@ -25,7 +25,12 @@ IdleBehaviorEngine::IdleBehaviorEngine(ConfigManager *config, PersonaEngine *per
 
 bool IdleBehaviorEngine::loadSayings(const QString &locale)
 {
-    m_sayingsUsable = m_pool.load(locale);
+    // When a ConfigManager is attached, prefer user-editable overrides on
+    // disk (<configDir>/sayings.<locale>.json) so saying text can be
+    // tweaked without recompiling. With no config (tests), falls back to
+    // the historical qrc-only chain.
+    const QString overrideDir = m_config ? m_config->configDir() : QString();
+    m_sayingsUsable = m_pool.load(locale, overrideDir);
     return m_sayingsUsable;
 }
 

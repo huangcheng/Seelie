@@ -1,6 +1,7 @@
 #include "SayingPool.h"
 #include "IdlePicker.h"
 
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -13,18 +14,33 @@ SayingPool::SayingPool()
 {
 }
 
-bool SayingPool::load(const QString &locale)
+bool SayingPool::load(const QString &locale, const QString &overrideDir)
 {
     m_categories.clear();
-    const QString path = QStringLiteral(":/i18n/i18n/tips.%1.json").arg(locale);
-    if (!loadFile(path)) {
-        if (locale == QLatin1String("en")) {
-            qWarning() << "SayingPool: no sayings in en bundle — sayings disabled";
-            return false;
+
+    // 1-2. External overrides (skipped when overrideDir is empty).
+    if (!overrideDir.isEmpty()) {
+        const QString locPath =
+            QDir(overrideDir).absoluteFilePath(QStringLiteral("sayings.%1.json").arg(locale));
+        if (loadFile(locPath)) return true;
+        if (locale != QLatin1String("en")) {
+            const QString enPath =
+                QDir(overrideDir).absoluteFilePath(QStringLiteral("sayings.en.json"));
+            if (loadFile(enPath)) return true;
         }
-        return loadFile(QStringLiteral(":/i18n/i18n/tips.en.json"));
     }
-    return !isEmpty();
+
+    // 3. qrc bundle for the requested locale.
+    if (loadFile(QStringLiteral(":/i18n/i18n/tips.%1.json").arg(locale))) return true;
+
+    // 4. qrc en fallback.
+    if (locale != QLatin1String("en")) {
+        if (loadFile(QStringLiteral(":/i18n/i18n/tips.en.json"))) return true;
+    }
+
+    qWarning() << "SayingPool: no sayings found for locale" << locale
+               << "(overrideDir:" << overrideDir << ") — sayings disabled";
+    return false;
 }
 
 bool SayingPool::isEmpty() const
@@ -73,7 +89,13 @@ bool SayingPool::loadFile(const QString &path)
         qWarning() << "SayingPool: parse error in" << path << ":" << err.errorString();
         return false;
     }
-    const QJsonObject sayings = doc.object().value(QStringLiteral("sayings")).toObject();
+    // Dual-format: qrc bundles wrap categories under a top-level "sayings"
+    // key alongside other tip sections; external override files use the
+    // bare categories object as the root for easier editing. Auto-detect.
+    const QJsonObject root = doc.object();
+    const QJsonObject sayings = root.contains(QStringLiteral("sayings"))
+        ? root.value(QStringLiteral("sayings")).toObject()
+        : root;
     if (sayings.isEmpty()) return false;
 
     const QVector<QPair<QString, int>> table = {
