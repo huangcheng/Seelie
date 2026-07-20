@@ -203,6 +203,7 @@ foreach(test_src ${TEST_SOURCES})
     endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/thirdparty/cgltf
         ${rlottie_SOURCE_DIR}/inc
     )
     target_compile_definitions(${test_name} PRIVATE

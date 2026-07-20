@@ -20,7 +20,7 @@ endif()
 # Neovim) can resolve Qt headers without choking on every QObject include.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Sql LinguistTools Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Sql LinguistTools Test OpenGL)
 
 # TTS support is now HTTP-based (no WebSocket dependency). Kept as an
 # optional feature so the build can still drop the AI tab on minimal builds.
@@ -453,7 +453,9 @@ qt_add_executable(Seelie
     $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAITTSProvider.cpp>
 )
 
-target_include_directories(Seelie PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Seelie PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cgltf)
 
 # Default endpoint for the version-check / update server. Baked into the
 # binary via SEELIE_DEFAULT_UPDATE_ENDPOINT and into the shipped Seelie.ini via
@@ -525,6 +527,7 @@ target_link_libraries(Seelie
         Qt::Network
         Qt::Sql
         Qt::Multimedia
+        Qt::OpenGL
         rlottie::rlottie
         QHotkey::QHotkey
 )
