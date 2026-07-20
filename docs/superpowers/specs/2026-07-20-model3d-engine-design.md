@@ -1,6 +1,6 @@
 # Model3D Engine — Skeletal 3D Character Packs
 
-**Date:** 2026-07-20 · **Status:** draft (pending user review)
+**Date:** 2026-07-20 · **Status:** implemented
 **Branch strategy:** feature branch merged back to `main` as a fourth engine (user decision — no product fork)
 **Council review:** incorporated 2026-07-20 — clip loop/completion semantics, root-motion clamp, bind-pose camera auto-fit, coordinate/unit normalization (`upAxis`/`unitScale`), sRGB + premultiplied-alpha handling, uniform-limit query + mat3×4 fallback, QOpenGLFunctions-only (no GLEW), per-engine GL contexts + `recoverOpenGL()` parity, `frameWidth`/`frameHeight` manifest fields, v2 deferral of hit-testing/auto-crop/pointer-tracking.
 

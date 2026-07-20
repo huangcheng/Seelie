@@ -10,6 +10,7 @@ private slots:
     void rejectsNonModel3DPack();
     void loadsAndRenders();
     void missingClipIsGraceful();
+    void loadsRealRobotPack();
 };
 
 static QString writeTestPack(QTemporaryDir &dir)
@@ -73,6 +74,39 @@ void TestModel3DEngine::missingClipIsGraceful()
     // Unknown clip names must not crash (user-imported pack tolerance).
     engine.playAnimation(QStringLiteral("NoSuchClip"), Model3DEngine::HighPriority);
     QVERIFY(engine.isPlaying());
+}
+
+void TestModel3DEngine::loadsRealRobotPack()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString packDir = dir.path() + "/robot";
+    QDir().mkpath(packDir);
+    QVERIFY(QFile::copy(QStringLiteral(SOURCE_DIR) + "/tests/data/robot_expressive.glb",
+                        packDir + "/model.glb"));
+    QFile f(packDir + "/manifest.json");
+    QVERIFY(f.open(QIODevice::WriteOnly));
+    f.write(R"JSON({
+  "formatVersion": "1.0.0",
+  "id": "test.robot", "name": "Robot", "author": "test", "version": "1.0.0",
+  "character": { "type": "model3d", "model": "model.glb",
+                 "frameWidth": 124, "frameHeight": 200 },
+  "idlePool": [ {"name": "Idle", "weight": 3}, {"name": "Walking", "weight": 1} ],
+  "eventMap": { "session.start": "Wave", "tool.after": "ThumbsUp" },
+  "stateMap": { "Tossed": "Jump" }
+})JSON");
+    f.close();
+
+    CharacterPack pack;
+    QVERIFY(pack.loadFromDirectory(packDir));
+    Model3DEngine engine;
+    if (!engine.loadFromCharacterPack(&pack))
+        QSKIP("No GL available in test environment");
+    QVERIFY(engine.hasAnimations());
+    QVERIFY(engine.lastPaintSuccessful());
+    engine.playAnimation(QStringLiteral("Wave"), Model3DEngine::HighPriority);
+    QTest::qWait(100);
+    QVERIFY(engine.lastPaintSuccessful());
 }
 
 QTEST_MAIN(TestModel3DEngine)

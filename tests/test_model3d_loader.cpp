@@ -15,6 +15,7 @@ private slots:
     void loadsTexture();
     void rejectsMissingFile();
     void manifestParsesModel3DFields();
+    void loadsRealBlenderModel();
 };
 
 static QString glbPath()
@@ -123,6 +124,31 @@ void TestModel3DLoader::manifestParsesModel3DFields()
     QVERIFY(qAbs(pack.characterConfig().unitScale - 1.0f) < 1e-6f);
     QCOMPARE(pack.characterConfig().upAxis, QStringLiteral("y"));
     QVERIFY(pack.assetPath(pack.characterConfig().modelFile).endsWith("model.glb"));
+}
+
+void TestModel3DLoader::loadsRealBlenderModel()
+{
+    Model3DModel model;
+    QString err;
+    QVERIFY2(GltfLoader::loadFromFile(QStringLiteral(SOURCE_DIR) + "/tests/data/robot_expressive.glb",
+                                      model, &err), qPrintable(err));
+    // RobotExpressive (Quaternius/Blender, CC0): 43 joints in first skin,
+    // 14 clips, 3 materials, no embedded textures (material colors).
+    QCOMPARE(model.joints.size(), 43);
+    QCOMPARE(model.clips.size(), 14);
+    QVERIFY(model.clipIndexByName.contains(QStringLiteral("Idle")));
+    QVERIFY(model.clipIndexByName.contains(QStringLiteral("Wave")));
+    QVERIFY(model.clipIndexByName.contains(QStringLiteral("Dance")));
+    QCOMPARE(model.materials.size(), 3);
+    QVERIFY(model.materials[0].baseColor.isNull());
+    QVERIFY(!model.primitives.isEmpty());
+    // Real exporters emit dense keyframes — every track must have matching
+    // time/value counts (3 comps for T/S, 4 for R).
+    for (const Model3DClip &clip : model.clips)
+        for (const Model3DTrack &t : clip.tracks) {
+            const int comps = t.path == Model3DTrack::Rotation ? 4 : 3;
+            QCOMPARE(t.values.size(), t.times.size() * comps);
+        }
 }
 
 QTEST_MAIN(TestModel3DLoader)

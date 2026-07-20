@@ -1,0 +1,37 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "seelie.robotexpressive",
+  "name": "Robot Expressive",
+  "author": "Quaternius (Tomas Laulhe), Seelie port",
+  "version": "1.0.0",
+  "description": "Skeletal 3D sample pack — CC0 robot by Quaternius, 14 animation clips.",
+  "tags": ["3d", "sample"],
+  "license": "CC0-1.0",
+  "category": "originals",
+  "character": {
+    "type": "model3d",
+    "model": "model.glb",
+    "frameWidth": 124,
+    "frameHeight": 200
+  },
+  "idlePool": [
+    { "name": "Idle", "weight": 4 },
+    { "name": "Walking", "weight": 1 },
+    { "name": "Standing", "weight": 2 }
+  ],
+  "eventMap": {
+    "session.start": "Wave",
+    "user.click": "Wave",
+    "prompt.submitted": "Yes",
+    "tool.after": "ThumbsUp",
+    "tool.failed": "No",
+    "permission.denied": "No",
+    "session.error": "Death",
+    "todo.updated": "Dance"
+  },
+  "stateMap": {
+    "Petted": "ThumbsUp",
+    "Grabbed": "No",
+    "Tossed": "Jump"
+  }
+}
