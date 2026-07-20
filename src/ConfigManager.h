@@ -16,6 +16,8 @@ class ConfigManager : public QObject
 
 public:
     enum class DisplayMode { Character, Ecg };
+    enum class SayingFrequency { Never = 0, Rarely, Sometimes, Often };
+    Q_ENUM(SayingFrequency)
 
     explicit ConfigManager(QObject *parent = nullptr);
     ~ConfigManager() override;
@@ -120,6 +122,14 @@ public:
     bool shareMemoryWithAi() const { return m_shareMemoryWithAi; }
     void setShareMemoryWithAi(bool enabled);
 
+    /** Idle-sayings cadence. Default Sometimes. */
+    SayingFrequency sayingFrequency() const { return m_sayingFrequency; }
+    void setSayingFrequency(SayingFrequency freq);
+
+    /** Whether idle sayings may occasionally be LLM-generated. Default false (cost opt-in). */
+    bool llmIdleQuipsEnabled() const { return m_llmIdleQuipsEnabled; }
+    void setLlmIdleQuipsEnabled(bool enabled);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -160,6 +170,8 @@ signals:
     void personaProfileChanged(const QString &name);
     void personaEnabledChanged(bool enabled);
     void shareMemoryWithAiChanged(bool enabled);
+    void sayingFrequencyChanged(SayingFrequency freq);
+    void llmIdleQuipsEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -186,6 +198,9 @@ private:
     QString m_personaProfile;
     bool m_personaEnabled = false;
     bool m_shareMemoryWithAi = false;
+
+    SayingFrequency m_sayingFrequency = SayingFrequency::Sometimes;
+    bool m_llmIdleQuipsEnabled = false;
 
 };
 

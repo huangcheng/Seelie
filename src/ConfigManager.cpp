@@ -167,6 +167,14 @@ void ConfigManager::load()
     m_touchReactionsEnabled = m_settings.value("touchReactions", true).toBool();
     m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
+    {
+        const int f = m_settings.value("sayingFrequency",
+                                       static_cast<int>(SayingFrequency::Sometimes)).toInt();
+        m_sayingFrequency = static_cast<SayingFrequency>(
+            qBound(0, f, static_cast<int>(SayingFrequency::Often)));
+    }
+    m_llmIdleQuipsEnabled = m_settings.value("llmIdleQuips", false).toBool();
+
     m_ttsEnabled = m_settings.value("tts/enabled", false).toBool();
 
     // One-shot migration: if any flat tts/* keys exist, copy them into
@@ -246,6 +254,8 @@ void ConfigManager::flush()
     m_settings.setValue("contextSensesEnabled", m_contextSensesEnabled);
     m_settings.setValue("touchReactions", m_touchReactionsEnabled);
     m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
+    m_settings.setValue("sayingFrequency", static_cast<int>(m_sayingFrequency));
+    m_settings.setValue("llmIdleQuips", m_llmIdleQuipsEnabled);
     m_settings.setValue("tts/enabled", m_ttsEnabled);
     m_settings.setValue("tts/activeProvider", m_ttsActiveProvider);
 
@@ -500,4 +510,20 @@ void ConfigManager::setShareMemoryWithAi(bool enabled)
     m_settings.setValue(QStringLiteral("llm/shareMemoryWithAi"), enabled);
     save();
     emit shareMemoryWithAiChanged(enabled);
+}
+
+void ConfigManager::setSayingFrequency(SayingFrequency freq)
+{
+    if (m_sayingFrequency == freq) return;
+    m_sayingFrequency = freq;
+    emit sayingFrequencyChanged(freq);
+    save();
+}
+
+void ConfigManager::setLlmIdleQuipsEnabled(bool enabled)
+{
+    if (m_llmIdleQuipsEnabled == enabled) return;
+    m_llmIdleQuipsEnabled = enabled;
+    emit llmIdleQuipsEnabledChanged(enabled);
+    save();
 }

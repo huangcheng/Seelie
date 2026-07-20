@@ -1,7 +1,9 @@
 #include <QtTest>
 #include "IdlePicker.h"
 #include "SayingPool.h"
+#include "ConfigManager.h"
 #include <QSettings>
+#include <QTemporaryDir>
 
 class TestIdleBehavior : public QObject
 {
@@ -17,6 +19,9 @@ private slots:
     void sayingPool_fallsBackToEn();
     void sayingPool_antiRepeat();
     void sayingPool_emptyIsSafe();
+    // --- ConfigManager keys ---
+    void config_defaults();
+    void config_roundTrip();
 };
 
 void TestIdleBehavior::pickWeighted_respectsWeights()
@@ -100,6 +105,37 @@ void TestIdleBehavior::sayingPool_emptyIsSafe()
     QVERIFY(pool.isEmpty());
     const SayingPool::Saying s = pool.pick();   // must not crash
     QVERIFY(s.body.isEmpty());
+}
+
+void TestIdleBehavior::config_defaults()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, tmp.path());
+    ConfigManager cfg;
+    cfg.load();
+    QCOMPARE(cfg.sayingFrequency(), ConfigManager::SayingFrequency::Sometimes);
+    QCOMPARE(cfg.llmIdleQuipsEnabled(), false);
+}
+
+void TestIdleBehavior::config_roundTrip()
+{
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, tmp.path());
+    {
+        ConfigManager cfg;
+        cfg.load();
+        cfg.setSayingFrequency(ConfigManager::SayingFrequency::Often);
+        cfg.setLlmIdleQuipsEnabled(true);
+        cfg.flush();
+    }
+    {
+        ConfigManager cfg2;
+        cfg2.load();
+        QCOMPARE(cfg2.sayingFrequency(), ConfigManager::SayingFrequency::Often);
+        QCOMPARE(cfg2.llmIdleQuipsEnabled(), true);
+    }
 }
 
 QTEST_MAIN(TestIdleBehavior)
