@@ -5,6 +5,7 @@
 
 #include "Live2DAnimationEngine.h"
 #include "CharacterPack.h"
+#include "IdlePicker.h"
 
 #include <QPainter>
 #include <QDir>
@@ -934,20 +935,13 @@ void Live2DAnimationEngine::startIdleAnimation()
 {
     if (m_idleAnims.isEmpty()) return;
 
-    int totalWeight = 0;
-    for (int w : m_idleWeights) totalWeight += w;
-    if (totalWeight <= 0) return;
-
-    int roll = QRandomGenerator::global()->bounded(totalWeight);
-    int cumulative = 0;
-    for (int i = 0; i < m_idleAnims.size(); ++i) {
-        cumulative += m_idleWeights.at(i);
-        if (roll < cumulative) {
-            playAnimation(m_idleAnims.at(i), NormalPriority);
-            return;
-        }
-    }
-    playAnimation(m_idleAnims.first(), NormalPriority);
+    const int exclude = m_idleAnims.size() > 1
+                        ? m_idleAnims.indexOf(m_lastIdleAnim) : -1;
+    int idx = IdlePicker::pickWeighted(m_idleWeights, exclude,
+                                       QRandomGenerator::global()->generateDouble());
+    if (idx < 0) return;
+    m_lastIdleAnim = m_idleAnims.at(idx);
+    playAnimation(m_lastIdleAnim, NormalPriority);
 }
 
 #endif // SEELIE_LIVE2D_SUPPORT
