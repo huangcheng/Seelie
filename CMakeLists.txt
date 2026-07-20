@@ -412,6 +412,9 @@ qt_add_executable(Seelie
     src/CharacterPackLoader.cpp
     src/CharacterPackLoader.h
     src/AnimationEngine.h
+    src/model3d/Model3DTypes.h
+    src/model3d/GltfLoader.cpp
+    src/model3d/GltfLoader.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp

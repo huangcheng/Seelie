@@ -43,6 +43,9 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/StyleUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/StyleUtils.h
     ${CMAKE_SOURCE_DIR}/src/AnimationEngine.h
+    ${CMAKE_SOURCE_DIR}/src/model3d/Model3DTypes.h
+    ${CMAKE_SOURCE_DIR}/src/model3d/GltfLoader.cpp
+    ${CMAKE_SOURCE_DIR}/src/model3d/GltfLoader.h
     ${CMAKE_SOURCE_DIR}/src/CanonicalEvents.h
     ${CMAKE_SOURCE_DIR}/src/CharacterPackLoader.cpp
     ${CMAKE_SOURCE_DIR}/src/CharacterPackLoader.h
@@ -155,6 +158,7 @@ set(TEST_SOURCES
     test_persona_pool.cpp
     test_persona_engine.cpp
     test_idle_behavior.cpp
+    test_model3d_loader.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
