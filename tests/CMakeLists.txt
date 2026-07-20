@@ -105,6 +105,7 @@ target_link_libraries(test_tts_live PRIVATE
     Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Sql Qt::Test rlottie::rlottie)
 target_include_directories(test_tts_live PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/thirdparty/cgltf
     ${rlottie_SOURCE_DIR}/inc)
 target_compile_definitions(test_tts_live PRIVATE
     SOURCE_DIR="${CMAKE_SOURCE_DIR}"
