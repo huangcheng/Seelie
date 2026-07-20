@@ -10,8 +10,8 @@ namespace {
 
 QMatrix4x4 toMat4(const cgltf_float m[16])
 {
-    // cgltf/glTF matrices are column-major; QMatrix4x4(const float*) expects
-    // row-major input. Transpose during construction.
+    // cgltf stores matrices column-major. Read element (row, col) from
+    // flat array index [col * 4 + row] via operator()(row, col).
     QMatrix4x4 r;
     for (int row = 0; row < 4; ++row)
         for (int col = 0; col < 4; ++col)
