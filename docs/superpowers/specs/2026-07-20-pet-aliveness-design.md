@@ -167,3 +167,12 @@ All three engines already have `m_idleTimer`, `m_idleAnims`/`m_idleWeights`, and
 
 - On ship: archive `openspec/changes/random-sayings` and `openspec/changes/random-idle-animations` via the openspec archive workflow (both are fully absorbed here, with the persona-era amendments recorded in this spec).
 - No migration needed; new config keys have safe defaults.
+
+## Amendment 2026-07-20: disk-first sayings
+
+Sayings are loaded disk-first so content edits don't require a recompile.
+Load chain (first source with ≥1 saying wins): `<configDir>/sayings.<locale>.json`
+→ `<configDir>/sayings.en.json` → qrc `tips.<locale>.json` → qrc `tips.en.json`.
+External files use a bare categories-object format (`{"humor": [...], ...}`);
+the qrc bundles keep the `{"sayings": {...}}` wrapper. The bundled 20 en + 20
+zh_CN sayings remain the factory defaults.

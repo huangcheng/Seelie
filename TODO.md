@@ -1,6 +1,23 @@
 # Seelie — TODO / Next Steps
 
-**Updated:** 2026-07-17 · **Branch:** `pet-memory-2` merged into `main` (ff `31ba078 → ee2f379`), pushed to `origin/main`
+**Updated:** 2026-07-20 · **Branch:** `pet-aliveness`
+
+---
+
+## 0.1 Pet Aliveness — status: ✅ COMPLETE (branch pet-aliveness, pending merge)
+
+Spec: `docs/superpowers/specs/2026-07-20-pet-aliveness-design.md` · Plan: `docs/superpowers/plans/2026-07-20-pet-aliveness.md`
+
+Shipped: `IdleBehaviorEngine` (idle sayings scheduler, canned pools + opt-in LLM idle quips
+via `idle.quip`), `SayingPool` (disk-first override in `<configDir>/sayings.<locale>.json`,
+qrc defaults), frequency + LLM-quip config keys, settings UI, idle rotation upgrades in all
+three engines (variable timing, anti-repeat, 12 new sprite names + EmptyTrash), zh_CN bundles.
+
+**Follow-ups:**
+- [ ] (Low) Manual smoke: frequency=Often → saying within ~4 min idle; LLM quip with a real profile.
+- [ ] (Low) Persona pool text can overwrite a saying bubble via `updateMessage` when an event
+  with an empty catalog tip arrives while a saying shows (found in Task 9 review;
+  mainwindow.cpp persona handler could skip when `bubbleType() == StatusBubble`).
 
 ---
 

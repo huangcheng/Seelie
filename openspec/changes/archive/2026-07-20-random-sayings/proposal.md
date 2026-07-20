@@ -1,3 +1,8 @@
+> **ARCHIVED 2026-07-20 — absorbed by the Pet Aliveness change.**
+> Shipped design: `docs/superpowers/specs/2026-07-20-pet-aliveness-design.md`
+> (amended: persona-era LLM idle quips, disk-first sayings override, all three animation engines).
+> Implementation plan: `docs/superpowers/plans/2026-07-20-pet-aliveness.md`.
+
 ## Why
 
 Qlippy currently only speaks when the `TipsEngine` detects a specific coding pattern (repeated errors, rapid edits, etc.). This makes the pet feel reactive rather than alive. Adding random idle sayings — humorous, encouraging, or contextual quips that appear when Qlippy is idle — will make the desktop pet feel more like a companion and less like a notification system.
