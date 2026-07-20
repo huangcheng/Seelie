@@ -29,10 +29,13 @@ public:
     using RngFn  = std::function<double()>;
     using GateFn = std::function<bool()>;
 
+    // Non-owning. Caller must ensure config and persona outlive this engine
+    // (in practice all three are created together in main() / MainWindow).
     IdleBehaviorEngine(ConfigManager *config, PersonaEngine *persona,
                        QObject *parent = nullptr);
 
-    /** Combined "pet idle & bubble-free" gate, supplied by MainWindow. */
+    /** Combined "pet idle & bubble-free" gate, supplied by MainWindow.
+     *  The lambda's captures must not outlive this engine. */
     void setCanShowGate(GateFn fn) { m_canShow = std::move(fn); }
 
     /** Call on every EventRouter::eventProcessed — resets the idle clock. */
