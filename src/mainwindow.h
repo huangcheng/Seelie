@@ -8,12 +8,14 @@
 #include <QMenu>
 
 #include "AnimationEngine.h"
+#include "CharacterPack.h"
 #include "ConfigManager.h"
 #include "StrokeDetector.h"
 
 class MemoryManager;
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
+class Model3DEngine;
 class Live2DAnimationEngine;  // forward-declared even when SEELIE_LIVE2D_SUPPORT
                               // is off so the m_live2dEngine pointer-member
                               // stays declared and accessor short-circuits
@@ -161,6 +163,12 @@ private:
 
     SpriteAnimationEngine *m_engine;
     LottieAnimationEngine *m_lottieEngine;
+    Model3DEngine *m_model3dEngine = nullptr;
+    // Engine that owns the ACTIVE pack. Dispatch routes here first so a
+    // stopped-but-still-loaded engine from a previously loaded pack can't
+    // swallow events after a pack switch (it would still report
+    // hasAnimations()==true).
+    CharacterPack::EngineType m_activeEngineType = CharacterPack::EngineType::Lottie;
     Live2DAnimationEngine *m_live2dEngine = nullptr;  // always null when
                                                       // SEELIE_LIVE2D_SUPPORT off
 #ifdef SEELIE_TTS_ENABLED

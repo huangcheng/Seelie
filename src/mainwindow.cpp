@@ -5,6 +5,7 @@
 #ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
+#include "model3d/Model3DEngine.h"
 #ifdef SEELIE_TTS_ENABLED
 #include "TTSEngine.h"
 #endif
@@ -86,6 +87,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 #ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine = new Live2DAnimationEngine(this);
 #endif
+    m_model3dEngine = new Model3DEngine(this);
 
     // Create floating widgets
     m_tipWidget = new TipWidget(nullptr); // no parent — separate top-level widget
@@ -176,6 +178,8 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             this, QOverload<>::of(&QWidget::update));
     connect(m_lottieEngine, &LottieAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
+    connect(m_model3dEngine, &Model3DEngine::frameChanged,
+            this, QOverload<>::of(&QWidget::update));
 #ifdef SEELIE_LIVE2D_SUPPORT
     connect(m_live2dEngine, &Live2DAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
@@ -258,12 +262,22 @@ void MainWindow::dispatchAnimation(const QString &anim,
                                    AnimationEngine::Priority priority)
 {
     if (anim.isEmpty()) return;
-#ifdef SEELIE_LIVE2D_SUPPORT
-    if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-        m_live2dEngine->playAnimation(anim, priority);
+    // Route to the engine that owns the ACTIVE pack first — a stopped engine
+    // from a previously loaded pack still has hasAnimations()==true and
+    // would otherwise swallow events after a pack switch.
+    if (m_activeEngineType == CharacterPack::EngineType::Model3D &&
+        m_model3dEngine && m_model3dEngine->hasAnimations()) {
+        m_model3dEngine->playAnimation(anim, priority);
         return;
     }
+    if (m_activeEngineType == CharacterPack::EngineType::Live2D) {
+#ifdef SEELIE_LIVE2D_SUPPORT
+        if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+            m_live2dEngine->playAnimation(anim, priority);
+            return;
+        }
 #endif
+    }
     if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
         m_lottieEngine->playAnimation(anim, priority);
         return;
@@ -277,12 +291,20 @@ void MainWindow::dispatchAnimationChain(const QStringList &chain,
                                         AnimationEngine::Priority priority)
 {
     if (chain.isEmpty()) return;
-#ifdef SEELIE_LIVE2D_SUPPORT
-    if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-        m_live2dEngine->playAnimationChain(chain, priority);
+    // Active pack's engine takes precedence — see dispatchAnimation() above.
+    if (m_activeEngineType == CharacterPack::EngineType::Model3D &&
+        m_model3dEngine && m_model3dEngine->hasAnimations()) {
+        m_model3dEngine->playAnimation(chain.first(), priority);
         return;
     }
+    if (m_activeEngineType == CharacterPack::EngineType::Live2D) {
+#ifdef SEELIE_LIVE2D_SUPPORT
+        if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+            m_live2dEngine->playAnimationChain(chain, priority);
+            return;
+        }
 #endif
+    }
     if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
         m_lottieEngine->playAnimation(chain.first(), priority);
         return;
@@ -378,6 +400,15 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
         }
     } else
 #endif
+    if (m_model3dEngine && m_model3dEngine->isPlaying()) {
+        if (m_model3dEngine->lastPaintSuccessful()) {
+            m_model3dEngine->paint(&painter, pet);
+        } else if (m_lottieEngine && m_lottieEngine->isPlaying()) {
+            m_lottieEngine->paint(&painter, pet);
+        } else if (m_engine) {
+            m_engine->paint(&painter, pet);
+        }
+    } else
     if (m_lottieEngine && m_lottieEngine->isPlaying()) {
         m_lottieEngine->paint(&painter, pet);
     } else if (m_engine) {
@@ -1327,6 +1358,7 @@ void MainWindow::onActivePackChanged()
     // Live2D frame squished into the sprite pack's smaller petRect.
     m_engine->stop();
     m_lottieEngine->stop();
+    m_model3dEngine->stop();
 #ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine->stop();
 #endif
@@ -1362,6 +1394,11 @@ void MainWindow::onActivePackChanged()
     }
 #endif
 
+    m_activeEngineType = pack->characterConfig().engineType;
+
+    if (pack->characterConfig().engineType == CharacterPack::EngineType::Model3D) {
+        m_model3dEngine->loadFromCharacterPack(pack);
+    } else
 #ifdef SEELIE_LIVE2D_SUPPORT
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
         m_live2dEngine->loadFromCharacterPack(pack);
