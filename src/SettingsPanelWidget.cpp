@@ -654,6 +654,31 @@ void SettingsPanelWidget::setupUi()
     interactGrid->addWidget(m_touchReactionsLabel, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
     interactGrid->addWidget(m_touchReactionsCheck, 2, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+    m_sayingsLabel = new QLabel(tr("Idle Sayings"), m_contentWidget);
+    m_sayingsLabel->setFont(harmonyFont(10));
+    m_sayingsLabel->setStyleSheet("color: black; background: transparent;");
+    m_sayingsLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_sayingsCombo = new QComboBox(m_contentWidget);
+    m_sayingsCombo->addItem(tr("Never"),     static_cast<int>(ConfigManager::SayingFrequency::Never));
+    m_sayingsCombo->addItem(tr("Rarely"),    static_cast<int>(ConfigManager::SayingFrequency::Rarely));
+    m_sayingsCombo->addItem(tr("Sometimes"), static_cast<int>(ConfigManager::SayingFrequency::Sometimes));
+    m_sayingsCombo->addItem(tr("Often"),     static_cast<int>(ConfigManager::SayingFrequency::Often));
+    m_sayingsCombo->setCurrentIndex(static_cast<int>(m_config->sayingFrequency()));
+    connect(m_sayingsCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int idx) {
+        m_config->setSayingFrequency(static_cast<ConfigManager::SayingFrequency>(
+            m_sayingsCombo->itemData(idx).toInt()));
+    });
+    connect(m_config, &ConfigManager::sayingFrequencyChanged,
+            this, [this](ConfigManager::SayingFrequency f) {
+        QSignalBlocker blocker(m_sayingsCombo);
+        m_sayingsCombo->setCurrentIndex(static_cast<int>(f));
+    });
+
+    interactGrid->addWidget(m_sayingsLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_sayingsCombo, 3, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     // --- AI Features group: TTS + persona toggles ---
     m_aiFeaturesGroup = makeSectionGroup(tr("AI Features"));
     auto *aiGrid = makeGroupGrid(m_aiFeaturesGroup);
@@ -881,6 +906,18 @@ void SettingsPanelWidget::setupUi()
         m_shareMemoryCheck->setToolTip(tr("Sends your name, profile bio, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
         m_shareMemoryCheck->setStyleSheet(m_autoStartCheck->styleSheet());
         privLayout->addWidget(m_shareMemoryCheck);
+        m_llmIdleQuipsCheck = new CheckMarkBox(tr("Occasional AI idle quips"), privacyGroup);
+        m_llmIdleQuipsCheck->setToolTip(tr("When the pet is idle, it may occasionally send a short prompt (plus your memory digest if 'Share memory with AI' is on) to the configured AI provider to generate a fresh quip."));
+        m_llmIdleQuipsCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+        m_llmIdleQuipsCheck->setChecked(m_config->llmIdleQuipsEnabled());
+        privLayout->addWidget(m_llmIdleQuipsCheck);
+        connect(m_llmIdleQuipsCheck, &QCheckBox::toggled,
+                this, [this](bool on) { m_config->setLLMIdleQuipsEnabled(on); });
+        connect(m_config, &ConfigManager::llmIdleQuipsEnabledChanged,
+                this, [this](bool on) {
+            QSignalBlocker blocker(m_llmIdleQuipsCheck);
+            m_llmIdleQuipsCheck->setChecked(on);
+        });
         llmLayout->addWidget(privacyGroup);
 
         // --- Regenerate button (inline — no group box needed for a single action) ---
@@ -1537,6 +1574,11 @@ void SettingsPanelWidget::retranslateUi()
         m_shareMemoryCheck->setText(tr("Share memory with AI"));
         m_shareMemoryCheck->setToolTip(tr("Sends your name, profile bio, relationship stats (bond, affection, sessions), and recent activity summaries to the AI provider with each on-demand event."));
     }
+    if (m_llmIdleQuipsCheck) {
+        m_llmIdleQuipsCheck->setText(tr("Occasional AI idle quips"));
+        m_llmIdleQuipsCheck->setToolTip(tr("When the pet is idle, it may occasionally send a short prompt (plus your memory digest if 'Share memory with AI' is on) to the configured AI provider to generate a fresh quip."));
+    }
+    if (m_sayingsLabel) m_sayingsLabel->setText(tr("Idle Sayings"));
     if (m_regenPoolBtn) {
         m_regenPoolBtn->setText(tr("Regenerate pool"));
         m_regenPoolBtn->setToolTip(tr("Wipe cached LLM responses for the active pack so they will be regenerated."));

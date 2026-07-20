@@ -159,6 +159,8 @@ private:
     QCheckBox *m_tipBubblesCheck = nullptr;
     QLabel *m_touchReactionsLabel = nullptr;
     QCheckBox *m_touchReactionsCheck = nullptr;
+    QLabel *m_sayingsLabel = nullptr;
+    QComboBox *m_sayingsCombo = nullptr;
     QLabel *m_personaEnabledLabel = nullptr;
 
     // Tab buttons (left side)
@@ -189,6 +191,7 @@ private:
     QPushButton  *m_llmTestBtn = nullptr;
     QCheckBox    *m_personaEnabledCheck = nullptr;
     QCheckBox    *m_shareMemoryCheck = nullptr;
+    QCheckBox    *m_llmIdleQuipsCheck = nullptr;
     QPushButton  *m_regenPoolBtn = nullptr;
     QLabel       *m_llmLastErrorLabel = nullptr;
     LlmStatusKind m_llmStatusKind = LlmStatusKind::Default;
