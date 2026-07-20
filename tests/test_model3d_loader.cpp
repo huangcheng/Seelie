@@ -1,5 +1,9 @@
 #include <QtTest>
+#include <QTemporaryDir>
+#include <QDir>
+#include <QFile>
 #include "model3d/GltfLoader.h"
+#include "CharacterPack.h"
 
 class TestModel3DLoader : public QObject
 {
@@ -10,6 +14,7 @@ private slots:
     void loadsMesh();
     void loadsTexture();
     void rejectsMissingFile();
+    void manifestParsesModel3DFields();
 };
 
 static QString glbPath()
@@ -79,6 +84,45 @@ void TestModel3DLoader::rejectsMissingFile()
     QString err;
     QVERIFY(!GltfLoader::loadFromFile(QStringLiteral("/nonexistent.glb"), model, &err));
     QVERIFY(!err.isEmpty());
+}
+
+static QString writeTestPack(QTemporaryDir &dir)
+{
+    // Minimal model3d pack: manifest + symlinked test GLB.
+    const QString packDir = dir.path() + "/cube3d";
+    QDir().mkpath(packDir);
+    QFile::copy(QStringLiteral(SOURCE_DIR) + "/tests/data/rig_cube.glb",
+                packDir + "/model.glb");
+    QFile f(packDir + "/manifest.json");
+    f.open(QIODevice::WriteOnly);
+    f.write(R"JSON({
+  "formatVersion": "1.0.0",
+  "id": "test.cube3d", "name": "Cube3D", "author": "test", "version": "1.0.0",
+  "character": { "type": "model3d", "model": "model.glb",
+                 "frameWidth": 124, "frameHeight": 200,
+                 "cameraDistance": 0.0, "cameraHeight": 0.0,
+                 "unitScale": 1.0, "upAxis": "y" },
+  "idlePool": [ {"name": "Idle", "weight": 1} ],
+  "eventMap": { "session.start": "Wave" },
+  "stateMap": {}
+})JSON");
+    f.close();
+    return packDir;
+}
+
+void TestModel3DLoader::manifestParsesModel3DFields()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    CharacterPack pack;
+    QVERIFY(pack.loadFromDirectory(writeTestPack(dir)));
+    QCOMPARE(pack.characterConfig().engineType, CharacterPack::EngineType::Model3D);
+    QCOMPARE(pack.characterConfig().modelFile, QStringLiteral("model.glb"));
+    QCOMPARE(pack.characterConfig().frameWidth, 124);
+    QCOMPARE(pack.characterConfig().frameHeight, 200);
+    QVERIFY(qAbs(pack.characterConfig().unitScale - 1.0f) < 1e-6f);
+    QCOMPARE(pack.characterConfig().upAxis, QStringLiteral("y"));
+    QVERIFY(pack.assetPath(pack.characterConfig().modelFile).endsWith("model.glb"));
 }
 
 QTEST_MAIN(TestModel3DLoader)

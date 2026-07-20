@@ -32,7 +32,8 @@ public:
     enum class EngineType {
         Lottie,      ///< Lottie JSON vector animations
         SpriteSheet, ///< Sprite sheet with frame grid
-        Live2D       ///< Live2D Cubism model
+        Live2D,      ///< Live2D Cubism model
+        Model3D      ///< Skeletal 3D glTF/GLB model
     };
 
     /**
@@ -120,6 +121,11 @@ public:
         QString animDirectory;    ///< Directory containing Lottie files (for Lottie type)
         QString definitions;      ///< Path to animations.json (for SpriteSheet type, optional)
         QString modelJson;        ///< Path to .model3.json (for Live2D type)
+        QString modelFile;        ///< Path to .glb (for Model3D type)
+        float cameraDistance = 0.0f; ///< Model3D: 0 = auto-fit bind-pose bbox
+        float cameraHeight = 0.0f;   ///< Model3D: 0 = auto (bbox center Y)
+        float unitScale = 1.0f;      ///< Model3D: e.g. 0.01 for cm-scaled exports
+        QString upAxis = QStringLiteral("y"); ///< Model3D: "y" (glTF default) or "z"
         float displayScale = 1.0f;///< Window-size multiplier over frameWidth/Height (default 1.0).
                                   ///< Sprite sheets can set e.g. 2.0 to render the 124×93 art at 248×186
                                   ///< so it looks comparable in size to 300×300 Live2D packs.

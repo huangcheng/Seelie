@@ -579,6 +579,8 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
         m_characterConfig.engineType = EngineType::SpriteSheet;
     } else if (typeStr == "live2d") {
         m_characterConfig.engineType = EngineType::Live2D;
+    } else if (typeStr == "model3d") {
+        m_characterConfig.engineType = EngineType::Model3D;
     } else {
         qWarning() << "CharacterPack: Unknown character type:" << typeStr;
         return false;
@@ -591,6 +593,14 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
         m_characterConfig.modelJson = character.value("model").toString();
         m_characterConfig.frameWidth = character.value("frameWidth").toInt(200);
         m_characterConfig.frameHeight = character.value("frameHeight").toInt(200);
+    } else if (m_characterConfig.engineType == EngineType::Model3D) {
+        m_characterConfig.modelFile = character.value("model").toString();
+        m_characterConfig.frameWidth = character.value("frameWidth").toInt(200);
+        m_characterConfig.frameHeight = character.value("frameHeight").toInt(200);
+        m_characterConfig.cameraDistance = float(character.value("cameraDistance").toDouble(0.0));
+        m_characterConfig.cameraHeight = float(character.value("cameraHeight").toDouble(0.0));
+        m_characterConfig.unitScale = float(character.value("unitScale").toDouble(1.0));
+        m_characterConfig.upAxis = character.value("upAxis").toString(QStringLiteral("y"));
     } else {
         m_characterConfig.spriteSheet = character.value("spriteSheet").toString();
         m_characterConfig.frameWidth = character.value("frameWidth").toInt();
