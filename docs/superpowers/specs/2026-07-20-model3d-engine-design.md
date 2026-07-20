@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-20 · **Status:** draft (pending user review)
 **Branch strategy:** feature branch merged back to `main` as a fourth engine (user decision — no product fork)
+**Council review:** incorporated 2026-07-20 — clip loop/completion semantics, root-motion clamp, bind-pose camera auto-fit, coordinate/unit normalization (`upAxis`/`unitScale`), sRGB + premultiplied-alpha handling, uniform-limit query + mat3×4 fallback, QOpenGLFunctions-only (no GLEW), per-engine GL contexts + `recoverOpenGL()` parity, `frameWidth`/`frameHeight` manifest fields, v2 deferral of hit-testing/auto-crop/pointer-tracking.
 
 ## Why
 
@@ -27,6 +28,7 @@ Seelie's three engines are capped by their asset formats: Live2D models ship fix
 
 **Non-goals (v1)**
 - No morph targets, no clip crossfading (hard cuts), no PBR beyond baseColor texture + hemisphere lighting, no physics/ragdoll, no runtime FBX, no user camera controls, no multi-character scenes.
+- **Deferred to v2 (council review):** per-pixel 3D hit-testing (ray-casting against meshes — window-level input like the other engines is sufficient for parity), Live2D-style delayed auto-crop of the window, pointer-tracking/head-look (Live2D's `setPointerTarget` is a concrete-class extra, not part of the `AnimationEngine` interface).
 
 ## Architecture
 
@@ -58,9 +60,19 @@ Sits behind a narrow `IModelLoader`-style seam (load → plain structs) so `ufbx
 
 Given a clip + local time, evaluates translation/rotation(slerp)/scale tracks per joint (step + linear interpolation; cubic-spline only if trivial), walks the hierarchy to model-space joint matrices, multiplies by inverse bind matrices → final skinning palette (≤64 joints). Pure math, unit-testable without GL.
 
+**Clip semantics (council amendment):** glTF clips carry no loop flag, so the engine defines it by mapping origin: **idle-pool clips loop; event/state clips are one-shot** and emit an internal completion signal so the FSM can return to idle (needed for Tossed → idle). Duration-0 clips render as a static pose. Joints missing from a track hold bind pose — never snap to zero. **Root-motion policy:** root-joint translation is clamped to the bind-pose XZ position (clips that walk the character would otherwise leave the frame; Y/bobbing is preserved).
+
 ### 3. `GLSkinningRenderer` (`src/model3d/GLSkinningRenderer.h/.cpp`)
 
-Owns GL resources: VBO/VAO per mesh, baseColor texture, skinning vertex shader (joint palette uniform, 4 influences), fragment shader (baseColor texture × hemisphere lighting — simple ambient + directional wrap, tuned for stylized models). Perspective camera **auto-fit to the model's bounding box** (any imported model frames sensibly in the 124×200 window); manifest may override with `cameraDistance`/`cameraHeight`. Transparent clear color; renders into the FBO like `Live2DAnimationEngine`.
+Owns GL resources: VBO/VAO per mesh, baseColor texture, skinning vertex shader (joint palette uniform, 4 influences), fragment shader (baseColor texture × hemisphere lighting — simple ambient + directional wrap, tuned for stylized models; `KHR_materials_unlit` models render as plain baseColor). Perspective camera **auto-fit to the bind-pose bounding box** (never the per-frame animated bbox — that would make the camera jump during animation), recentering off-origin geometry; manifest may override with `cameraDistance`/`cameraHeight`. Transparent clear color; renders into the FBO like `Live2DAnimationEngine`.
+
+**Hard constraints (council amendments):**
+- **Qt GL wrappers only — no GLEW.** Model3D uses `QOpenGLFunctions`/`QOpenGLShaderProgram`/`QOpenGLBuffer` exclusively. GLEW's function pointers are process-global; keeping a second GL loader out of the process eliminates the Live2D coexistence hazard (esp. Windows desktop-GL/ANGLE mixes).
+- **Uniform-limit query at load.** GL 2.1 only guarantees 512 vertex uniform components (vec4s) = 32 mat4 palettes, so a 64×mat4 palette (256 vec4s) fits the minimum but leaves no headroom on near-limit drivers. Query `GL_MAX_VERTEX_UNIFORM_COMPONENTS` at load; if the mat4 palette won't fit, fall back to a mat3×4 palette (3 vec4s/joint → 64 joints = 192 vec4s) or a lowered joint cap. Warn loudly at load when a model's joint count exceeds the safe palette (many Mixamo rigs exceed 64 joints — "clamp to first 64" silently drops fingers/leaf joints, so the authoring doc must call this out).
+- **sRGB:** glTF baseColor is sRGB; `GL_FRAMEBUFFER_SRGB` isn't guaranteed on a 2.1 compat context — decode/encode in the fragment shader.
+- **Premultiplied alpha:** clear color transparent; blending/shader output verified against FBO `toImage()`'s premultiplied format for correct QPainter compositing.
+- **Coordinate normalization at load:** glTF is Y-up/right-handed/meters, but Blender FBX round-trips routinely arrive Z-up or ×100 scale. Normalization pass + manifest `upAxis`/`unitScale` overrides; auto-fit is not trusted to absorb it.
+- **Context strategy:** per-engine `QOffscreenSurface` + `QOpenGLContext`, no share groups, same format as Live2D (GL 2.1 compat, 24/8 depth-stencil → no driver surprises, GLSL 120 skinning fits). Strict `makeCurrent()`/`doneCurrent()` discipline; port Live2D's `recoverOpenGL()` context-loss recovery pattern.
 
 ### 4. `Model3DEngine` (`src/model3d/Model3DEngine.h/.cpp`)
 
@@ -79,16 +91,20 @@ Manifest (`CharacterPack.cpp:474-560` parsing, engineType parsed at ~579-590):
   "character": {
     "engineType": "model3d",
     "modelFile": "model.glb",        // GLB with embedded textures + clips
+    "frameWidth": 124,                // REQUIRED — MainWindow sizes the window
+    "frameHeight": 200,               //   from these × displayScale (mainwindow.cpp:1300-1311)
     "displayScale": 1.0,              // optional uniform scale
-    "cameraDistance": 0.0,            // optional; 0 = auto-fit bounding box
-    "cameraHeight": 0.0               // optional; 0 = auto (bbox center)
+    "cameraDistance": 0.0,            // optional; 0 = auto-fit bind-pose bbox
+    "cameraHeight": 0.0,              // optional; 0 = auto (bbox center)
+    "upAxis": "y",                    // optional; "y"|"z" normalization override
+    "unitScale": 1.0                  // optional; e.g. 0.01 for cm-scaled exports
   },
   "eventMap": { "session.start": "Wave", ... },   // existing keys, clip names
   "idlePool": [ {"animationName": "Idle", "weight": 3}, ... ],
   "stateMap": { "Petted": "Happy", "Tossed": "Spin", ... }
 }
 ```
-`CharacterPack::EngineType` gains `Model3D`; engine switching in `mainwindow.cpp:1334-1365` gains a Model3D branch. Unknown clip names in any mapping are filtered at load (never crash on a user-imported pack).
+`CharacterPack::EngineType` gains `Model3D`; engine switching in `mainwindow.cpp:1334-1365` gains a Model3D branch (and the stop-all block at :1323-1327 gains a Model3D line). Unknown clip names in any mapping are filtered at load (never crash on a user-imported pack). The Live2D-style delayed auto-crop (`mainwindow.cpp:1377-1399`) is **not** applied to Model3D in v1 (deferred — see non-goals).
 
 ### 6. Conversion tooling
 
@@ -109,12 +125,13 @@ Manifest (`CharacterPack.cpp:474-560` parsing, engineType parsed at ~579-590):
 | GLB has no skin (static mesh) | Loads; clips ignored; renders static model (still a valid pack) |
 | GLB has no animations | Loads; idle pool empty → engine idles on bind pose (Live2D-style fallback) |
 | Manifest clip names missing in model | Skipped at load with log; fallbacks apply |
-| >64 joints | Clamp palette to first 64 joints with a load-time warning (documented limit) |
+| >64 joints | Query uniform limit at load; mat3×4 fallback or lowered cap; **loud load-time warning** (Mixamo rigs often exceed 64 — silent clamping would drop finger/leaf joints) |
 | GL context init failure | Same handling as Live2D (`lastPaintSuccessful`, engine fallback) |
+| GL context lost mid-session (GPU power-state change, DWM restart) | Port Live2D's `recoverOpenGL()` pattern: detect, recreate context + GL resources, resume |
 
 ## Testing (Qt Test)
 
-- **GltfLoader**: parse a tiny committed test GLB (2-joint rigged cube, 2 clips, few KB, generated once by `scripts/make_test_glb.py` and committed) — joint count, clip names, sampler data, texture decode.
+- **GltfLoader**: parse a tiny committed test GLB (2-joint rigged cube, 2 clips, few KB, generated by `scripts/make_test_glb.py` — a pure-Python GLB writer with pinned output, no Blender dependency in tests) — joint count, clip names, sampler data, texture decode.
 - **AnimationEvaluator**: interpolation math at t=0/mid/end against hand-computed values; palette correctness on the 2-joint rig.
 - **CharacterPack**: manifest with `engineType: "model3d"` parses; clip filtering drops missing names.
 - **Model3DEngine**: idle anti-repeat (pool >1), priority/queue semantics via a stub renderer (no GL needed for logic paths); offscreen render smoke test (FBO non-empty) guarded like Live2D's GL tests (skip when no GL).
