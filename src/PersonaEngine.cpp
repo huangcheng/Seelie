@@ -206,7 +206,14 @@ PersonaEngine::Resolved PersonaEngine::resolveOnDemand(const QString &eventName,
         "Reply with ONE short sentence in %1. Do not add quotes, "
         "translation, or commentary — just the sentence itself.").arg(lang);
     QString userPrompt;
-    if (shareMemory) {
+    if (eventName == QLatin1String("idle.quip")) {
+        // Ambient one-liner, not an event reaction. The memory/name/bio
+        // blocks below still apply behind the shareMemoryWithAi gate.
+        userPrompt = QStringLiteral(
+            "You're idling on the user's desktop. Say one short ambient "
+            "in-character line — an observation, gentle humor, or quiet "
+            "encouragement. No questions, no exclamation marks.");
+    } else if (shareMemory) {
         userPrompt = QStringLiteral("Event: %1\nRecent events: %2\nReact in-character.")
                       .arg(eventName, recent.join(QStringLiteral(", ")));
     } else {

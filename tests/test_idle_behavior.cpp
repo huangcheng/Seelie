@@ -3,6 +3,7 @@
 #include "SayingPool.h"
 #include "ConfigManager.h"
 #include "IdleBehaviorEngine.h"
+#include "PersonaEngine.h"
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -30,6 +31,9 @@ private slots:
     void engine_eventResetsClock();
     void engine_gateBlocksSilently();
     void engine_neverDisables();
+    // --- PersonaEngine idle.quip ---
+    void persona_idleQuipIsOnDemand();
+    void persona_idleQuipNoProfile();
 };
 
 // Helper: engine with fake clock/rng, canned-only (persona == nullptr).
@@ -252,6 +256,23 @@ void TestIdleBehavior::engine_neverDisables()
     fx.now += 10'000'000;
     engine.tick();
     QCOMPARE(spy.count(), 0);
+}
+
+void TestIdleBehavior::persona_idleQuipIsOnDemand()
+{
+    QCOMPARE(PersonaEngine::tierFor(QStringLiteral("idle.quip")),
+             PersonaEngine::Tier::OnDemand);
+}
+
+void TestIdleBehavior::persona_idleQuipNoProfile()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();   // persona disabled, no profile
+    PersonaEngine persona(nullptr, &cfg);
+    const PersonaEngine::Resolved r =
+        persona.resolve(QStringLiteral("idle.quip"), QJsonObject{});
+    // No LLM call may be fired; caller falls back to canned.
+    QCOMPARE(r.requestId, quint64(0));
 }
 
 QTEST_MAIN(TestIdleBehavior)
