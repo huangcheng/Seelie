@@ -1,4 +1,5 @@
 #include "GLSkinningRenderer.h"
+#include "AnimationEvaluator.h"
 
 #include <QOpenGLShaderProgram>
 #include <QOpenGLFramebufferObject>
@@ -111,6 +112,9 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
         g.unlit = p.material >= 0 && p.material < model.materials.size()
                   && model.materials[p.material].unlit;
         g.indexCount = p.indices.size();
+        g.skinned = p.skinned;
+        g.attachedJoint = p.attachedJoint;
+        g.attachTransform = p.attachTransform;
         glGenBuffers(1, &g.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, g.vbo);
         glBufferData(GL_ARRAY_BUFFER, p.vertices.size() * int(sizeof(Model3DVertex)),
@@ -143,14 +147,40 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
 
 void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
 {
-    // Bind-pose bbox (NOT per-frame — an animated bbox makes the camera jump).
+    // Bind-pose bbox in WORLD space (NOT per-frame — an animated bbox makes
+    // the camera jump). For models with armature-local vertices (Blender
+    // exports like RobotExpressive), raw vertex positions are tiny and the
+    // palette/attachTransform must be applied to get world coordinates.
+    QVector<QMatrix4x4> palette, globals;
+    AnimationEvaluator::evaluate(model, nullptr, 0.0f, false, palette, &globals);
+
     QVector3D mn( 1e9f,  1e9f,  1e9f), mx(-1e9f, -1e9f, -1e9f);
-    for (const Model3DPrimitive &p : model.primitives)
+    for (const Model3DPrimitive &p : model.primitives) {
+        QMatrix4x4 rigidXform;
+        if (!p.skinned) {
+            rigidXform = (p.attachedJoint >= 0 && p.attachedJoint < globals.size())
+                ? globals[p.attachedJoint] * p.attachTransform
+                : p.attachTransform;
+        }
         for (const Model3DVertex &v : p.vertices) {
-            const QVector3D q(v.px, v.py, v.pz);
+            QVector3D q;
+            if (p.skinned) {
+                QVector4D sum(0, 0, 0, 0);
+                for (int k = 0; k < 4; ++k) {
+                    if (v.weights[k] <= 0.0f) continue;
+                    const int j = v.joints[k];
+                    if (j < 0 || j >= palette.size()) continue;
+                    const QVector4D pv = palette[j].map(QVector4D(v.px, v.py, v.pz, 1.0f));
+                    sum += pv * v.weights[k];
+                }
+                q = sum.toVector3D();
+            } else {
+                q = rigidXform.map(QVector3D(v.px, v.py, v.pz));
+            }
             mn = QVector3D(qMin(mn.x(), q.x()), qMin(mn.y(), q.y()), qMin(mn.z(), q.z()));
             mx = QVector3D(qMax(mx.x(), q.x()), qMax(mx.y(), q.y()), qMax(mx.z(), q.z()));
         }
+    }
     if (mn.x() > mx.x()) {   // no vertices — degenerate model
         m_fitDistance = 5.0f;
         m_fitCenterY = 0.5f;
@@ -177,7 +207,8 @@ void GLSkinningRenderer::setCameraOverrides(float distance, float height)
 }
 
 void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
-                                const QVector<QMatrix4x4> &palette)
+                                const QVector<QMatrix4x4> &palette,
+                                const QVector<QMatrix4x4> &globalJoints)
 {
     if (!m_program || !fbo) return;
 
@@ -199,13 +230,12 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
     m_program->setUniformValue("uMVP", mvp);
     m_program->setUniformValue("uModel", m_modelMatrix);
 
-    // Upload the palette (identity fallback for unskinned models), capped to
-    // the uniform limit queried in initialize().
+    // Per-primitive palette upload:
+    //  - skinned primitives use the full joint palette (capped to m_maxJoints);
+    //  - rigid primitives upload a 1-entry palette = globalJoints[attachedJoint]
+    //    * attachTransform (or just attachTransform if no joint ancestor),
+    //    reused via slot 0 since static verts have weight[0]=1, joint[0]=0.
     QMatrix4x4 joints[64];
-    const int n = qMin(qMin(palette.size(), m_maxJoints), 64);
-    for (int i = 0; i < qMax(n, 1); ++i)
-        joints[i] = (i < n) ? palette[i] : QMatrix4x4();
-    m_program->setUniformValueArray("uJoints", joints, qMax(n, 1));
 
     const int aPos = m_program->attributeLocation("aPos");
     const int aNrm = m_program->attributeLocation("aNormal");
@@ -215,6 +245,18 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
     m_program->setUniformValue("uTexture", 0);
 
     for (const PrimitiveGL &g : m_prims) {
+        if (g.skinned) {
+            const int n = qMin(qMin(palette.size(), m_maxJoints), 64);
+            for (int i = 0; i < qMax(n, 1); ++i)
+                joints[i] = (i < n) ? palette[i] : QMatrix4x4();
+            m_program->setUniformValueArray("uJoints", joints, qMax(n, 1));
+        } else {
+            joints[0] = (g.attachedJoint >= 0 && g.attachedJoint < globalJoints.size())
+                ? globalJoints[g.attachedJoint] * g.attachTransform
+                : g.attachTransform;
+            m_program->setUniformValueArray("uJoints", joints, 1);
+        }
+
         const bool hasTex = g.material >= 0 && g.material < m_textures.size()
                             && m_textures[g.material] != 0;
         m_program->setUniformValue("uHasTexture", hasTex ? 1 : 0);

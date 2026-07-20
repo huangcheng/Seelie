@@ -17,11 +17,14 @@ class AnimationEvaluator
 {
 public:
     // clip may be nullptr -> bind pose. outPalette resized to joint count.
+    // If outGlobal is non-null it receives the joint world transforms BEFORE
+    // the inverse-bind multiply (needed for rigid bone-parented primitives).
     static void evaluate(const Model3DModel &model,
                          const Model3DClip *clip,
                          float timeSec,
                          bool loop,
-                         QVector<QMatrix4x4> &outPalette);
+                         QVector<QMatrix4x4> &outPalette,
+                         QVector<QMatrix4x4> *outGlobal = nullptr);
 };
 
 #endif // MODEL3D_ANIMATION_EVALUATOR_H

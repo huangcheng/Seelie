@@ -29,7 +29,8 @@ public:
     bool initialize(QString *error);            // requires current context
     void upload(const Model3DModel &model);
     void render(QOpenGLFramebufferObject *fbo,
-                const QVector<QMatrix4x4> &palette);
+                const QVector<QMatrix4x4> &palette,
+                const QVector<QMatrix4x4> &globalJoints);
     void release();
 
     int maxJoints() const { return m_maxJoints; }  // from uniform-limit query
@@ -45,6 +46,9 @@ private:
         int indexCount = 0;
         int material = -1;
         bool unlit = false;          // KHR_materials_unlit
+        bool skinned = false;        // node had a skin -> use joint palette
+        int attachedJoint = -1;      // rigid: nearest joint ancestor
+        QMatrix4x4 attachTransform;  // rigid: chain from attachedJoint to mesh node
     };
     void fitCameraToBindPose(const Model3DModel &model);
 

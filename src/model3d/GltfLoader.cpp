@@ -2,6 +2,7 @@
 
 #include <QFileInfo>
 #include <QDebug>
+#include <QSet>
 
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
@@ -28,6 +29,26 @@ bool readAccessorFloats(const cgltf_accessor *acc, QVector<float> &out)
             return false;
     }
     return true;
+}
+
+// Compose a node's local TRS into a 4x4 (T * R * S, same convention as the
+// evaluator's hierarchy walk). glTF also permits a direct matrix; unused by
+// the robot but supported for completeness.
+QMatrix4x4 nodeLocalMatrix(const cgltf_node *n)
+{
+    QMatrix4x4 m;
+    if (n->has_matrix) {
+        m = toMat4(n->matrix);
+        return m;
+    }
+    if (n->has_translation)
+        m.translate(QVector3D(n->translation[0], n->translation[1], n->translation[2]));
+    if (n->has_rotation)
+        m.rotate(QQuaternion(n->rotation[3], n->rotation[0],
+                             n->rotation[1], n->rotation[2]));
+    if (n->has_scale)
+        m.scale(QVector3D(n->scale[0], n->scale[1], n->scale[2]));
+    return m;
 }
 
 } // namespace
@@ -71,14 +92,109 @@ bool GltfLoader::loadFromFile(const QString &path, Model3DModel &out, QString *e
         out.materials.append(m);
     }
 
-    // --- Mesh primitives ---
-    for (cgltf_size mi = 0; mi < data->meshes_count; ++mi) {
-        const cgltf_mesh &mesh = data->meshes[mi];
+    // --- Skeleton (first skin; v1 renders single-character packs) ---
+    // Built BEFORE meshes so the jointOf map is available for rigid
+    // primitive attachment lookup.
+    QHash<const cgltf_node *, int> jointOf;
+    if (data->skins_count > 0) {
+        const cgltf_skin &skin = data->skins[0];
+        const cgltf_size nj = skin.joints_count;
+        out.joints.resize(int(nj));
+        for (cgltf_size j = 0; j < nj; ++j) jointOf.insert(skin.joints[j], int(j));
+        QVector<float> ibm;
+        if (skin.inverse_bind_matrices &&
+            !readAccessorFloats(skin.inverse_bind_matrices, ibm)) {
+            cgltf_free(data);
+            return fail(QStringLiteral("failed reading inverse bind matrices"));
+        }
+        for (cgltf_size j = 0; j < nj; ++j) {
+            const cgltf_node *node = skin.joints[j];
+            Model3DJoint &jj = out.joints[int(j)];
+            jj.name = node->name ? QString::fromUtf8(node->name) : QStringLiteral("joint%1").arg(j);
+            jj.parent = -1;
+            // Parent = nearest ancestor that is also a joint.
+            for (const cgltf_node *p = node->parent; p; p = p->parent) {
+                if (jointOf.contains(p)) { jj.parent = jointOf.value(p); break; }
+            }
+            if (node->has_translation)
+                jj.bindT = QVector3D(node->translation[0], node->translation[1], node->translation[2]);
+            if (node->has_rotation)
+                jj.bindR = QQuaternion(node->rotation[3], node->rotation[0],
+                                       node->rotation[1], node->rotation[2]);
+            if (node->has_scale)
+                jj.bindS = QVector3D(node->scale[0], node->scale[1], node->scale[2]);
+            if (skin.inverse_bind_matrices)
+                jj.inverseBind = toMat4(ibm.constData() + j * 16);
+
+            // preTransform: product of NON-JOINT ancestor node transforms
+            // between this joint and its nearest JOINT ancestor (exclusive).
+            // For the robot, Bone's preTransform = RootNode × RobotArmature
+            // = scale(100) × rotX(-90°). Without this, joint globals are
+            // armature-local while IBMs are world-inverse, so the bind-pose
+            // palette equals armature⁻¹ and the model renders at 1/100 scale.
+            // Collect non-joint ancestors in top-down order (root first).
+            QVector<const cgltf_node *> chain;
+            for (const cgltf_node *p = node->parent; p; p = p->parent) {
+                if (jointOf.contains(p)) break;  // stop at nearest JOINT ancestor
+                chain.prepend(p);
+            }
+            QMatrix4x4 pre;
+            for (const cgltf_node *n : chain)
+                pre *= nodeLocalMatrix(n);
+            jj.preTransform = pre;
+        }
+    }
+
+    // --- Mesh primitives (node-aware) ---
+    // Iterate data->nodes (not data->meshes) so each primitive carries its
+    // referencing node's transform context. A mesh referenced by multiple
+    // nodes is processed exactly once — v1 takes the first referencing node.
+    QSet<const cgltf_mesh *> processedMeshes;
+    for (cgltf_size ni = 0; ni < data->nodes_count; ++ni) {
+        const cgltf_node *node = data->nodes + ni;
+        if (!node->mesh) continue;
+        if (processedMeshes.contains(node->mesh)) continue;
+        processedMeshes.insert(node->mesh);
+
+        // Per-node attachment info (computed once, applied to every primitive
+        // of this mesh).
+        const bool nodeSkinned = (node->skin != nullptr);
+        int attachedJoint = -1;
+        QMatrix4x4 attachTransform;
+        if (!nodeSkinned) {
+            // Rigid: find nearest joint ancestor by walking up parents.
+            const cgltf_node *jointAncestor = nullptr;
+            for (const cgltf_node *p = node; p; p = p->parent) {
+                if (jointOf.contains(p)) { jointAncestor = p; break; }
+            }
+            if (jointAncestor) {
+                attachedJoint = jointOf.value(jointAncestor);
+                // Chain from jointAncestor (exclusive) down to node (inclusive),
+                // top-down product. Walk up collecting, then reverse.
+                QVector<const cgltf_node *> chain;
+                for (const cgltf_node *p = node; p && p != jointAncestor; p = p->parent)
+                    chain.prepend(p);
+                for (const cgltf_node *n : chain)
+                    attachTransform *= nodeLocalMatrix(n);
+            } else {
+                // No joint ancestor: full chain from scene root down to node.
+                QVector<const cgltf_node *> chain;
+                for (const cgltf_node *p = node; p; p = p->parent)
+                    chain.prepend(p);
+                for (const cgltf_node *n : chain)
+                    attachTransform *= nodeLocalMatrix(n);
+            }
+        }
+
+        const cgltf_mesh &mesh = *node->mesh;
         for (cgltf_size pi = 0; pi < mesh.primitives_count; ++pi) {
             const cgltf_primitive &prim = mesh.primitives[pi];
             if (prim.type != cgltf_primitive_type_triangles) continue;
             Model3DPrimitive p;
             p.material = prim.material ? int(prim.material - data->materials) : -1;
+            p.skinned = nodeSkinned;
+            p.attachedJoint = attachedJoint;
+            p.attachTransform = attachTransform;
             const cgltf_accessor *pos = nullptr, *nrm = nullptr, *uv = nullptr,
                                  *jnt = nullptr, *wgt = nullptr;
             for (cgltf_size ai = 0; ai < prim.attributes_count; ++ai) {
@@ -122,41 +238,6 @@ bool GltfLoader::loadFromFile(const QString &path, Model3DModel &out, QString *e
                 for (cgltf_size ii = 0; ii < n; ++ii) p.indices[int(ii)] = uint32_t(ii);
             }
             out.primitives.append(p);
-        }
-    }
-
-    // --- Skeleton (first skin; v1 renders single-character packs) ---
-    if (data->skins_count > 0) {
-        const cgltf_skin &skin = data->skins[0];
-        const cgltf_size nj = skin.joints_count;
-        out.joints.resize(int(nj));
-        // Map cgltf node* -> joint index.
-        QHash<const cgltf_node *, int> jointOf;
-        for (cgltf_size j = 0; j < nj; ++j) jointOf.insert(skin.joints[j], int(j));
-        QVector<float> ibm;
-        if (skin.inverse_bind_matrices &&
-            !readAccessorFloats(skin.inverse_bind_matrices, ibm)) {
-            cgltf_free(data);
-            return fail(QStringLiteral("failed reading inverse bind matrices"));
-        }
-        for (cgltf_size j = 0; j < nj; ++j) {
-            const cgltf_node *node = skin.joints[j];
-            Model3DJoint &jj = out.joints[int(j)];
-            jj.name = node->name ? QString::fromUtf8(node->name) : QStringLiteral("joint%1").arg(j);
-            jj.parent = -1;
-            // Parent = nearest ancestor that is also a joint.
-            for (const cgltf_node *p = node->parent; p; p = p->parent) {
-                if (jointOf.contains(p)) { jj.parent = jointOf.value(p); break; }
-            }
-            if (node->has_translation)
-                jj.bindT = QVector3D(node->translation[0], node->translation[1], node->translation[2]);
-            if (node->has_rotation)
-                jj.bindR = QQuaternion(node->rotation[3], node->rotation[0],
-                                       node->rotation[1], node->rotation[2]);
-            if (node->has_scale)
-                jj.bindS = QVector3D(node->scale[0], node->scale[1], node->scale[2]);
-            if (skin.inverse_bind_matrices)
-                jj.inverseBind = toMat4(ibm.constData() + j * 16);
         }
     }
 

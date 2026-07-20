@@ -299,9 +299,9 @@ void Model3DEngine::renderFrame()
         return;
     }
     const Model3DClip *clip = (m_currentClip >= 0) ? &m_model.clips[m_currentClip] : nullptr;
-    QVector<QMatrix4x4> palette;
-    AnimationEvaluator::evaluate(m_model, clip, m_clipTimeSec, m_currentLoops, palette);
-    m_renderer->render(m_fbo, palette);
+    QVector<QMatrix4x4> palette, globals;
+    AnimationEvaluator::evaluate(m_model, clip, m_clipTimeSec, m_currentLoops, palette, &globals);
+    m_renderer->render(m_fbo, palette, globals);
     m_image = m_fbo->toImage();
     m_lastPaintSuccessful = !m_image.isNull();
     m_glContext->doneCurrent();

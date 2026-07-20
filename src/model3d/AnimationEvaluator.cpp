@@ -51,10 +51,12 @@ void AnimationEvaluator::evaluate(const Model3DModel &model,
                                   const Model3DClip *clip,
                                   float timeSec,
                                   bool loop,
-                                  QVector<QMatrix4x4> &outPalette)
+                                  QVector<QMatrix4x4> &outPalette,
+                                  QVector<QMatrix4x4> *outGlobal)
 {
     const int nj = model.joints.size();
     outPalette.resize(nj);
+    if (outGlobal) outGlobal->resize(nj);
     if (nj == 0) return;
 
     float t = 0.0f;
@@ -93,6 +95,9 @@ void AnimationEvaluator::evaluate(const Model3DModel &model,
 
     // Hierarchy walk. cgltf skin joints are not guaranteed parent-before-child,
     // so iterate until all globals are resolved (small n, trivially fast).
+    // preTransform folds in NON-JOINT ancestor node transforms (e.g. the
+    // robot's RobotArmature: scale(100) × rotX(-90°)) so joint globals match
+    // the coordinate frame the inverse-bind matrices were computed in.
     QVector<QMatrix4x4> global(nj);
     QVector<bool> done(nj, false);
     for (int remaining = nj; remaining > 0;) {
@@ -105,13 +110,18 @@ void AnimationEvaluator::evaluate(const Model3DModel &model,
             local.translate(localT[i]);
             local.rotate(localR[i]);
             local.scale(localS[i]);
-            global[i] = (p >= 0 ? global[p] : QMatrix4x4()) * local;
+            global[i] = (p >= 0 ? global[p] : QMatrix4x4())
+                        * model.joints[i].preTransform * local;
             done[i] = true;
             --remaining;
             progress = true;
         }
         if (!progress) break; // cycle — malformed skin, bail with partial pose
     }
+
+    if (outGlobal)
+        for (int i = 0; i < nj; ++i)
+            (*outGlobal)[i] = global[i];
 
     for (int i = 0; i < nj; ++i)
         outPalette[i] = global[i] * model.joints[i].inverseBind;

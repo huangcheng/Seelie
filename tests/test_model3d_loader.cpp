@@ -66,6 +66,8 @@ void TestModel3DLoader::loadsMesh()
     QCOMPARE(model.primitives[0].vertices[0].joints[0], 0);
     QVERIFY(qAbs(model.primitives[0].vertices[0].weights[0] - 1.0f) < 1e-6f);
     QCOMPARE(model.primitives[0].vertices[4].joints[0], 1);
+    // rig_cube's mesh node has a skin attribute -> primitive is skinned.
+    QVERIFY(model.primitives[0].skinned);
 }
 
 void TestModel3DLoader::loadsTexture()
@@ -149,6 +151,20 @@ void TestModel3DLoader::loadsRealBlenderModel()
             const int comps = t.path == Model3DTrack::Rotation ? 4 : 3;
             QCOMPARE(t.values.size(), t.times.size() * comps);
         }
+    // Armature-root transform is captured, not dropped (RobotArmature: x100, rotX-90).
+    bool anyNonIdentityPre = false;
+    for (const Model3DJoint &j : model.joints)
+        if (!j.preTransform.isIdentity()) { anyNonIdentityPre = true; break; }
+    QVERIFY(anyNonIdentityPre);
+    // Body meshes are rigid-attached to joints (Hand.R/Hand.L are skinned);
+    // the loader must classify both correctly rather than dropping either.
+    bool anyRigid = false, anySkinned = false;
+    for (const Model3DPrimitive &p : model.primitives) {
+        if (p.skinned) anySkinned = true;
+        else if (p.attachedJoint >= 0) anyRigid = true;
+    }
+    QVERIFY(anySkinned);
+    QVERIFY(anyRigid);
 }
 
 QTEST_MAIN(TestModel3DLoader)

@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <cmath>
 #include "model3d/AnimationEvaluator.h"
 #include "model3d/GltfLoader.h"
 
@@ -12,6 +13,8 @@ private slots:
     void loopWraps();
     void rootMotionClampedXZ();
     void missingTrackHoldsBindPose();
+    void preTransformAppliedToHierarchy();
+    void robotBindPoseAppliesArmatureTransform();
 };
 
 static Model3DModel loadCube()
@@ -105,6 +108,68 @@ void TestModel3DEvaluator::missingTrackHoldsBindPose()
     AnimationEvaluator::evaluate(m, &wave, 0.25f, false, palette);
     // Root has no track in Wave: palette[0] stays identity (bind).
     QVERIFY(palette[0].isIdentity());
+}
+
+void TestModel3DEvaluator::preTransformAppliedToHierarchy()
+{
+    // Synthetic model with a non-identity preTransform on the root joint.
+    // Verifies the evaluator folds preTransform into the hierarchy walk.
+    Model3DModel m;
+    m.joints.resize(1);
+    m.joints[0].name = QStringLiteral("Root");
+    m.joints[0].parent = -1;
+    m.joints[0].inverseBind = QMatrix4x4(); // identity
+    m.joints[0].preTransform.scale(2.5f);   // pretend a non-joint ancestor scaled ×2.5
+    QVector<QMatrix4x4> palette, globals;
+    AnimationEvaluator::evaluate(m, nullptr, 0.0f, false, palette, &globals);
+    // palette = global × IBM = (preTransform × local) × identity = preTransform.
+    QCOMPARE(palette.size(), 1);
+    QCOMPARE(globals.size(), 1);
+    QVERIFY2(qAbs(palette[0](0, 0) - 2.5f) < 1e-5f,
+             qPrintable(QStringLiteral("palette[0](0,0) = %1 (expected 2.5)").arg(palette[0](0, 0))));
+    QVERIFY2(qAbs(globals[0](0, 0) - 2.5f) < 1e-5f,
+             qPrintable(QStringLiteral("global[0](0,0) = %1 (expected 2.5)").arg(globals[0](0, 0))));
+}
+
+void TestModel3DEvaluator::robotBindPoseAppliesArmatureTransform()
+{
+    // RobotExpressive (Quaternius/Blender, CC0) exposes the bug: the
+    // RobotArmature node carries scale(100) + rotX(-90°) and is NOT a skin
+    // joint. Without applying preTransform in the hierarchy walk, joint
+    // globals stay armature-local while the raw vertices are in armature-
+    // local space (±0.03) — the near-identity palette maps them through
+    // unchanged and the robot renders as an invisible dot.
+    //
+    // With the fix, palette[i] inherits the armature ×100 scale and vertices
+    // land in world space. The armature-local IBMs (a Blender exporter
+    // convention — distinct from the glTF-spec world-space IBMs) mean the
+    // palette is NOT identity at bind; it equals preTransform × (local × IBM)
+    // which carries the armature scale on every joint.
+    Model3DModel m;
+    QVERIFY(GltfLoader::loadFromFile(QStringLiteral(SOURCE_DIR) + "/tests/data/robot_expressive.glb",
+                                     m, nullptr));
+    int rootIdx = -1;
+    for (int i = 0; i < m.joints.size(); ++i)
+        if (m.joints[i].parent == -1) { rootIdx = i; break; }
+    QVERIFY(rootIdx >= 0);
+    QVERIFY2(!m.joints[rootIdx].preTransform.isIdentity(),
+             "root joint preTransform must be non-identity for the robot "
+             "(loader must capture RobotArmature's scale/rotation)");
+
+    QVector<QMatrix4x4> palette, globals;
+    AnimationEvaluator::evaluate(m, nullptr, 0.0f, false, palette, &globals);
+    QCOMPARE(palette.size(), 43);
+    QCOMPARE(globals.size(), 43);
+    // At bind, every joint's palette must include the armature ×100 scale.
+    // The buggy code produced an identity-like palette (column length ≈ 1).
+    for (int i = 0; i < palette.size(); ++i) {
+        const float *e = palette[i].constData();
+        const float col0Len = std::sqrt(e[0]*e[0] + e[1]*e[1] + e[2]*e[2]);
+        QVERIFY2(col0Len > 50.0f,
+                 qPrintable(QStringLiteral("joint %1 palette column 0 length = %2 "
+                                           "(expected >50 — armature scale missing)")
+                            .arg(i).arg(col0Len)));
+    }
 }
 
 QTEST_MAIN(TestModel3DEvaluator)

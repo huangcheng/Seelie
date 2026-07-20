@@ -26,6 +26,11 @@ struct Model3DPrimitive {
     QVector<Model3DVertex> vertices;
     QVector<uint32_t> indices;
     int material = -1;
+    bool skinned = false;          // had JOINTS_0 on a node WITH a skin
+    int attachedJoint = -1;        // rigid: nearest joint ancestor of the mesh node
+    QMatrix4x4 attachTransform;    // rigid: node-chain transform from attachedJoint
+                                   // (exclusive) down to mesh node (inclusive);
+                                   // static (attachedJoint==-1): full world chain
 };
 
 struct Model3DJoint {
@@ -35,6 +40,9 @@ struct Model3DJoint {
     QQuaternion bindR;
     QVector3D bindS{1, 1, 1};
     QMatrix4x4 inverseBind;
+    QMatrix4x4 preTransform;         // product of NON-JOINT ancestor node transforms
+                                     // between this joint and its nearest joint
+                                     // ancestor (identity for most joints)
 };
 
 struct Model3DTrack {
