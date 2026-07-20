@@ -429,8 +429,13 @@ namespace {
 
 QMatrix4x4 toMat4(const cgltf_float m[16])
 {
-    // Both cgltf and QMatrix4x4(const float*) use column-major order.
-    return QMatrix4x4(m);
+    // cgltf/glTF matrices are column-major; QMatrix4x4(const float*) expects
+    // row-major input. Transpose during construction.
+    QMatrix4x4 r;
+    for (int row = 0; row < 4; ++row)
+        for (int col = 0; col < 4; ++col)
+            r(row, col) = m[col * 4 + row];
+    return r;
 }
 
 int nodeIndex(const cgltf_data *data, const cgltf_node *node)
