@@ -95,7 +95,10 @@ bool Model3DEngine::recoverOpenGL()
     if (!initOpenGL()) return false;
 
     m_model = std::move(model);
-    m_glContext->makeCurrent(m_surface);
+    if (!m_glContext->makeCurrent(m_surface)) {
+        qWarning() << "Model3D: recoverOpenGL: makeCurrent failed after init";
+        return false;
+    }
     m_renderer->upload(m_model);
     m_glContext->doneCurrent();
 
@@ -187,7 +190,8 @@ void Model3DEngine::playAnimation(const QString &name, Priority priority)
     if (priority == HighPriority) {
         m_queue.clear();
         startClip(index, loops);
-    } else if (m_currentClip < 0) {
+    } else if (m_currentClip < 0 || m_currentLoops) {
+        // Preempt looping clips (idle) with NormalPriority event clips.
         startClip(index, loops);
     } else {
         m_queue.append(index);
@@ -262,6 +266,15 @@ void Model3DEngine::tick()
 {
     if (!m_modelLoaded || !m_glContext) return;
 
+    if (!m_glContext->isValid()) {
+        qWarning() << "Model3D: GL context lost — attempting recovery";
+        if (!recoverOpenGL()) {
+            qWarning() << "Model3D: GL recovery failed — stopping engine";
+            stop();
+            return;
+        }
+    }
+
     static QElapsedTimer clock;   // engine lives on the GUI thread only
     if (!clock.isValid()) clock.start();
     const qint64 now = clock.elapsed();
@@ -311,7 +324,8 @@ void Model3DEngine::releaseModel()
         m_glContext->makeCurrent(m_surface);
         m_renderer->release();
         QString err;
-        m_renderer->initialize(&err);   // keep renderer reusable for next pack
+        if (!m_renderer->initialize(&err))
+            qWarning() << "Model3D: renderer re-init failed after release:" << err;
         m_glContext->doneCurrent();
     }
     m_model = Model3DModel{};
