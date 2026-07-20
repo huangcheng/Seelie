@@ -1,5 +1,7 @@
 #include <QtTest>
 #include "IdlePicker.h"
+#include "SayingPool.h"
+#include <QSettings>
 
 class TestIdleBehavior : public QObject
 {
@@ -10,6 +12,11 @@ private slots:
     void pickWeighted_excludesIndex();
     void pickWeighted_zeroWeightsReturnMinus1();
     void idleTimeoutMs_bounds();
+    // --- SayingPool ---
+    void sayingPool_loadsEnBundle();
+    void sayingPool_fallsBackToEn();
+    void sayingPool_antiRepeat();
+    void sayingPool_emptyIsSafe();
 };
 
 void TestIdleBehavior::pickWeighted_respectsWeights()
@@ -53,6 +60,46 @@ void TestIdleBehavior::idleTimeoutMs_bounds()
     // Out-of-range r is clamped, never out of bounds.
     QVERIFY(IdlePicker::idleTimeoutMs(-0.5) >= 1000);
     QVERIFY(IdlePicker::idleTimeoutMs(1.5) <= 4000);
+}
+
+void TestIdleBehavior::sayingPool_loadsEnBundle()
+{
+    SayingPool pool;
+    QVERIFY(pool.load(QStringLiteral("en")));
+    QVERIFY(!pool.isEmpty());
+    QCOMPARE(pool.size(), 20);   // 4 categories x 5 sayings
+    const SayingPool::Saying s = pool.pick();
+    QVERIFY(!s.body.isEmpty());
+    QVERIFY(!s.title.isEmpty());
+}
+
+void TestIdleBehavior::sayingPool_fallsBackToEn()
+{
+    SayingPool pool;
+    // A locale with no bundled file must fall back to en, not come up empty.
+    QVERIFY(pool.load(QStringLiteral("xx_YY")));
+    QVERIFY(!pool.isEmpty());
+}
+
+void TestIdleBehavior::sayingPool_antiRepeat()
+{
+    SayingPool pool;
+    QVERIFY(pool.load(QStringLiteral("en")));
+    // Scripted RNG: always picks the last category (observation) and a fixed
+    // position in it — two consecutive picks must differ.
+    double r = 0.999;
+    pool.setRngFn([&r] { return r; });
+    const SayingPool::Saying a = pool.pick();
+    const SayingPool::Saying b = pool.pick();
+    QVERIFY(a.body != b.body);
+}
+
+void TestIdleBehavior::sayingPool_emptyIsSafe()
+{
+    SayingPool pool;   // never loaded
+    QVERIFY(pool.isEmpty());
+    const SayingPool::Saying s = pool.pick();   // must not crash
+    QVERIFY(s.body.isEmpty());
 }
 
 QTEST_MAIN(TestIdleBehavior)

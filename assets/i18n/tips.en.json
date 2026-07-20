@@ -63,5 +63,35 @@
       {"title": "Ack!",          "body": "What was that for?"},
       {"title": "Dizzy…",        "body": "The room is spinning."}
     ]
+  },
+  "sayings": {
+    "humor": [
+      {"title": "Hmm", "body": "I counted your semicolons today. Impressive. Slightly alarming, but impressive."},
+      {"title": "Psst", "body": "If I had a coin for every build, I'd have a very strange wallet."},
+      {"title": "Fun fact", "body": "My favorite debugging technique is staring at you until the fix appears."},
+      {"title": "Note", "body": "I did NOT touch your code while you weren't looking. Probably."},
+      {"title": "Report", "body": "Status: sitting here, looking productive. One of us has to."}
+    ],
+    "encouragement": [
+      {"title": "Hey", "body": "You've shipped harder things than this. Keep going."},
+      {"title": "Reminder", "body": "Small steps still count as progress."},
+      {"title": "For you", "body": "The bug is more afraid of you than you are of it."},
+      {"title": "Cheering", "body": "Quiet focus looks good on you."},
+      {"title": "Trust me", "body": "Future you is already grateful for this refactor."}
+    ],
+    "coding_wisdom": [
+      {"title": "Wisdom", "body": "Make it work, make it right, make it fast — in that order."},
+      {"title": "Wisdom", "body": "The best line of code is the one you didn't have to write."},
+      {"title": "Wisdom", "body": "Name things like the next reader is you at 3 AM."},
+      {"title": "Wisdom", "body": "If it's hard to test, it's probably doing too much."},
+      {"title": "Wisdom", "body": "Commit early. Regret less."}
+    ],
+    "observation": [
+      {"title": "Observing", "body": "It's been quiet. Suspiciously quiet."},
+      {"title": "Observing", "body": "Your cursor has been very thoughtful lately."},
+      {"title": "Observing", "body": "I watered your desktop icons while you were away. You're welcome."},
+      {"title": "Observing", "body": "Somewhere out there, a CI pipeline is green because of you."},
+      {"title": "Observing", "body": "This corner of the screen has excellent views."}
+    ]
   }
 }
