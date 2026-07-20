@@ -100,7 +100,7 @@ Manifest (`CharacterPack.cpp:474-560` parsing, engineType parsed at ~579-590):
     "unitScale": 1.0                  // optional; e.g. 0.01 for cm-scaled exports
   },
   "eventMap": { "session.start": "Wave", ... },   // existing keys, clip names
-  "idlePool": [ {"animationName": "Idle", "weight": 3}, ... ],
+  "idlePool": [ {"name": "Idle", "weight": 3}, ... ],
   "stateMap": { "Petted": "Happy", "Tossed": "Spin", ... }
 }
 ```

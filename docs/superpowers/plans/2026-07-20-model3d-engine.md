@@ -1370,7 +1370,7 @@ static QString writeTestPack(QTemporaryDir &dir)
                  "frameWidth": 124, "frameHeight": 200,
                  "cameraDistance": 0.0, "cameraHeight": 0.0,
                  "unitScale": 1.0, "upAxis": "y" },
-  "idlePool": [ {"animationName": "Idle", "weight": 1} ],
+  "idlePool": [ {"name": "Idle", "weight": 1} ],
   "eventMap": { "session.start": "Wave" },
   "stateMap": {}
 })JSON");
@@ -1941,7 +1941,7 @@ static QString writeTestPack(QTemporaryDir &dir)
   "id": "test.cube3d", "name": "Cube3D", "author": "test", "version": "1.0.0",
   "character": { "type": "model3d", "model": "model.glb",
                  "frameWidth": 124, "frameHeight": 200 },
-  "idlePool": [ {"animationName": "Idle", "weight": 1} ],
+  "idlePool": [ {"name": "Idle", "weight": 1} ],
   "eventMap": { "session.start": "Wave" },
   "stateMap": {}
 })JSON");
@@ -2278,7 +2278,7 @@ cp tests/data/rig_cube.glb assets/packs/cube3d/model.glb
     "frameHeight": 200
   },
   "idlePool": [
-    { "animationName": "Idle", "weight": 1 }
+    { "name": "Idle", "weight": 1 }
   ],
   "eventMap": {
     "session.start": "Wave",
