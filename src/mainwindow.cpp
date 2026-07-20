@@ -1115,8 +1115,10 @@ void MainWindow::setIdleBehaviorEngine(IdleBehaviorEngine *engine)
     });
 
     if (m_eventRouter) {
+        // Context `this` (not m_idleEngine): the lambda captures MainWindow,
+        // so the connection must die with the window, not the engine.
         connect(m_eventRouter, &EventRouter::eventProcessed,
-                m_idleEngine, [this](const QString &, const QJsonObject &) {
+                this, [this](const QString &, const QJsonObject &) {
             if (m_idleEngine) m_idleEngine->onEventProcessed();
         });
     }

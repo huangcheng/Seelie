@@ -48,7 +48,9 @@ void IdleBehaviorEngine::onEventProcessed()
 {
     m_lastEventAt = m_now();
     // Any real event also cancels a pending idle quip — the event's own
-    // bubble wins.
+    // bubble wins. Note: the in-flight LLM request itself isn't cancelled
+    // (its cost is already incurred); its late response is dropped by the
+    // requestId match in onQuipUpgraded/onQuipFailed.
     m_pendingQuipId = 0;
     if (m_timer.isActive()) {
         m_intervalMs = rollIntervalMs();
