@@ -23,6 +23,7 @@ private slots:
     void idleTimeoutMs_bounds();
     // --- SayingPool ---
     void sayingPool_loadsEnBundle();
+    void sayingPool_loadsZhBundle();
     void sayingPool_fallsBackToEn();
     void sayingPool_antiRepeat();
     void sayingPool_emptyIsSafe();
@@ -105,6 +106,15 @@ void TestIdleBehavior::sayingPool_loadsEnBundle()
     const SayingPool::Saying s = pool.pick();
     QVERIFY(!s.body.isEmpty());
     QVERIFY(!s.title.isEmpty());
+}
+
+void TestIdleBehavior::sayingPool_loadsZhBundle()
+{
+    SayingPool pool;
+    QVERIFY(pool.load(QStringLiteral("zh_CN")));
+    QCOMPARE(pool.size(), 20);
+    const SayingPool::Saying s = pool.pick();
+    QVERIFY(!s.body.isEmpty());
 }
 
 void TestIdleBehavior::sayingPool_fallsBackToEn()
