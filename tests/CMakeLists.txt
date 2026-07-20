@@ -163,6 +163,7 @@ set(TEST_SOURCES
     test_idle_behavior.cpp
     test_model3d_loader.cpp
     test_model3d_evaluator.cpp
+    test_model3d_engine.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
@@ -220,6 +221,18 @@ foreach(test_src ${TEST_SOURCES})
         SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}"
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
+
+    # Model3DEngine + renderer are GL-dependent; the shared lib list stays GL-free,
+    # so test_model3d_engine links them (and Qt::OpenGL) directly.
+    if(${test_name} STREQUAL "test_model3d_engine")
+        target_sources(${test_name} PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/model3d/Model3DEngine.cpp
+            ${CMAKE_SOURCE_DIR}/src/model3d/Model3DEngine.h
+            ${CMAKE_SOURCE_DIR}/src/model3d/GLSkinningRenderer.cpp
+            ${CMAKE_SOURCE_DIR}/src/model3d/GLSkinningRenderer.h
+        )
+        target_link_libraries(${test_name} PRIVATE Qt::OpenGL)
+    endif()
 
     # TipsCatalog resource bundle — needed by tests that resolve tip text.
     qt_add_resources(${test_name} "tips_i18n"

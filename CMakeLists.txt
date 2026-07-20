@@ -419,6 +419,8 @@ qt_add_executable(Seelie
     src/model3d/AnimationEvaluator.h
     src/model3d/GLSkinningRenderer.cpp
     src/model3d/GLSkinningRenderer.h
+    src/model3d/Model3DEngine.cpp
+    src/model3d/Model3DEngine.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp
