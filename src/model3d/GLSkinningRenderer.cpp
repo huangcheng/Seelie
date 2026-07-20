@@ -28,7 +28,9 @@ void main() {
               + uJoints[j.z] * aWeights.z + uJoints[j.w] * aWeights.w;
     vec4 posed = skin * vec4(aPos, 1.0);
     gl_Position = uMVP * posed;
-    vNormal = normalize(mat3(uModel) * (mat3(skin) * aNormal));
+    mat3 skin3 = mat3(skin[0].xyz, skin[1].xyz, skin[2].xyz);
+    mat3 model3 = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz);
+    vNormal = normalize(model3 * (skin3 * aNormal));
     vUV = aUV;
 }
 )GLSL";
