@@ -149,12 +149,17 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
             mn = QVector3D(qMin(mn.x(), q.x()), qMin(mn.y(), q.y()), qMin(mn.z(), q.z()));
             mx = QVector3D(qMax(mx.x(), q.x()), qMax(mx.y(), q.y()), qMax(mx.z(), q.z()));
         }
-    const QVector3D ext = mx - mn;
-    const float maxDim = qMax(ext.x(), qMax(ext.y(), ext.z()));
-    const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
-    const float fov = qDegreesToRadians(30.0f);
-    m_fitDistance = (maxDim * 0.5f) / std::tan(fov * 0.5f) * 1.2f;
-    m_fitCenterY = center.y();
+    if (mn.x() > mx.x()) {   // no vertices — degenerate model
+        m_fitDistance = 5.0f;
+        m_fitCenterY = 0.5f;
+    } else {
+        const QVector3D ext = mx - mn;
+        const float maxDim = qMax(ext.x(), qMax(ext.y(), ext.z()));
+        const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
+        const float fov = qDegreesToRadians(30.0f);
+        m_fitDistance = (maxDim * 0.5f) / std::tan(fov * 0.5f) * 1.2f;
+        m_fitCenterY = center.y();
+    }
     m_view.setToIdentity();
     const float dist = m_camDistance > 0.0f ? m_camDistance : m_fitDistance;
     const float height = m_camHeight != 0.0f ? m_camHeight : m_fitCenterY;
@@ -232,9 +237,17 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
         glDrawElements(GL_TRIANGLES, g.indexCount, GL_UNSIGNED_INT, nullptr);
     }
 
+    glDisableVertexAttribArray(aPos);
+    glDisableVertexAttribArray(aNrm);
+    glDisableVertexAttribArray(aUV);
+    glDisableVertexAttribArray(aJnt);
+    glDisableVertexAttribArray(aWgt);
+
     m_program->release();
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
     fbo->release();
 }
 
