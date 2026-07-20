@@ -364,6 +364,8 @@ qt_add_executable(Seelie
     src/TipsCatalog.h
     src/SayingPool.cpp
     src/SayingPool.h
+    src/IdleBehaviorEngine.cpp
+    src/IdleBehaviorEngine.h
     src/ConfigManager.cpp
     src/ConfigManager.h
     src/SystemTray.cpp

@@ -2,7 +2,9 @@
 #include "IdlePicker.h"
 #include "SayingPool.h"
 #include "ConfigManager.h"
+#include "IdleBehaviorEngine.h"
 #include <QSettings>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 
 class TestIdleBehavior : public QObject
@@ -22,6 +24,23 @@ private slots:
     // --- ConfigManager keys ---
     void config_defaults();
     void config_roundTrip();
+    // --- IdleBehaviorEngine (canned path) ---
+    void engine_noFireBeforeInterval();
+    void engine_firesAfterInterval();
+    void engine_eventResetsClock();
+    void engine_gateBlocksSilently();
+    void engine_neverDisables();
+};
+
+// Helper: engine with fake clock/rng, canned-only (persona == nullptr).
+// `now` starts at 1'000'000 ms so arithmetic stays positive.
+struct EngineFixture {
+    QTemporaryDir tmp;
+    qint64 now = 1'000'000;
+    double rng = 0.5;
+    EngineFixture() {
+        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, tmp.path());
+    }
 };
 
 void TestIdleBehavior::pickWeighted_respectsWeights()
@@ -136,6 +155,103 @@ void TestIdleBehavior::config_roundTrip()
         QCOMPARE(cfg2.sayingFrequency(), ConfigManager::SayingFrequency::Often);
         QCOMPARE(cfg2.llmIdleQuipsEnabled(), true);
     }
+}
+
+void TestIdleBehavior::engine_noFireBeforeInterval()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();
+    IdleBehaviorEngine engine(&cfg, nullptr);
+    engine.setNowFn([&fx] { return fx.now; });
+    engine.setRngFn([&fx] { return fx.rng; });
+    engine.setCanShowGate([] { return true; });
+    QVERIFY(engine.loadSayings(QStringLiteral("en")));
+    engine.applyConfig();   // Sometimes → interval in [360000, 600000]
+    QSignalSpy spy(&engine, &IdleBehaviorEngine::sayingReady);
+    engine.tick();
+    fx.now += 100'000;    // well under the shortest Sometimes interval
+    engine.tick();
+    QCOMPARE(spy.count(), 0);
+}
+
+void TestIdleBehavior::engine_firesAfterInterval()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();
+    IdleBehaviorEngine engine(&cfg, nullptr);
+    engine.setNowFn([&fx] { return fx.now; });
+    engine.setRngFn([&fx] { return fx.rng; });
+    engine.setCanShowGate([] { return true; });
+    QVERIFY(engine.loadSayings(QStringLiteral("en")));
+    engine.applyConfig();
+    QSignalSpy spy(&engine, &IdleBehaviorEngine::sayingReady);
+    fx.now += 700'000;    // beyond the longest Sometimes interval (600000)
+    engine.tick();
+    QCOMPARE(spy.count(), 1);
+    const QString body = spy.takeFirst().at(1).toString();
+    QVERIFY(!body.isEmpty());
+}
+
+void TestIdleBehavior::engine_eventResetsClock()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();
+    IdleBehaviorEngine engine(&cfg, nullptr);
+    engine.setNowFn([&fx] { return fx.now; });
+    engine.setRngFn([&fx] { return fx.rng; });
+    engine.setCanShowGate([] { return true; });
+    QVERIFY(engine.loadSayings(QStringLiteral("en")));
+    engine.applyConfig();
+    QSignalSpy spy(&engine, &IdleBehaviorEngine::sayingReady);
+    fx.now += 500'000;
+    engine.onEventProcessed();      // event at t=+500s resets the clock
+    fx.now += 400'000;              // 400s since the event < 480s interval — not enough
+    engine.tick();
+    QCOMPARE(spy.count(), 0);
+    fx.now += 200'000;              // 600s since the event ≥ 480s — fires
+    engine.tick();
+    QCOMPARE(spy.count(), 1);
+}
+
+void TestIdleBehavior::engine_gateBlocksSilently()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();
+    IdleBehaviorEngine engine(&cfg, nullptr);
+    engine.setNowFn([&fx] { return fx.now; });
+    engine.setRngFn([&fx] { return fx.rng; });
+    bool gateOpen = false;
+    engine.setCanShowGate([&gateOpen] { return gateOpen; });
+    QVERIFY(engine.loadSayings(QStringLiteral("en")));
+    engine.applyConfig();
+    QSignalSpy spy(&engine, &IdleBehaviorEngine::sayingReady);
+    fx.now += 700'000;
+    engine.tick();                  // gated → silent skip
+    QCOMPARE(spy.count(), 0);
+    fx.now += 700'000;              // no catch-up burst: still one slot max
+    engine.tick();
+    QCOMPARE(spy.count(), 0);
+    gateOpen = true;
+    fx.now += 700'000;
+    engine.tick();
+    QCOMPARE(spy.count(), 1);
+}
+
+void TestIdleBehavior::engine_neverDisables()
+{
+    EngineFixture fx;
+    ConfigManager cfg; cfg.load();
+    cfg.setSayingFrequency(ConfigManager::SayingFrequency::Never);
+    IdleBehaviorEngine engine(&cfg, nullptr);
+    engine.setNowFn([&fx] { return fx.now; });
+    engine.setRngFn([&fx] { return fx.rng; });
+    engine.setCanShowGate([] { return true; });
+    QVERIFY(engine.loadSayings(QStringLiteral("en")));
+    engine.applyConfig();
+    QSignalSpy spy(&engine, &IdleBehaviorEngine::sayingReady);
+    fx.now += 10'000'000;
+    engine.tick();
+    QCOMPARE(spy.count(), 0);
 }
 
 QTEST_MAIN(TestIdleBehavior)
