@@ -43,6 +43,7 @@ The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips →
 - **EventRouter** — Maps 17 canonical event names (e.g. `session.start`, `tool.before`, `file.edited`) to `EventAction` structs containing animation name, effect name, tip title/body. The event set is fixed — gateways normalize tool-specific events into these.
 - **LottieAnimationEngine** — Primary animation engine using rlottie to play Lottie JSON character animations from sprite packs.
 - **SpriteAnimationEngine** — Legacy fallback: plays frame-based animations from sprite sheets using definitions in `animations.json`.
+- **Model3DEngine** (`src/model3d/`) — Skeletal 3D glTF/GLB engine: `GltfLoader` (vendored cgltf) → `AnimationEvaluator` (CPU skinning palette) → `GLSkinningRenderer` (GLSL 120 vertex skinning, Qt GL wrappers only — no GLEW) → offscreen FBO like Live2D. Pack manifests use `"type": "model3d"` and map glTF clip names via the standard `eventMap`/`idlePool`/`stateMap` keys. Authoring docs: `docs/model3d-packs.md`; FBX conversion: `scripts/fbx_to_glb.py`.
 - **LottieEffectOverlay** — Renders visual effects (sparkles, confetti, alert-pulse, etc.) from `assets/lottie/effects/` with offset positioning above the character.
 - **SpritePack / SpritePackManager** — Pack data structure with manifest parsing; discovers, loads, and switches between `.spk` sprite packs.
 - **TipBubbleWidget** — Win98-style speech bubble with asymmetric tail, fade animations, auto-dismiss (6s status / 12s tips).
