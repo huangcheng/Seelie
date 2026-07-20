@@ -96,7 +96,6 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
     release();
 
     m_jointCount = model.joints.size();
-    m_hasSkin = model.hasSkin();
     m_modelTooLarge = m_jointCount > m_maxJoints;
     if (m_modelTooLarge) {
         // Loud warning — Mixamo rigs often exceed 64 joints, and silently
@@ -142,7 +141,7 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
         m_textures.append(tex);
     }
 
-    fitCameraToBindPose(model);
+    fitCameraToBindPose(model);  // O(joints + vertices), once per pack switch
 }
 
 void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)

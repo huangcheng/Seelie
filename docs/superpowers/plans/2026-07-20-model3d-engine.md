@@ -2333,3 +2333,12 @@ git commit -m "feat(model3d): cube3d sample pack; mark spec implemented"
 - `tick()` uses a function-static `QElapsedTimer` for dt; if the engine ever moves threads this must become a member. Fine for v1 (GUI thread only).
 - The dispatch-by-active-type change in Task 7 alters behavior for the latent stopped-engine misroute — intentional, call it out in the commit message if it surprises in review.
 
+---
+
+## Post-Execution Addendum (2026-07-21)
+
+**Executed as written except:** Task 5's fixture JSON used `"animationName"` in idlePool — the parser's actual key is `"name"` (fixed in-flight, docs synced, commit `326d59c`). Task 9 used the real Blender model (RobotExpressive, CC0) per user direction instead of cube3d.
+
+**Task 10 (unplanned, discovered by real-model visual QA):** the robot rendered blank in-app. Root cause: real-world Blender exports keep (a) armature-root transforms (×100 scale, rotX-90) on NON-joint nodes the loader dropped, and (b) body meshes rigid-parented under joint nodes (`skin: None`) that the loader rendered at identity. Fix (`640ffa7`): per-joint `preTransform` (product of non-joint-ancestor transforms) applied in the evaluator walk; per-primitive `skinned`/`attachedJoint`/`attachTransform` for rigid meshes; evaluator optional `outGlobal` (scene globals without IBM); world-space camera fit. Note: Blender GLB IBMs are **armature-local**, so bind-pose palette = armature transform, not identity — regression tests assert that (`640ffa7`, spec+quality reviewed).
+
+

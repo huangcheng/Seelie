@@ -61,7 +61,6 @@ private:
     int m_maxJoints = 64;
     bool m_modelTooLarge = false;
     int m_jointCount = 0;
-    bool m_hasSkin = false;
 };
 
 #endif // GLSKINNING_RENDERER_H
