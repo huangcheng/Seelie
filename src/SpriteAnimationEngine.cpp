@@ -1,5 +1,6 @@
 #include "SpriteAnimationEngine.h"
 #include "CharacterPack.h"
+#include "IdlePicker.h"
 
 #include <QPainter>
 #include <QJsonDocument>
@@ -77,6 +78,20 @@ void SpriteAnimationEngine::buildNameMap()
     m_nameMap["lookleft"]        = "LookLeft";
     m_nameMap["lookright"]       = "LookRight";
     m_nameMap["lookup"]          = "LookUp";
+
+    // Personality / look-around animations — previously unreachable by name.
+    m_nameMap["idle_head_scratch"]  = "IdleHeadScratch";
+    m_nameMap["idle_finger_tap"]    = "IdleFingerTap";
+    m_nameMap["idle_eyebrow_raise"] = "IdleEyeBrowRaise";
+    m_nameMap["idle_rope_pile"]     = "IdleRopePile";
+    m_nameMap["idle_snooze"]        = "IdleSnooze";
+    m_nameMap["checking"]           = "CheckingSomething";
+    m_nameMap["empty_trash"]        = "EmptyTrash";
+    m_nameMap["hearing"]            = "Hearing_1";
+    m_nameMap["look_down_left"]     = "LookDownLeft";
+    m_nameMap["look_down_right"]    = "LookDownRight";
+    m_nameMap["look_up_left"]       = "LookUpLeft";
+    m_nameMap["look_up_right"]      = "LookUpRight";
 }
 
 bool SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QString &animJsonPath)
@@ -176,6 +191,7 @@ bool SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
         {"CheckingSomething", 1},
         {"Writing",           1},
         {"Searching",         1},
+        {"EmptyTrash",        1},
     };
     for (const auto &[name, weight] : idlePool) {
         if (m_animations.contains(name)) {
@@ -480,6 +496,9 @@ void SpriteAnimationEngine::startNextAnimation()
         checkEffectTrigger(nextName);
     } else {
         m_playing = false;
+        // Variable 1–4s gap so idle motion doesn't feel metronomic.
+        m_idleTimer.setInterval(IdlePicker::idleTimeoutMs(
+            QRandomGenerator::global()->generateDouble()));
         m_idleTimer.start();
     }
 }
@@ -511,18 +530,11 @@ void SpriteAnimationEngine::startIdleAnimation()
         return;
     }
 
-    int totalWeight = 0;
-    for (int w : m_idleWeights) totalWeight += w;
-
-    int roll = QRandomGenerator::global()->bounded(totalWeight);
-    int cumulative = 0;
-    for (int i = 0; i < m_idleAnims.size(); ++i) {
-        cumulative += m_idleWeights.at(i);
-        if (roll < cumulative) {
-            playAnimation(m_idleAnims.at(i), HighPriority);
-            return;
-        }
-    }
-
-    playAnimation(m_idleAnims.first(), HighPriority);
+    const int exclude = m_idleAnims.size() > 1
+                        ? m_idleAnims.indexOf(m_lastIdleAnim) : -1;
+    int idx = IdlePicker::pickWeighted(m_idleWeights, exclude,
+                                       QRandomGenerator::global()->generateDouble());
+    if (idx < 0) idx = 0;
+    m_lastIdleAnim = m_idleAnims.at(idx);
+    playAnimation(m_lastIdleAnim, HighPriority);
 }

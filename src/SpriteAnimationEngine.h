@@ -111,6 +111,7 @@ private:
     QVector<int> m_idleWeights;
     QTimer m_idleTimer;
     int m_idleTimeoutMs = 3000;
+    QString m_lastIdleAnim;   // anti-repeat for idle picks
 
     // Queue
     QStringList m_queue;

@@ -4,6 +4,10 @@
 #include "ConfigManager.h"
 #include "IdleBehaviorEngine.h"
 #include "PersonaEngine.h"
+#include "SpriteAnimationEngine.h"
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -34,6 +38,8 @@ private slots:
     // --- PersonaEngine idle.quip ---
     void persona_idleQuipIsOnDemand();
     void persona_idleQuipNoProfile();
+    // --- Sprite engine name map ---
+    void sprite_newNamesResolve();
 };
 
 // Helper: engine with fake clock/rng, canned-only (persona == nullptr).
@@ -273,6 +279,67 @@ void TestIdleBehavior::persona_idleQuipNoProfile()
         persona.resolve(QStringLiteral("idle.quip"), QJsonObject{});
     // No LLM call may be fired; caller falls back to canned.
     QCOMPARE(r.requestId, quint64(0));
+}
+
+void TestIdleBehavior::sprite_newNamesResolve()
+{
+    // Locate sprite assets mirroring test_ipc_animations.cpp's findAssetsDir():
+    // assets/ → SOURCE_DIR/assets → assets/packs/<name>/sprites/. The legacy
+    // top-level assets/map.png was removed; the sheet now ships inside packs.
+    auto findSpriteRoot = []() -> QString {
+        const auto hasAssets = [](const QString &dir) {
+            return QFile::exists(dir + QStringLiteral("/map.png"))
+                && QFile::exists(dir + QStringLiteral("/animations.json"));
+        };
+        QDir dir(QCoreApplication::applicationDirPath());
+        for (int i = 0; i < 6; ++i) {
+            const QString candidate = dir.absoluteFilePath(QStringLiteral("assets"));
+            if (hasAssets(candidate)) return candidate;
+            if (!dir.cdUp()) break;
+        }
+        const QString srcAssets =
+            QDir(QStringLiteral(SOURCE_DIR)).absoluteFilePath(QStringLiteral("assets"));
+        if (hasAssets(srcAssets)) return srcAssets;
+        QDir packsDir(srcAssets + QStringLiteral("/packs"));
+        if (packsDir.exists()) {
+            const QStringList packs = packsDir.entryList(
+                QStringList(), QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+            for (const QString &pack : packs) {
+                const QString sprites =
+                    packsDir.absoluteFilePath(pack + QStringLiteral("/sprites"));
+                if (hasAssets(sprites)) return sprites;
+            }
+        }
+        return QString();
+    };
+
+    const QString assetsDir = findSpriteRoot();
+    QVERIFY2(!assetsDir.isEmpty(), "Could not locate sprite assets directory");
+
+    SpriteAnimationEngine engine;
+    QVERIFY(engine.loadAssets(assetsDir + QStringLiteral("/map.png"),
+                              assetsDir + QStringLiteral("/animations.json")));
+
+    const QVector<QPair<QString, QString>> cases = {
+        {QStringLiteral("idle_head_scratch"), QStringLiteral("IdleHeadScratch")},
+        {QStringLiteral("idle_finger_tap"),   QStringLiteral("IdleFingerTap")},
+        {QStringLiteral("idle_eyebrow_raise"),QStringLiteral("IdleEyeBrowRaise")},
+        {QStringLiteral("idle_rope_pile"),    QStringLiteral("IdleRopePile")},
+        {QStringLiteral("idle_snooze"),       QStringLiteral("IdleSnooze")},
+        {QStringLiteral("checking"),          QStringLiteral("CheckingSomething")},
+        {QStringLiteral("empty_trash"),       QStringLiteral("EmptyTrash")},
+        {QStringLiteral("hearing"),           QStringLiteral("Hearing_1")},
+        {QStringLiteral("look_down_left"),    QStringLiteral("LookDownLeft")},
+        {QStringLiteral("look_down_right"),   QStringLiteral("LookDownRight")},
+        {QStringLiteral("look_up_left"),      QStringLiteral("LookUpLeft")},
+        {QStringLiteral("look_up_right"),     QStringLiteral("LookUpRight")},
+    };
+    for (const auto &[publicName, internal] : cases) {
+        // HighPriority preempts whatever is playing — no stop() needed
+        // (stop() clears loaded state and would break subsequent plays).
+        engine.playAnimation(publicName, SpriteAnimationEngine::HighPriority);
+        QCOMPARE(engine.currentAnimation(), internal);
+    }
 }
 
 QTEST_MAIN(TestIdleBehavior)
