@@ -1,5 +1,6 @@
 #include "LottieAnimationEngine.h"
 #include "CharacterPack.h"
+#include "IdlePicker.h"
 
 #include <QPainter>
 #include <QImage>
@@ -268,6 +269,8 @@ void LottieAnimationEngine::startNextAnimation()
     } else {
         // No more animations — go to rest pose
         m_playing = false;
+        m_idleTimer.setInterval(IdlePicker::idleTimeoutMs(
+            QRandomGenerator::global()->generateDouble()));
         m_idleTimer.start();
     }
 }
@@ -279,21 +282,11 @@ void LottieAnimationEngine::startIdleAnimation()
         return;
     }
 
-    // Weighted random selection
-    int totalWeight = 0;
-    for (int w : m_idleWeights) {
-        totalWeight += w;
-    }
-
-    int roll = QRandomGenerator::global()->bounded(totalWeight);
-    int cumulative = 0;
-    for (int i = 0; i < m_idleAnims.size(); ++i) {
-        cumulative += m_idleWeights.at(i);
-        if (roll < cumulative) {
-            playAnimation(m_idleAnims.at(i), HighPriority);
-            return;
-        }
-    }
-
-    playAnimation(m_idleAnims.first(), HighPriority);
+    const int exclude = m_idleAnims.size() > 1
+                        ? m_idleAnims.indexOf(m_lastIdleAnim) : -1;
+    int idx = IdlePicker::pickWeighted(m_idleWeights, exclude,
+                                       QRandomGenerator::global()->generateDouble());
+    if (idx < 0) idx = 0;
+    m_lastIdleAnim = m_idleAnims.at(idx);
+    playAnimation(m_lastIdleAnim, HighPriority);
 }
