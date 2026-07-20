@@ -97,7 +97,7 @@ def f32s(vals):
 def add_acc(vals, ctype, atype, target, mn=None, mx=None):
     if ctype == 5126: data = f32s(vals)
     elif ctype == 5123: data = struct.pack("<%dH"%len(vals), *vals)
-    elif ctype == 5121: data = struct.pack("<%dB"%len([c for v in vals for c in v]), *vals)
+    elif ctype == 5121: data = struct.pack("<%dB"%len([c for v in vals for c in v]), *[c for v in vals for c in v])
     n = len(vals) if atype!="SCALAR" or ctype!=5123 else len(vals)
     acc = {"bufferView":add_view(data,target),"componentType":ctype,
            "count":len(vals) if isinstance(vals[0],tuple) else len(vals),"type":atype}
@@ -111,9 +111,9 @@ acc_jnt = add_acc(JNT,5121,"VEC4",34962)
 acc_wgt = add_acc(WGT,5126,"VEC4",34962)
 acc_idx = add_acc(IDX,5123,"SCALAR",34963)
 acc_ibm = add_acc([tuple(IBM_ROOT),tuple(IBM_TIP)],5126,"MAT4",None)
-acc_idle_t = add_acc(IDLE_T,5126,"SCALAR",None)
+acc_idle_t = add_acc(IDLE_T,5126,"SCALAR",None, mn=[0.0], mx=[1.0])
 acc_idle_r = add_acc(IDLE_R,5126,"VEC4",None)
-acc_wave_t = add_acc(WAVE_T,5126,"SCALAR",None)
+acc_wave_t = add_acc(WAVE_T,5126,"SCALAR",None, mn=[0.0], mx=[0.5])
 acc_wave_r = add_acc(WAVE_R,5126,"VEC4",None)
 png = png_2x2()
 view_png = add_view(png, None)
@@ -140,11 +140,11 @@ gltf = {
   "accessors":accessors, "bufferViews":views,
   "buffers":[{"byteLength":0}]}
 
+actual_len = len(bin_blob)
+gltf["buffers"][0]["byteLength"] = actual_len  # unpadded data extent
 json_chunk = json.dumps(gltf, separators=(",",":")).encode()
 while len(json_chunk) % 4: json_chunk += b" "
-gltf["buffers"][0]["byteLength"] = len(bin_blob)
-json_chunk = json.dumps(gltf, separators=(",",":")).encode()
-while len(json_chunk) % 4: json_chunk += b" "
+while len(bin_blob) % 4: bin_blob.append(0)   # pad chunk to multiple of 4
 bin_chunk = bytes(bin_blob)
 total = 12 + 8+len(json_chunk) + 8+len(bin_chunk)
 out = (struct.pack("<III", 0x46546C67, 2, total)
