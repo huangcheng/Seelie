@@ -150,6 +150,7 @@ set(TEST_SOURCES
     test_llm_provider.cpp
     test_persona_pool.cpp
     test_persona_engine.cpp
+    test_idle_behavior.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
