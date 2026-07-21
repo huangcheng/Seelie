@@ -52,9 +52,12 @@ void main() {
     tex *= uBaseColor;
     float hemi = 1.0;
     if (uUnlit == 0) {
-        // Hemisphere light: sky from +Y, ground bounce, no hard terminator —
-        // forgiving on stylized models.
-        hemi = 0.75 + 0.25 * vNormal.y;
+        // Hemisphere base (soft sky fill) + directional key from upper-left
+        // front. The key gives form/depth; the fill keeps shadows readable.
+        float fill = 0.45 + 0.15 * vNormal.y;
+        vec3 keyDir = normalize(vec3(-0.45, 0.65, 0.62));
+        float key = max(dot(vNormal, keyDir), 0.0);
+        hemi = min(fill + 0.55 * key, 1.25);
     }
     vec3 linear = tex.rgb * hemi;
     gl_FragColor = vec4(pow(linear, vec3(1.0 / 2.2)), tex.a);
