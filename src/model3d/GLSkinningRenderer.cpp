@@ -279,7 +279,7 @@ void GLSkinningRenderer::finalizeFit(const QVector3D &mn, const QVector3D &mx)
     const float fovH = 2.0f * std::atan(std::tan(fovV * 0.5f) * m_fitAspect);
     const float fitH = (ext.y() * 0.5f) / std::tan(fovV * 0.5f);
     const float fitW = (qMax(ext.x(), ext.z()) * 0.5f) / std::tan(fovH * 0.5f);
-    m_fitDistance = qMax(fitH, fitW) * 1.4f;
+    m_fitDistance = qMax(fitH, fitW) * 1.2f;
     m_fitCenter = center;
     m_view.setToIdentity();
     const float dist = m_camDistance > 0.0f ? m_camDistance : m_fitDistance;

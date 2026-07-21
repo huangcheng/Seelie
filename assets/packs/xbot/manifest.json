@@ -18,8 +18,9 @@
     "frameWidth": 124,
     "frameHeight": 200,
     "cameraYaw": 0.0,
-    "cameraDistance": 3.8,
-    "cameraHeight": 0.9
+    "cameraDistance": 3.2,
+    "cameraHeight": 0.9,
+    "displayScale": 1.5
   },
   "idlePool": [
     {
