@@ -3,8 +3,8 @@
   "id": "seelie.xbot",
   "name": "Xbot",
   "author": "Mixamo (Adobe), Seelie port",
-  "version": "2.0.0",
-  "description": "Sci-fi android — 13 clips: idle, Wave, ThumbsUp, Bow, Dance, Laugh, Shrug, agree, headShake, sad_pose, sneak_pose, walk, run.",
+  "version": "3.0.0",
+  "description": "Sci-fi android — 10 Mixamo clips: Idle, Wave, ThumbsUp, Yes, No, Bow, Shrug, Dance, Laugh, Sit.",
   "tags": ["3d", "robot", "mixamo"],
   "license": "Mixamo royalty-free",
   "category": "originals",
@@ -16,24 +16,23 @@
     "cameraYaw": 15.0
   },
   "idlePool": [
-    { "name": "idle", "weight": 3 },
-    { "name": "sneak_pose", "weight": 1 }
+    { "name": "Idle", "weight": 3 }
   ],
   "eventMap": {
     "session.start": "Wave",
     "user.click": "Wave",
-    "prompt.submitted": "agree",
+    "prompt.submitted": "Yes",
     "tool.after": "ThumbsUp",
-    "tool.failed": "headShake",
+    "tool.failed": "No",
     "permission.requested": "Bow",
     "permission.denied": "Shrug",
-    "session.error": "sad_pose",
+    "session.error": "Sit",
     "todo.updated": "Dance",
     "file.edited": "Laugh"
   },
   "stateMap": {
     "Petted": "ThumbsUp",
-    "Grabbed": "headShake",
-    "Tossed": "sad_pose"
+    "Grabbed": "No",
+    "Tossed": "Sit"
   }
 }
