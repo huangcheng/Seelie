@@ -193,10 +193,37 @@ bool Model3DEngine::loadFromCharacterPack(const CharacterPack *pack)
     return true;
 }
 
+// Resolve FSM engine-default animation names to actual GLB clip names.
+// The FSM's built-in chains use sprite-pack names ("waving", "idle",
+// "running", "failed", "jumping", etc.) that don't exist in glTF clips.
+static QString resolveClipName(const Model3DModel &model, const QString &name)
+{
+    static const QMap<QString, QString> aliases = {
+        {"waving", "Wave"}, {"wave", "Wave"}, {"greet", "Wave"},
+        {"idle", "Idle"}, {"rest", "Idle"},
+        {"running", "Sit"}, {"toss", "Sit"},
+        {"failed", "No"}, {"alert", "No"},
+        {"jumping", "Dance"}, {"celebrate", "Dance"}, {"congratulate", "Dance"},
+        {"review", "Bow"}, {"waiting", "Idle"},
+        {"pat", "ThumbsUp"}, {"happy", "ThumbsUp"},
+        {"grab", "No"}, {"getattention", "Bow"},
+        {"yes", "Yes"}, {"no", "No"},
+        {"bow", "Bow"}, {"shrug", "Shrug"},
+        {"dance", "Dance"}, {"laugh", "Laugh"},
+        {"sit", "Sit"}, {"thumbsup", "ThumbsUp"},
+    };
+    const QString lower = name.toLower();
+    const auto it = aliases.constFind(lower);
+    if (it != aliases.constEnd() && model.clipIndexByName.contains(it.value()))
+        return it.value();
+    return name;
+}
+
 void Model3DEngine::playAnimation(const QString &name, Priority priority)
 {
     if (!m_modelLoaded) return;
-    const auto it = m_model.clipIndexByName.constFind(name);
+    const QString resolved = resolveClipName(m_model, name);
+    const auto it = m_model.clipIndexByName.constFind(resolved);
     if (it == m_model.clipIndexByName.constEnd()) {
         qWarning() << "Model3D: clip" << name << "not found";
         return;
