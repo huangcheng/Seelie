@@ -96,9 +96,10 @@ bool GLSkinningRenderer::initialize(QString *error)
     return true;
 }
 
-void GLSkinningRenderer::upload(const Model3DModel &model)
+void GLSkinningRenderer::upload(const Model3DModel &model, float viewportAspect)
 {
     releaseModelResources();
+    m_fitAspect = viewportAspect > 0.0f ? viewportAspect : 1.0f;
 
     m_jointCount = model.joints.size();
     m_cpuSkinning = model.hasSkin() && m_jointCount > m_maxJoints;
@@ -204,10 +205,16 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
         m_fitCenterY = 0.5f;
     } else {
         const QVector3D ext = mx - mn;
-        const float maxDim = qMax(ext.x(), qMax(ext.y(), ext.z()));
         const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
-        const float fov = qDegreesToRadians(30.0f);
-        m_fitDistance = (maxDim * 0.5f) / std::tan(fov * 0.5f) * 1.4f;
+        const float fovV = qDegreesToRadians(30.0f);
+        // Root-cause fix: the pet window is NOT square (124x200, aspect ~0.62),
+        // so the horizontal FOV is much narrower than the vertical one. Fit
+        // BOTH axes and take the larger distance — fitting only maxDim against
+        // a square-FOV assumption clips wide models (T-pose arms).
+        const float fovH = 2.0f * std::atan(std::tan(fovV * 0.5f) * m_fitAspect);
+        const float fitH = (ext.y() * 0.5f) / std::tan(fovV * 0.5f);
+        const float fitW = (qMax(ext.x(), ext.z()) * 0.5f) / std::tan(fovH * 0.5f);
+        m_fitDistance = qMax(fitH, fitW) * 1.4f;
         m_fitCenterY = center.y();
     }
     m_view.setToIdentity();

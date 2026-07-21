@@ -105,7 +105,7 @@ bool Model3DEngine::recoverOpenGL()
         qWarning() << "Model3D: recoverOpenGL: makeCurrent failed after init";
         return false;
     }
-    m_renderer->upload(m_model);
+    m_renderer->upload(m_model, float(m_renderWidth) / float(m_renderHeight));
     m_glContext->doneCurrent();
 
     m_lastPaintSuccessful = true;
@@ -154,7 +154,7 @@ bool Model3DEngine::loadFromCharacterPack(const CharacterPack *pack)
     m_fbo = new QOpenGLFramebufferObject(m_renderWidth * kSupersample,
                                          m_renderHeight * kSupersample,
                                          QOpenGLFramebufferObject::CombinedDepthStencil);
-    m_renderer->upload(m_model);
+    m_renderer->upload(m_model, float(m_renderWidth) / float(m_renderHeight));
     m_glContext->doneCurrent();
 
     // Filter pack mappings against clips present in the model (missing names

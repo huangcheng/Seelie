@@ -27,7 +27,7 @@ public:
     ~GLSkinningRenderer();
 
     bool initialize(QString *error);            // requires current context
-    void upload(const Model3DModel &model);
+    void upload(const Model3DModel &model, float viewportAspect = 1.0f);
     void render(QOpenGLFramebufferObject *fbo,
                 const QVector<QMatrix4x4> &palette,
                 const QVector<QMatrix4x4> &globalJoints);
@@ -69,6 +69,7 @@ private:
     float m_swaySec = -1.0f;       // <0 = no sway
     float m_camDistance = 0.0f, m_camHeight = 0.0f, m_camYaw = 0.0f;
     float m_fitDistance = 1.0f, m_fitCenterY = 0.5f;
+    float m_fitAspect = 1.0f;      // viewport w/h — horizontal fit needs it
     int m_maxJoints = 64;
     bool m_modelTooLarge = false;
     bool m_cpuSkinning = false;
