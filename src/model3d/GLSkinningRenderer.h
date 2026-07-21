@@ -44,6 +44,10 @@ public:
     // Gives life even to packs whose clips are static poses (pose libraries).
     void setSway(float timeSec, bool active) { m_swaySec = active ? timeSec : -1.0f; }
 
+    // Refit the camera to a given clip's pose (e.g. the idle clip) instead of
+    // the bind pose — T-posed characters frame their relaxed stance.
+    void fitCameraToPose(const Model3DModel &model, const Model3DClip *clip);
+
 private:
     struct PrimitiveGL {
         GLuint vbo = 0, ebo = 0;

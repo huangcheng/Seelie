@@ -176,6 +176,14 @@ bool Model3DEngine::loadFromCharacterPack(const CharacterPack *pack)
         m_idleWeights.append(1);
     }
 
+    // Refit camera to the IDLE pose (not the bind pose) — T-posed characters
+    // frame their relaxed stance instead of their spread bind pose.
+    if (!m_idleClips.isEmpty() && m_idleClips[0] < m_model.clips.size()) {
+        m_glContext->makeCurrent(m_surface);
+        m_renderer->fitCameraToPose(m_model, &m_model.clips[m_idleClips[0]]);
+        m_glContext->doneCurrent();
+    }
+
     m_modelLoaded = true;
     m_playing = true;
     m_lastPaintSuccessful = true;

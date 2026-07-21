@@ -166,12 +166,17 @@ void GLSkinningRenderer::upload(const Model3DModel &model, float viewportAspect)
 
 void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
 {
-    // Bind-pose bbox in WORLD space (NOT per-frame — an animated bbox makes
-    // the camera jump). For models with armature-local vertices (Blender
-    // exports like RobotExpressive), raw vertex positions are tiny and the
-    // palette/attachTransform must be applied to get world coordinates.
+    fitCameraToPose(model, nullptr);
+}
+
+void GLSkinningRenderer::fitCameraToPose(const Model3DModel &model, const Model3DClip *clip)
+{
+    // Bbox in WORLD space (NOT per-frame — an animated bbox makes the camera
+    // jump). When a clip is given (e.g. the idle clip), evaluates that pose
+    // instead of the bind pose so T-posed characters frame their relaxed
+    // stance rather than their spread bind pose.
     QVector<QMatrix4x4> palette, globals;
-    AnimationEvaluator::evaluate(model, nullptr, 0.0f, false, palette, &globals);
+    AnimationEvaluator::evaluate(model, clip, 0.0f, false, palette, &globals);
 
     QVector3D mn( 1e9f,  1e9f,  1e9f), mx(-1e9f, -1e9f, -1e9f);
     for (const Model3DPrimitive &p : model.primitives) {
