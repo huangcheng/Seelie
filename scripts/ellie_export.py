@@ -92,8 +92,51 @@ for a in list(bpy.data.actions):
         bpy.data.actions.remove(a)
 print(f"actions kept: {len(bpy.data.actions)}")
 
+# Bake one smoothing subdivision before export via the RENDER depsgraph
+# (the glTF exporter skips SubSurf on skinned meshes; CloudRig drives the
+# modifiers' VIEWPORT visibility off, but render visibility stays on, so
+# evaluating in render mode yields the subdivided mesh). new_from_object
+# with preserve_all_data_layers keeps vertex groups + UVs; the armature
+# modifier stays in the stack and re-deforms the denser mesh at rest
+# (identity) — correct bind.
+# Pass 1: un-drive and enable SubSurf on all visible meshes FIRST.
+for o in bpy.data.objects:
+    if o.type != 'MESH' or not o.visible_get():
+        continue
+    for m in o.modifiers:
+        if m.type == 'SUBSURF':
+            try:
+                o.driver_remove(f'modifiers["{m.name}"].levels')
+            except Exception:
+                pass
+            m.show_viewport = True
+            m.levels = 1   # cap: level 2 would ~4x verts again
+
+# Pass 2: bake the subdivided result (fresh depsgraph sees levels=1).
+_dg = bpy.context.evaluated_depsgraph_get()
+_dg.update()
+for o in bpy.data.objects:
+    if o.type != 'MESH' or not o.visible_get():
+        continue
+    subs = [m for m in o.modifiers if m.type == 'SUBSURF']
+    if not subs:
+        continue
+    try:
+        ev = o.evaluated_get(_dg)
+        new = bpy.data.meshes.new_from_object(ev, preserve_all_data_layers=True, depsgraph=_dg)
+        if len(new.vertices) <= len(o.data.vertices):
+            print(f"bake no-op on {o.name} (eval gave {len(new.vertices)} verts)")
+            bpy.data.meshes.remove(new)
+            continue
+        for m in subs:
+            o.modifiers.remove(m)
+        o.data = new
+        print(f"baked subsurf on {o.name}: {len(new.vertices)} verts")
+    except Exception as e:
+        print(f"bake failed on {o.name}: {e}")
+
 bpy.ops.export_scene.gltf(
-    filepath="/tmp/ellie/model4.glb", export_format="GLB",
+    filepath="/tmp/ellie/model6.glb", export_format="GLB",
     export_animations=True, export_skins=True,
     export_def_bones=True,
     export_animation_mode='ACTIONS',

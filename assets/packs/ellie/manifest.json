@@ -16,8 +16,8 @@
     "model": "model.glb",
     "frameWidth": 124,
     "frameHeight": 200,
-    "cameraDistance": 1.0,
-    "cameraHeight": 1.04
+    "cameraDistance": 2.2,
+    "cameraHeight": 0.88
   },
   "idlePool": [
     {
