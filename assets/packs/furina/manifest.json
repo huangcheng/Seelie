@@ -1,134 +1,41 @@
 {
   "formatVersion": "1.0.0",
-  "id": "im.cheng.seelie.furina",
-  "name": "Furina",
-  "nameLocalized": {
-    "zh_CN": "芙宁娜"
-  },
-  "author": "User-imported (VTube Studio model)",
+  "id": "seelie.furina",
+  "name": "Furina (Genshin Impact)",
+  "author": "Genshin Impact fan rip, Seelie port",
   "version": "1.0.0",
-  "description": "Furina — Live2D character imported from upstream collection. Asset rights belong to the original game studio.",
-  "preview": "preview.png",
+  "description": "Furina from Genshin Impact \u2014 241-joint rigged character with authored idle/wave/happy/no clips.",
   "tags": [
-    "live2d",
-    "furina"
+    "3d",
+    "anime"
   ],
-  "license": "Asset rights belong to original studio; personal use only",
+  "license": "Fan content",
   "category": "originals",
-  "minAppVersion": "2.0.0",
   "character": {
-    "type": "live2d",
-    "model": "model/furina.model3.json",
-    "frameWidth": 300,
-    "frameHeight": 300
+    "type": "model3d",
+    "model": "model.glb",
+    "frameWidth": 124,
+    "frameHeight": 200,
+    "cameraDistance": 0.0,
+    "cameraHeight": 0.0
   },
   "idlePool": [
     {
       "name": "Idle",
-      "weight": 4
-    },
-    {
-      "name": "Standby",
-      "weight": 6
-    },
-    {
-      "name": "Login",
-      "weight": 1
-    },
-    {
-      "name": "Mission",
-      "weight": 1
-    },
-    {
-      "name": "Complete",
-      "weight": 1
-    },
-    {
-      "name": "MissionComplete",
-      "weight": 1
-    },
-    {
-      "name": "Mail",
-      "weight": 2
-    },
-    {
-      "name": "Wedding",
-      "weight": 1
+      "weight": 3
     }
   ],
   "eventMap": {
-    "session.start": [
-      "Login",
-      "Tap"
-    ],
-    "session.end": [
-      "MissionComplete",
-      "Idle"
-    ],
-    "session.idle": [
-      "Idle"
-    ],
-    "session.error": [
-      "Tap"
-    ],
-    "prompt.submitted": [
-      "Mission",
-      "Tap"
-    ],
-    "tool.before": [
-      "Mission",
-      "Tap"
-    ],
-    "tool.after": [
-      "Complete",
-      "Tap"
-    ],
-    "tool.failed": [
-      "Tap"
-    ],
-    "permission.requested": [
-      "TouchHead",
-      "Tap"
-    ],
-    "permission.denied": [
-      "Tap"
-    ],
-    "permission.response": [
-      "Idle"
-    ],
-    "subagent.started": [
-      "Mission",
-      "Tap"
-    ],
-    "subagent.stopped": [
-      "Wedding",
-      "MissionComplete",
-      "Tap"
-    ],
-    "notification.sent": [
-      "Mail",
-      "Tap"
-    ],
-    "file.edited": [
-      "Idle"
-    ],
-    "file.watched": [
-      "Idle"
-    ],
-    "todo.updated": [
-      "MissionComplete",
-      "Complete",
-      "Tap"
-    ],
-    "user.click": [
-      "TouchBody",
-      "TouchHead",
-      "Tap"
-    ],
-    "user.doubleclick": [
-      "TouchSpecial",
-      "TouchBody",
-      "Tap"
-    ]
+    "session.start": "Wave",
+    "user.click": "Wave",
+    "tool.after": "Happy",
+    "tool.failed": "No",
+    "permission.denied": "No",
+    "todo.updated": "Happy"
+  },
+  "stateMap": {
+    "Petted": "Happy",
+    "Grabbed": "No",
+    "Tossed": "Happy"
   }
 }
