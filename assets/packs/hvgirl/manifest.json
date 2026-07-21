@@ -1,0 +1,33 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "seelie.hvgirl",
+  "name": "HVGirl",
+  "author": "BabylonJS, Seelie port",
+  "version": "1.0.0",
+  "description": "Stylized cartoon girl — light skin, blue tee, pink skirt. 49-joint Mixamo rig, 7 clips.",
+  "tags": ["3d", "cartoon"],
+  "license": "CC-BY-4.0",
+  "category": "originals",
+  "character": {
+    "type": "model3d",
+    "model": "model.glb",
+    "frameWidth": 124,
+    "frameHeight": 200
+  },
+  "idlePool": [
+    { "name": "Idle", "weight": 3 }
+  ],
+  "eventMap": {
+    "session.start": "Wave",
+    "user.click": "Wave",
+    "tool.after": "Happy",
+    "tool.failed": "No",
+    "permission.denied": "No",
+    "todo.updated": "Samba"
+  },
+  "stateMap": {
+    "Petted": "Happy",
+    "Grabbed": "No",
+    "Tossed": "Happy"
+  }
+}

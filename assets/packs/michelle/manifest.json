@@ -1,0 +1,33 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "seelie.michelle",
+  "name": "Michelle (Mixamo)",
+  "author": "Mixamo (Adobe), Seelie port",
+  "version": "1.0.0",
+  "description": "Michelle — detailed stylized character with braided hair and PBR textures. 65-joint Mixamo rig.",
+  "tags": ["3d", "anime", "mixamo"],
+  "license": "Mixamo royalty-free",
+  "category": "originals",
+  "character": {
+    "type": "model3d",
+    "model": "model.glb",
+    "frameWidth": 124,
+    "frameHeight": 200
+  },
+  "idlePool": [
+    { "name": "Idle", "weight": 3 }
+  ],
+  "eventMap": {
+    "session.start": "Wave",
+    "user.click": "Wave",
+    "tool.after": "Happy",
+    "tool.failed": "No",
+    "permission.denied": "No",
+    "todo.updated": "SambaDance"
+  },
+  "stateMap": {
+    "Petted": "Happy",
+    "Grabbed": "No",
+    "Tossed": "Happy"
+  }
+}
