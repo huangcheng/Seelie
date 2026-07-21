@@ -41,8 +41,39 @@
     "file.edited": "Laugh"
   },
   "stateMap": {
+    "Idle": "Idle",
+    "Greeting": "Wave",
+    "Thinking": "Idle",
+    "Working": "Idle",
+    "Reviewing": "Bow",
+    "Failed": "No",
+    "Celebrating": "Dance",
     "Petted": "ThumbsUp",
     "Grabbed": "No",
     "Tossed": "Sit"
+  },
+  "nameMap": {
+    "greet": "Wave",
+    "think": "Idle",
+    "thinking": "Idle",
+    "work": "Idle",
+    "processing": "Idle",
+    "writing": "Idle",
+    "searching": "Idle",
+    "attention": "Bow",
+    "alert": "No",
+    "celebrate": "Dance",
+    "congratulate": "Dance",
+    "pat": "ThumbsUp",
+    "happy": "ThumbsUp",
+    "grab": "No",
+    "getattention": "Bow",
+    "toss": "Sit",
+    "running": "Sit",
+    "gesture_up": "Wave",
+    "idle": "Idle",
+    "rest": "Idle",
+    "failed": "No",
+    "waving": "Wave"
   }
 }
