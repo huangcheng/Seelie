@@ -42,12 +42,14 @@ const char *kFragShader = R"GLSL(
 uniform sampler2D uTexture;
 uniform int uHasTexture;
 uniform int uUnlit;
+uniform vec4 uBaseColor;
 varying vec2 vUV;
 varying vec3 vNormal;
 void main() {
     vec4 tex = (uHasTexture == 1)
         ? pow(texture2D(uTexture, vUV), vec4(2.2, 2.2, 2.2, 1.0))
         : vec4(1.0);
+    tex *= uBaseColor;
     float hemi = 1.0;
     if (uUnlit == 0) {
         // Hemisphere light: sky from +Y, ground bounce, no hard terminator —
@@ -110,6 +112,9 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
         g.material = p.material;
         g.unlit = p.material >= 0 && p.material < model.materials.size()
                   && model.materials[p.material].unlit;
+        if (p.material >= 0 && p.material < model.materials.size())
+            for (int c = 0; c < 4; ++c)
+                g.color[c] = model.materials[p.material].baseColorFactor[c];
         g.indexCount = p.indices.size();
         g.skinned = p.skinned;
         g.attachedJoint = p.attachedJoint;
@@ -260,6 +265,7 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
                             && m_textures[g.material] != 0;
         m_program->setUniformValue("uHasTexture", hasTex ? 1 : 0);
         m_program->setUniformValue("uUnlit", g.unlit ? 1 : 0);
+        m_program->setUniformValue("uBaseColor", g.color[0], g.color[1], g.color[2], g.color[3]);
         if (hasTex) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, m_textures[g.material]);

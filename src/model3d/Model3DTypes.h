@@ -61,6 +61,7 @@ struct Model3DClip {
 
 struct Model3DMaterial {
     QImage baseColor;                // may be null -> default white
+    float baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f}; // multiplies baseColor
     bool unlit = false;              // KHR_materials_unlit
 };
 

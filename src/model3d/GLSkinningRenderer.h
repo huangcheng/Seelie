@@ -46,6 +46,7 @@ private:
         int indexCount = 0;
         int material = -1;
         bool unlit = false;          // KHR_materials_unlit
+        float color[4] = {1.0f, 1.0f, 1.0f, 1.0f}; // baseColorFactor
         bool skinned = false;        // node had a skin -> use joint palette
         int attachedJoint = -1;      // rigid: nearest joint ancestor
         QMatrix4x4 attachTransform;  // rigid: chain from attachedJoint to mesh node

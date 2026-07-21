@@ -82,6 +82,10 @@ bool GltfLoader::loadFromFile(const QString &path, Model3DModel &out, QString *e
         const cgltf_material &mat = data->materials[i];
         Model3DMaterial m;
         m.unlit = mat.unlit;
+        if (mat.has_pbr_metallic_roughness) {
+            for (int c = 0; c < 4; ++c)
+                m.baseColorFactor[c] = float(mat.pbr_metallic_roughness.base_color_factor[c]);
+        }
         const cgltf_texture *tex = mat.has_pbr_metallic_roughness
             ? mat.pbr_metallic_roughness.base_color_texture.texture : nullptr;
         if (tex && tex->image && tex->image->buffer_view) {

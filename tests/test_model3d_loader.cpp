@@ -143,6 +143,22 @@ void TestModel3DLoader::loadsRealBlenderModel()
     QVERIFY(model.clipIndexByName.contains(QStringLiteral("Dance")));
     QCOMPARE(model.materials.size(), 3);
     QVERIFY(model.materials[0].baseColor.isNull());
+    // Robot colors come from baseColorFactor (Grey/Main-orange/Black), not textures.
+    bool anyColored = false;
+    for (const Model3DMaterial &mat : model.materials) {
+        const float *f = mat.baseColorFactor;
+        if (qAbs(f[0] - 1.0f) > 1e-3f || qAbs(f[1] - 1.0f) > 1e-3f || qAbs(f[2] - 1.0f) > 1e-3f)
+            anyColored = true;
+    }
+    QVERIFY(anyColored);
+    // "Main" material is orange: high R, mid G, low B.
+    bool foundOrange = false;
+    for (const Model3DMaterial &mat : model.materials) {
+        const float *f = mat.baseColorFactor;
+        if (f[0] > 0.5f && f[1] > 0.2f && f[1] < 0.45f && f[2] < 0.15f)
+            foundOrange = true;
+    }
+    QVERIFY(foundOrange);
     QVERIFY(!model.primitives.isEmpty());
     // Real exporters emit dense keyframes — every track must have matching
     // time/value counts (3 comps for T/S, 4 for R).
