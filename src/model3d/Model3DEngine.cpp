@@ -146,7 +146,8 @@ bool Model3DEngine::loadFromCharacterPack(const CharacterPack *pack)
         modelMat.rotate(-90.0f, 1.0f, 0.0f, 0.0f);
     m_renderer->setModelTransform(modelMat);
     m_renderer->setCameraOverrides(pack->characterConfig().cameraDistance,
-                                   pack->characterConfig().cameraHeight);
+                                   pack->characterConfig().cameraHeight,
+                                   pack->characterConfig().cameraYaw);
 
     m_glContext->makeCurrent(m_surface);
     delete m_fbo;

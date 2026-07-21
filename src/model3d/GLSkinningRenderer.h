@@ -38,7 +38,7 @@ public:
     bool modelTooLarge() const { return m_modelTooLarge; } // joints > maxJoints
 
     // Manifest overrides (0 = auto).
-    void setCameraOverrides(float distance, float height);
+    void setCameraOverrides(float distance, float height, float yawDeg = 0.0f);
     void setModelTransform(const QMatrix4x4 &m) { m_modelMatrix = m; } // upAxis/unitScale
     // Procedural idle sway: gentle bob + rock composed onto the model matrix.
     // Gives life even to packs whose clips are static poses (pose libraries).
@@ -67,7 +67,7 @@ private:
     QVector<GLuint> m_textures;      // parallel to model materials
     QMatrix4x4 m_proj, m_view, m_modelMatrix;
     float m_swaySec = -1.0f;       // <0 = no sway
-    float m_camDistance = 0.0f, m_camHeight = 0.0f;
+    float m_camDistance = 0.0f, m_camHeight = 0.0f, m_camYaw = 0.0f;
     float m_fitDistance = 1.0f, m_fitCenterY = 0.5f;
     int m_maxJoints = 64;
     bool m_modelTooLarge = false;

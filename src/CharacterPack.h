@@ -124,6 +124,7 @@ public:
         QString modelFile;        ///< Path to .glb (for Model3D type)
         float cameraDistance = 0.0f; ///< Model3D: 0 = auto-fit bind-pose bbox
         float cameraHeight = 0.0f;   ///< Model3D: 0 = auto (bbox center Y)
+        float cameraYaw = 0.0f;      ///< Model3D: orbit degrees (0 = front; ~25-30 fits T-pose arms in narrow windows)
         float unitScale = 1.0f;      ///< Model3D: e.g. 0.01 for cm-scaled exports
         QString upAxis = QStringLiteral("y"); ///< Model3D: "y" (glTF default) or "z"
         float displayScale = 1.0f;///< Window-size multiplier over frameWidth/Height (default 1.0).

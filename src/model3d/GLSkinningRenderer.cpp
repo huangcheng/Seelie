@@ -213,15 +213,19 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
     m_view.setToIdentity();
     const float dist = m_camDistance > 0.0f ? m_camDistance : m_fitDistance;
     const float height = m_camHeight != 0.0f ? m_camHeight : m_fitCenterY;
-    m_view.lookAt(QVector3D(0, height, dist),
+    // Orbit the camera around the model: a slight yaw foreshortens T-pose
+    // arms so they fit the narrow pet window (and reads more dynamic).
+    const float yaw = qDegreesToRadians(m_camYaw);
+    m_view.lookAt(QVector3D(std::sin(yaw) * dist, height, std::cos(yaw) * dist),
                   QVector3D(0, height, 0),
                   QVector3D(0, 1, 0));
 }
 
-void GLSkinningRenderer::setCameraOverrides(float distance, float height)
+void GLSkinningRenderer::setCameraOverrides(float distance, float height, float yawDeg)
 {
     m_camDistance = distance;
     m_camHeight = height;
+    m_camYaw = yawDeg;
 }
 
 void GLSkinningRenderer::poseOnCpu(PrimitiveGL &g, const QVector<QMatrix4x4> &palette)

@@ -599,6 +599,7 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
         m_characterConfig.frameHeight = character.value("frameHeight").toInt(200);
         m_characterConfig.cameraDistance = float(character.value("cameraDistance").toDouble(0.0));
         m_characterConfig.cameraHeight = float(character.value("cameraHeight").toDouble(0.0));
+        m_characterConfig.cameraYaw = float(character.value("cameraYaw").toDouble(0.0));
         m_characterConfig.unitScale = float(character.value("unitScale").toDouble(1.0));
         m_characterConfig.upAxis = character.value("upAxis").toString(QStringLiteral("y"));
     } else {
