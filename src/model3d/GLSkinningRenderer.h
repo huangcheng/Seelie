@@ -31,7 +31,8 @@ public:
     void render(QOpenGLFramebufferObject *fbo,
                 const QVector<QMatrix4x4> &palette,
                 const QVector<QMatrix4x4> &globalJoints);
-    void release();
+    void releaseModelResources();   // per-model GL resources (context current)
+    void release();                 // model resources + shader program
 
     int maxJoints() const { return m_maxJoints; }  // from uniform-limit query
     bool modelTooLarge() const { return m_modelTooLarge; } // joints > maxJoints

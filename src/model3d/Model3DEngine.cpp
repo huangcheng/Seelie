@@ -322,10 +322,7 @@ void Model3DEngine::releaseModel()
 {
     if (m_renderer && m_glContext && m_surface) {
         m_glContext->makeCurrent(m_surface);
-        m_renderer->release();
-        QString err;
-        if (!m_renderer->initialize(&err))
-            qWarning() << "Model3D: renderer re-init failed after release:" << err;
+        m_renderer->releaseModelResources();   // keep the shader program
         m_glContext->doneCurrent();
     }
     m_model = Model3DModel{};

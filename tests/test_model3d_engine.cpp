@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QSignalSpy>
+#include <QPainter>
 #include "model3d/Model3DEngine.h"
 #include "CharacterPack.h"
 
@@ -107,6 +108,23 @@ void TestModel3DEngine::loadsRealRobotPack()
     engine.playAnimation(QStringLiteral("Wave"), Model3DEngine::HighPriority);
     QTest::qWait(100);
     QVERIFY(engine.lastPaintSuccessful());
+
+    // The frame must contain actual visible pixels — lastPaintSuccessful only
+    // proves toImage() returned a non-null QImage, which a fully transparent
+    // FBO satisfies. (Regression: upload() once deleted the shader program,
+    // every render early-returned, and every test passed on a blank window.)
+    QImage target(124, 200, QImage::Format_ARGB32_Premultiplied);
+    target.fill(Qt::transparent);
+    {
+        QPainter p(&target);
+        engine.paint(&p, target.rect());
+    }
+    int opaque = 0;
+    for (int y = 0; y < target.height(); ++y)
+        for (int x = 0; x < target.width(); ++x)
+            if (target.pixelColor(x, y).alpha() > 10)
+                ++opaque;
+    QVERIFY2(opaque > 100, qPrintable(QStringLiteral("frame has only %1 opaque pixels").arg(opaque)));
 }
 
 QTEST_MAIN(TestModel3DEngine)

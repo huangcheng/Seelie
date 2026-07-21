@@ -95,7 +95,7 @@ bool GLSkinningRenderer::initialize(QString *error)
 
 void GLSkinningRenderer::upload(const Model3DModel &model)
 {
-    release();
+    releaseModelResources();
 
     m_jointCount = model.joints.size();
     m_modelTooLarge = m_jointCount > m_maxJoints;
@@ -300,8 +300,11 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
     fbo->release();
 }
 
-void GLSkinningRenderer::release()
+void GLSkinningRenderer::releaseModelResources()
 {
+    // Per-model GL resources only. The shader program is context-level and
+    // survives pack switches — deleting it here would leave render()
+    // early-returning on a null program after every upload().
     for (PrimitiveGL &g : m_prims) {
         if (g.vbo) glDeleteBuffers(1, &g.vbo);
         if (g.ebo) glDeleteBuffers(1, &g.ebo);
@@ -310,6 +313,11 @@ void GLSkinningRenderer::release()
     for (GLuint t : m_textures)
         if (t) glDeleteTextures(1, &t);
     m_textures.clear();
+}
+
+void GLSkinningRenderer::release()
+{
+    releaseModelResources();
     delete m_program;
     m_program = nullptr;
 }
