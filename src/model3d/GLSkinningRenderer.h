@@ -68,7 +68,8 @@ private:
     QMatrix4x4 m_proj, m_view, m_modelMatrix;
     float m_swaySec = -1.0f;       // <0 = no sway
     float m_camDistance = 0.0f, m_camHeight = 0.0f, m_camYaw = 0.0f;
-    float m_fitDistance = 1.0f, m_fitCenterY = 0.5f;
+    float m_fitDistance = 1.0f;
+    QVector3D m_fitCenter{0, 0.5f, 0};  // full 3D bbox center — camera target
     float m_fitAspect = 1.0f;      // viewport w/h — horizontal fit needs it
     int m_maxJoints = 64;
     bool m_modelTooLarge = false;

@@ -196,13 +196,14 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
             } else {
                 q = rigidXform.map(QVector3D(v.px, v.py, v.pz));
             }
+            q = m_modelMatrix.map(q);   // apply upAxis/unitScale before fitting
             mn = QVector3D(qMin(mn.x(), q.x()), qMin(mn.y(), q.y()), qMin(mn.z(), q.z()));
             mx = QVector3D(qMax(mx.x(), q.x()), qMax(mx.y(), q.y()), qMax(mx.z(), q.z()));
         }
     }
     if (mn.x() > mx.x()) {   // no vertices — degenerate model
         m_fitDistance = 5.0f;
-        m_fitCenterY = 0.5f;
+        m_fitCenter = QVector3D(0, 0.5f, 0);
     } else {
         const QVector3D ext = mx - mn;
         const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
@@ -215,16 +216,16 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
         const float fitH = (ext.y() * 0.5f) / std::tan(fovV * 0.5f);
         const float fitW = (qMax(ext.x(), ext.z()) * 0.5f) / std::tan(fovH * 0.5f);
         m_fitDistance = qMax(fitH, fitW) * 1.4f;
-        m_fitCenterY = center.y();
+        m_fitCenter = center;
     }
     m_view.setToIdentity();
     const float dist = m_camDistance > 0.0f ? m_camDistance : m_fitDistance;
-    const float height = m_camHeight != 0.0f ? m_camHeight : m_fitCenterY;
-    // Orbit the camera around the model: a slight yaw foreshortens T-pose
-    // arms so they fit the narrow pet window (and reads more dynamic).
+    const QVector3D target = (m_camHeight != 0.0f)
+        ? QVector3D(m_fitCenter.x(), m_camHeight, m_fitCenter.z())
+        : m_fitCenter;
     const float yaw = qDegreesToRadians(m_camYaw);
-    m_view.lookAt(QVector3D(std::sin(yaw) * dist, height, std::cos(yaw) * dist),
-                  QVector3D(0, height, 0),
+    m_view.lookAt(target + QVector3D(std::sin(yaw) * dist, 0, std::cos(yaw) * dist),
+                  target,
                   QVector3D(0, 1, 0));
 }
 

@@ -17,7 +17,8 @@
     "frameWidth": 124,
     "frameHeight": 200,
     "cameraDistance": 0.0,
-    "cameraHeight": 0.0
+    "cameraHeight": 0.0,
+    "upAxis": "z"
   },
   "idlePool": [
     {
