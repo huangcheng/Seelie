@@ -47,6 +47,9 @@ public:
     // Refit the camera to a given clip's pose (e.g. the idle clip) instead of
     // the bind pose — T-posed characters frame their relaxed stance.
     void fitCameraToPose(const Model3DModel &model, const Model3DClip *clip);
+    // Refit to the WIDEST pose across bind + all clips at t=0 — guarantees
+    // no clip's arms/extremities get clipped at the window edges.
+    void fitCameraToAllClips(const Model3DModel &model);
 
 private:
     struct PrimitiveGL {
@@ -65,6 +68,10 @@ private:
     };
     void fitCameraToBindPose(const Model3DModel &model);
     void poseOnCpu(PrimitiveGL &g, const QVector<QMatrix4x4> &palette);
+    void computeFitFromPalette(const Model3DModel &model,
+                                const QVector<QMatrix4x4> &palette,
+                                const QVector<QMatrix4x4> &globals);
+    void finalizeFit(const QVector3D &mn, const QVector3D &mx);
 
     QOpenGLShaderProgram *m_program = nullptr;
     QVector<PrimitiveGL> m_prims;

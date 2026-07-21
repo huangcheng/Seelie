@@ -4,8 +4,12 @@
   "name": "Xbot",
   "author": "Mixamo (Adobe), Seelie port",
   "version": "3.0.0",
-  "description": "Sci-fi android — 10 Mixamo clips: Idle, Wave, ThumbsUp, Yes, No, Bow, Shrug, Dance, Laugh, Sit.",
-  "tags": ["3d", "robot", "mixamo"],
+  "description": "Sci-fi android \u2014 10 Mixamo clips: Idle, Wave, ThumbsUp, Yes, No, Bow, Shrug, Dance, Laugh, Sit.",
+  "tags": [
+    "3d",
+    "robot",
+    "mixamo"
+  ],
   "license": "Mixamo royalty-free",
   "category": "originals",
   "character": {
@@ -13,10 +17,15 @@
     "model": "model.glb",
     "frameWidth": 124,
     "frameHeight": 200,
-    "cameraYaw": 15.0
+    "cameraYaw": 0.0,
+    "cameraDistance": 3.8,
+    "cameraHeight": 0.9
   },
   "idlePool": [
-    { "name": "Idle", "weight": 3 }
+    {
+      "name": "Idle",
+      "weight": 3
+    }
   ],
   "eventMap": {
     "session.start": "Wave",

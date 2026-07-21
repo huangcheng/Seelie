@@ -177,7 +177,64 @@ void GLSkinningRenderer::fitCameraToPose(const Model3DModel &model, const Model3
     // stance rather than their spread bind pose.
     QVector<QMatrix4x4> palette, globals;
     AnimationEvaluator::evaluate(model, clip, 0.0f, false, palette, &globals);
+    computeFitFromPalette(model, palette, globals);
+}
 
+void GLSkinningRenderer::fitCameraToAllClips(const Model3DModel &model)
+{
+    // Union bbox across bind pose + every clip at t=0. Guarantees no clip's
+    // arms or extremities get clipped at the window edges. Costs a few
+    // palette evaluations at load time — negligible for a one-time fit.
+    QVector3D mn( 1e9f,  1e9f,  1e9f), mx(-1e9f, -1e9f, -1e9f);
+    QVector<QMatrix4x4> palette, globals;
+
+    auto accumulate = [&](const Model3DClip *clip) {
+        AnimationEvaluator::evaluate(model, clip, 0.0f, false, palette, &globals);
+        for (const Model3DPrimitive &p : model.primitives) {
+            QMatrix4x4 rigidXform;
+            if (!p.skinned) {
+                rigidXform = (p.attachedJoint >= 0 && p.attachedJoint < globals.size())
+                    ? globals[p.attachedJoint] * p.attachTransform
+                    : p.attachTransform;
+            }
+            for (const Model3DVertex &v : p.vertices) {
+                QVector3D q;
+                if (p.skinned) {
+                    QVector4D sum(0, 0, 0, 0);
+                    for (int k = 0; k < 4; ++k) {
+                        if (v.weights[k] <= 0.0f) continue;
+                        const int j = v.joints[k];
+                        if (j < 0 || j >= palette.size()) continue;
+                        const QVector4D pv = palette[j].map(QVector4D(v.px, v.py, v.pz, 1.0f));
+                        sum += pv * v.weights[k];
+                    }
+                    q = sum.toVector3D();
+                } else {
+                    q = rigidXform.map(QVector3D(v.px, v.py, v.pz));
+                }
+                q = m_modelMatrix.map(q);
+                mn = QVector3D(qMin(mn.x(), q.x()), qMin(mn.y(), q.y()), qMin(mn.z(), q.z()));
+                mx = QVector3D(qMax(mx.x(), q.x()), qMax(mx.y(), q.y()), qMax(mx.z(), q.z()));
+            }
+        }
+    };
+
+    accumulate(nullptr);  // bind pose
+    for (const Model3DClip &clip : model.clips)
+        accumulate(&clip);
+
+    if (mn.x() > mx.x()) {
+        m_fitDistance = 5.0f;
+        m_fitCenter = QVector3D(0, 0.5f, 0);
+        return;
+    }
+    finalizeFit(mn, mx);
+}
+
+void GLSkinningRenderer::computeFitFromPalette(const Model3DModel &model,
+                                                 const QVector<QMatrix4x4> &palette,
+                                                 const QVector<QMatrix4x4> &globals)
+{
     QVector3D mn( 1e9f,  1e9f,  1e9f), mx(-1e9f, -1e9f, -1e9f);
     for (const Model3DPrimitive &p : model.primitives) {
         QMatrix4x4 rigidXform;
@@ -209,20 +266,21 @@ void GLSkinningRenderer::fitCameraToPose(const Model3DModel &model, const Model3
     if (mn.x() > mx.x()) {   // no vertices — degenerate model
         m_fitDistance = 5.0f;
         m_fitCenter = QVector3D(0, 0.5f, 0);
-    } else {
-        const QVector3D ext = mx - mn;
-        const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
-        const float fovV = qDegreesToRadians(30.0f);
-        // Root-cause fix: the pet window is NOT square (124x200, aspect ~0.62),
-        // so the horizontal FOV is much narrower than the vertical one. Fit
-        // BOTH axes and take the larger distance — fitting only maxDim against
-        // a square-FOV assumption clips wide models (T-pose arms).
-        const float fovH = 2.0f * std::atan(std::tan(fovV * 0.5f) * m_fitAspect);
-        const float fitH = (ext.y() * 0.5f) / std::tan(fovV * 0.5f);
-        const float fitW = (qMax(ext.x(), ext.z()) * 0.5f) / std::tan(fovH * 0.5f);
-        m_fitDistance = qMax(fitH, fitW) * 1.4f;
-        m_fitCenter = center;
+        return;
     }
+    finalizeFit(mn, mx);
+}
+
+void GLSkinningRenderer::finalizeFit(const QVector3D &mn, const QVector3D &mx)
+{
+    const QVector3D ext = mx - mn;
+    const QVector3D center = (mn + mx) * 0.5f;
+    const float fovV = qDegreesToRadians(30.0f);
+    const float fovH = 2.0f * std::atan(std::tan(fovV * 0.5f) * m_fitAspect);
+    const float fitH = (ext.y() * 0.5f) / std::tan(fovV * 0.5f);
+    const float fitW = (qMax(ext.x(), ext.z()) * 0.5f) / std::tan(fovH * 0.5f);
+    m_fitDistance = qMax(fitH, fitW) * 1.4f;
+    m_fitCenter = center;
     m_view.setToIdentity();
     const float dist = m_camDistance > 0.0f ? m_camDistance : m_fitDistance;
     const QVector3D target = (m_camHeight != 0.0f)
