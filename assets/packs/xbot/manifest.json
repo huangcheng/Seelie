@@ -15,12 +15,12 @@
   "character": {
     "type": "model3d",
     "model": "model.glb",
-    "frameWidth": 124,
+    "frameWidth": 200,
     "frameHeight": 200,
     "cameraYaw": 0.0,
-    "cameraDistance": 3.2,
-    "cameraHeight": 0.9,
-    "displayScale": 1.5
+    "cameraDistance": 0.0,
+    "cameraHeight": 0.0,
+    "displayScale": 1.0
   },
   "idlePool": [
     {
