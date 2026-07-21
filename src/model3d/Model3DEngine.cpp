@@ -291,9 +291,10 @@ void Model3DEngine::tick()
     if (m_currentClip >= 0) {
         m_clipTimeSec += dt;
         const Model3DClip &clip = m_model.clips[m_currentClip];
-        if (!m_currentLoops && m_clipTimeSec >= clip.duration)
+        if (!m_currentLoops && m_clipTimeSec >= clip.duration + oneShotHoldSec(clip.duration))
             onClipFinished();
     }
+    m_swayTimeSec += dt;
 
     renderFrame();
     emit frameChanged();
@@ -308,6 +309,9 @@ void Model3DEngine::renderFrame()
     const Model3DClip *clip = (m_currentClip >= 0) ? &m_model.clips[m_currentClip] : nullptr;
     QVector<QMatrix4x4> palette, globals;
     AnimationEvaluator::evaluate(m_model, clip, m_clipTimeSec, m_currentLoops, palette, &globals);
+    // Procedural sway while idling (bind pose or looping idle clip) — gives
+    // life even to packs whose idle clips are static poses.
+    m_renderer->setSway(m_swayTimeSec, m_currentClip < 0 || m_currentLoops);
     m_renderer->render(m_fbo, palette, globals);
     m_image = m_fbo->toImage();
     m_lastPaintSuccessful = !m_image.isNull();

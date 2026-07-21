@@ -224,7 +224,7 @@ bool GltfLoader::loadFromFile(const QString &path, Model3DModel &out, QString *e
                 if (jnt) {
                     cgltf_uint j[4] = {0,0,0,0};
                     cgltf_accessor_read_uint(jnt, vi, j, 4);
-                    for (int k = 0; k < 4; ++k) v.joints[k] = uint8_t(qMin(j[k], 255u));
+                    for (int k = 0; k < 4; ++k) v.joints[k] = uint16_t(qMin(j[k], 65535u));
                 }
                 if (wgt) cgltf_accessor_read_float(wgt, vi, v.weights, 4);
                 else v.weights[0] = 1.0f;

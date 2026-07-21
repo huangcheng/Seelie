@@ -1,0 +1,52 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "seelie.ellie",
+  "name": "Ellie (Sprite Fright)",
+  "author": "Blender Studio, Seelie port",
+  "version": "1.0.0",
+  "description": "Ellie from Blender open movie Sprite Fright \u2014 329-joint rig, CPU-skinned.",
+  "tags": [
+    "3d",
+    "blender-studio"
+  ],
+  "license": "CC-BY-4.0",
+  "category": "originals",
+  "character": {
+    "type": "model3d",
+    "model": "model.glb",
+    "frameWidth": 124,
+    "frameHeight": 200,
+    "cameraDistance": 1.2,
+    "cameraHeight": 1.08
+  },
+  "idlePool": [
+    {
+      "name": "face_default",
+      "weight": 3
+    },
+    {
+      "name": "face_content",
+      "weight": 2
+    },
+    {
+      "name": "RIG.Ellie_Eyelid_Upper_Close-Open",
+      "weight": 2
+    }
+  ],
+  "eventMap": {
+    "session.start": "pose_wave",
+    "user.click": "pose_wave",
+    "prompt.submitted": "face_awe",
+    "tool.after": "face_excited",
+    "tool.failed": "face_angry",
+    "permission.requested": "face_suspicious",
+    "permission.denied": "face_annoyed",
+    "session.error": "face_scared",
+    "todo.updated": "mouth_smileopen"
+  },
+  "stateMap": {
+    "Petted": "face_excited",
+    "Grabbed": "face_squint",
+    "Tossed": "face_scared2"
+  }
+}

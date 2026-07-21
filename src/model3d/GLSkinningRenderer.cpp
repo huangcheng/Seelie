@@ -98,13 +98,11 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
     releaseModelResources();
 
     m_jointCount = model.joints.size();
-    m_modelTooLarge = m_jointCount > m_maxJoints;
-    if (m_modelTooLarge) {
-        // Loud warning — Mixamo rigs often exceed 64 joints, and silently
-        // clamping would drop finger/leaf joints. See docs/model3d-packs.md.
-        qWarning() << "Model3D: model has" << m_jointCount
-                   << "joints but this GL stack supports at most" << m_maxJoints
-                   << "— animation will be degraded. Reduce the rig's joint count.";
+    m_cpuSkinning = model.hasSkin() && m_jointCount > m_maxJoints;
+    m_modelTooLarge = false;   // legacy flag; the CPU path handles big rigs
+    if (m_cpuSkinning) {
+        qWarning() << "Model3D: model has" << m_jointCount << "joints (> uniform palette of"
+                   << m_maxJoints << ") — using CPU skinning (per-frame vertex stream).";
     }
 
     for (const Model3DPrimitive &p : model.primitives) {
@@ -119,10 +117,23 @@ void GLSkinningRenderer::upload(const Model3DModel &model)
         g.skinned = p.skinned;
         g.attachedJoint = p.attachedJoint;
         g.attachTransform = p.attachTransform;
+        const bool cpu = m_cpuSkinning && p.skinned;
+        if (cpu) {
+            g.bindVerts = p.vertices;
+            g.scratch = p.vertices;
+            // The shader still evaluates the skin equation on whatever
+            // joints/weights the vertices carry — neutralize them to slot 0
+            // (identity) so only the CPU-posed positions/normals matter.
+            for (Model3DVertex &v : g.scratch) {
+                v.joints[0] = v.joints[1] = v.joints[2] = v.joints[3] = 0;
+                v.weights[0] = 1.0f;
+                v.weights[1] = v.weights[2] = v.weights[3] = 0.0f;
+            }
+        }
         glGenBuffers(1, &g.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, g.vbo);
         glBufferData(GL_ARRAY_BUFFER, p.vertices.size() * int(sizeof(Model3DVertex)),
-                     p.vertices.constData(), GL_STATIC_DRAW);
+                     p.vertices.constData(), cpu ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
         glGenBuffers(1, &g.ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, p.indices.size() * int(sizeof(uint32_t)),
@@ -210,6 +221,27 @@ void GLSkinningRenderer::setCameraOverrides(float distance, float height)
     m_camHeight = height;
 }
 
+void GLSkinningRenderer::poseOnCpu(PrimitiveGL &g, const QVector<QMatrix4x4> &palette)
+{
+    const int n = g.bindVerts.size();
+    for (int i = 0; i < n; ++i) {
+        const Model3DVertex &v = g.bindVerts[i];
+        QVector3D pos, nrm;
+        for (int k = 0; k < 4; ++k) {
+            const float w = v.weights[k];
+            if (w <= 0.0f) continue;
+            const int j = v.joints[k];
+            if (j >= palette.size()) continue;
+            const QMatrix4x4 &m = palette[j];
+            pos += m.map(QVector3D(v.px, v.py, v.pz)) * w;
+            nrm += m.mapVector(QVector3D(v.nx, v.ny, v.nz)) * w;
+        }
+        Model3DVertex &o = g.scratch[i];
+        o.px = pos.x(); o.py = pos.y(); o.pz = pos.z();
+        o.nx = nrm.x(); o.ny = nrm.y(); o.nz = nrm.z();
+    }
+}
+
 void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
                                 const QVector<QMatrix4x4> &palette,
                                 const QVector<QMatrix4x4> &globalJoints)
@@ -228,11 +260,18 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
     m_proj.setToIdentity();
     m_proj.perspective(30.0f, float(fbo->size().width()) / float(fbo->size().height()),
                        0.01f, 100.0f);
-    const QMatrix4x4 mvp = m_proj * m_view * m_modelMatrix;
+    QMatrix4x4 modelMat = m_modelMatrix;
+    if (m_swaySec >= 0.0f) {
+        // Subtle breathing: vertical bob ~1% of model height, ±1.2° rock.
+        const float ph = m_swaySec * 2.0f * float(M_PI) / 3.2f;  // ~3.2s cycle
+        modelMat.translate(0.0f, std::sin(ph) * 0.012f, 0.0f);
+        modelMat.rotate(std::sin(ph * 0.5f) * 1.2f, 0.0f, 0.0f, 1.0f);
+    }
+    const QMatrix4x4 mvp = m_proj * m_view * modelMat;
 
     m_program->bind();
     m_program->setUniformValue("uMVP", mvp);
-    m_program->setUniformValue("uModel", m_modelMatrix);
+    m_program->setUniformValue("uModel", modelMat);
 
     // Per-primitive palette upload:
     //  - skinned primitives use the full joint palette (capped to m_maxJoints);
@@ -248,8 +287,18 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
     const int aWgt = m_program->attributeLocation("aWeights");
     m_program->setUniformValue("uTexture", 0);
 
-    for (const PrimitiveGL &g : m_prims) {
-        if (g.skinned) {
+    for (PrimitiveGL &g : m_prims) {
+        const bool cpu = m_cpuSkinning && g.skinned;
+        if (cpu) {
+            // Big-rig path: pose on CPU, stream verts, draw with identity skin.
+            poseOnCpu(g, palette);
+            glBindBuffer(GL_ARRAY_BUFFER, g.vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                            g.scratch.size() * int(sizeof(Model3DVertex)),
+                            g.scratch.constData());
+            joints[0] = QMatrix4x4();
+            m_program->setUniformValueArray("uJoints", joints, 1);
+        } else if (g.skinned) {
             const int n = qMin(qMin(palette.size(), m_maxJoints), 64);
             for (int i = 0; i < qMax(n, 1); ++i)
                 joints[i] = (i < n) ? palette[i] : QMatrix4x4();
@@ -279,7 +328,7 @@ void GLSkinningRenderer::render(QOpenGLFramebufferObject *fbo,
         glEnableVertexAttribArray(aUV);
         glVertexAttribPointer(aUV, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void *>(offsetof(Model3DVertex, u)));
         glEnableVertexAttribArray(aJnt);
-        glVertexAttribPointer(aJnt, 4, GL_UNSIGNED_BYTE, GL_FALSE, stride, reinterpret_cast<void *>(offsetof(Model3DVertex, joints)));
+        glVertexAttribPointer(aJnt, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride, reinterpret_cast<void *>(offsetof(Model3DVertex, joints)));
         glEnableVertexAttribArray(aWgt);
         glVertexAttribPointer(aWgt, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void *>(offsetof(Model3DVertex, weights)));
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ebo);

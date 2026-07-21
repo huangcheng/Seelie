@@ -40,6 +40,9 @@ public:
     // Manifest overrides (0 = auto).
     void setCameraOverrides(float distance, float height);
     void setModelTransform(const QMatrix4x4 &m) { m_modelMatrix = m; } // upAxis/unitScale
+    // Procedural idle sway: gentle bob + rock composed onto the model matrix.
+    // Gives life even to packs whose clips are static poses (pose libraries).
+    void setSway(float timeSec, bool active) { m_swaySec = active ? timeSec : -1.0f; }
 
 private:
     struct PrimitiveGL {
@@ -51,17 +54,24 @@ private:
         bool skinned = false;        // node had a skin -> use joint palette
         int attachedJoint = -1;      // rigid: nearest joint ancestor
         QMatrix4x4 attachTransform;  // rigid: chain from attachedJoint to mesh node
+        // CPU-skinning path (models whose joint count exceeds the uniform
+        // palette): bind-pose copy + per-frame posed scratch, streamed to vbo.
+        QVector<Model3DVertex> bindVerts;
+        QVector<Model3DVertex> scratch;
     };
     void fitCameraToBindPose(const Model3DModel &model);
+    void poseOnCpu(PrimitiveGL &g, const QVector<QMatrix4x4> &palette);
 
     QOpenGLShaderProgram *m_program = nullptr;
     QVector<PrimitiveGL> m_prims;
     QVector<GLuint> m_textures;      // parallel to model materials
     QMatrix4x4 m_proj, m_view, m_modelMatrix;
+    float m_swaySec = -1.0f;       // <0 = no sway
     float m_camDistance = 0.0f, m_camHeight = 0.0f;
     float m_fitDistance = 1.0f, m_fitCenterY = 0.5f;
     int m_maxJoints = 64;
     bool m_modelTooLarge = false;
+    bool m_cpuSkinning = false;
     int m_jointCount = 0;
 };
 

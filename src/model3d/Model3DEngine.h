@@ -79,7 +79,15 @@ private:
     bool m_playing = false;
     int m_currentClip = -1;          // index into m_model.clips, -1 = bind pose
     bool m_currentLoops = false;
+    // One-shot clips shorter than this hold their final frame until the total
+    // reaches kMinOneShotSec — pose-library clips (1-frame poses) would
+    // otherwise flash back to idle in a single tick and never read.
+    static constexpr float kMinOneShotSec = 1.5f;
+    static float oneShotHoldSec(float duration) {
+        return duration < kMinOneShotSec ? kMinOneShotSec - duration : 0.0f;
+    }
     float m_clipTimeSec = 0.0f;
+    float m_swayTimeSec = 0.0f;    // continuous clock for the idle sway
     QVector<int> m_queue;            // queued clip indices (one-shot)
     QTimer m_timer;                  // 16ms frame tick
     qint64 m_lastTickMs = 0;

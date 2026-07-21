@@ -18,7 +18,7 @@ struct Model3DVertex {
     float px, py, pz;
     float nx, ny, nz;
     float u, v;
-    uint8_t joints[4];
+    uint16_t joints[4];         // u16: rigs can exceed 255 joints (film rigs)
     float weights[4];
 };
 
