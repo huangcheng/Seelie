@@ -9,6 +9,11 @@
 #include <QRandomGenerator>
 #include <QDebug>
 
+// Render the FBO at 2x the window size; paint() downscales with
+// SmoothPixmapTransform, giving cheap full-scene anti-aliasing (incl. alpha
+// edges, which MSAA wouldn't fix).
+static constexpr int kSupersample = 2;
+
 Model3DEngine::Model3DEngine(QObject *parent) : QObject(parent)
 {
     m_timer.setInterval(16);
@@ -59,7 +64,8 @@ bool Model3DEngine::initOpenGL()
     if (!m_renderer->initialize(&err))
         return bail(qPrintable(QStringLiteral("renderer init failed: %1").arg(err)));
 
-    m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
+    m_fbo = new QOpenGLFramebufferObject(m_renderWidth * kSupersample,
+                                         m_renderHeight * kSupersample,
                                          QOpenGLFramebufferObject::CombinedDepthStencil);
     if (!m_fbo->isValid())
         return bail("FBO creation failed");
@@ -144,7 +150,8 @@ bool Model3DEngine::loadFromCharacterPack(const CharacterPack *pack)
 
     m_glContext->makeCurrent(m_surface);
     delete m_fbo;
-    m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
+    m_fbo = new QOpenGLFramebufferObject(m_renderWidth * kSupersample,
+                                         m_renderHeight * kSupersample,
                                          QOpenGLFramebufferObject::CombinedDepthStencil);
     m_renderer->upload(m_model);
     m_glContext->doneCurrent();

@@ -193,7 +193,7 @@ void GLSkinningRenderer::fitCameraToBindPose(const Model3DModel &model)
         const float maxDim = qMax(ext.x(), qMax(ext.y(), ext.z()));
         const QVector3D center = (mn + mx) * 0.5f;   // recenters off-origin geometry
         const float fov = qDegreesToRadians(30.0f);
-        m_fitDistance = (maxDim * 0.5f) / std::tan(fov * 0.5f) * 1.2f;
+        m_fitDistance = (maxDim * 0.5f) / std::tan(fov * 0.5f) * 1.4f;
         m_fitCenterY = center.y();
     }
     m_view.setToIdentity();
