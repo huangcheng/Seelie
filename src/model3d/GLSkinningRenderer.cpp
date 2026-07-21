@@ -219,7 +219,8 @@ void GLSkinningRenderer::fitCameraToAllClips(const Model3DModel &model)
         }
     };
 
-    accumulate(nullptr);  // bind pose
+    // Fit to clip poses only — the bind pose (T-pose for Mixamo) is never
+    // shown after the first frame, so it shouldn't drag the camera back.
     for (const Model3DClip &clip : model.clips)
         accumulate(&clip);
 
