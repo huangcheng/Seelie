@@ -3,11 +3,11 @@
   "id": "im.cheng.seelie.seelie",
   "name": "Seelie",
   "nameLocalized": {
-    "zh_CN": "仙灵"
+    "zh_CN": "\u4ed9\u7075"
   },
   "author": "HUANG Cheng",
-  "version": "1.0.0",
-  "description": "Seelie — the project's built-in mascot. A small fae-spirit virtual idol girl who reacts to AI coding tool events. Generated as an 8×9 atlas via the OpenAI hatch-pet skill from MiniMax-generated reference art.",
+  "version": "2.0.0",
+  "description": "Seelie sakura mascot \u2014 desktop-life sprite pack with idle, work, touch, and motion clips.",
   "preview": "preview.png",
   "tags": [
     "seelie",
@@ -25,30 +25,106 @@
     "frameWidth": 192,
     "frameHeight": 208,
     "definitions": "animations.json",
-    "displayScale": 1.0
+    "displayScale": 1.0,
+    "desktopMotion": true
   },
   "idlePool": [
-    { "name": "idle",    "weight": 7 },
-    { "name": "waiting", "weight": 2 },
-    { "name": "review",  "weight": 1 }
+    {
+      "name": "idle",
+      "weight": 6
+    },
+    {
+      "name": "idle_fidget",
+      "weight": 2
+    },
+    {
+      "name": "idle_look_left",
+      "weight": 1
+    },
+    {
+      "name": "idle_look_right",
+      "weight": 1
+    },
+    {
+      "name": "idle_stretch",
+      "weight": 1
+    },
+    {
+      "name": "idle_snooze",
+      "weight": 1
+    }
   ],
+  "stateMap": {
+    "Idle": [
+      "idle"
+    ],
+    "Greeting": [
+      "greet",
+      "waving"
+    ],
+    "Thinking": [
+      "think",
+      "waiting"
+    ],
+    "Working": [
+      "work",
+      "running"
+    ],
+    "Reviewing": [
+      "review"
+    ],
+    "Failed": [
+      "fail",
+      "failed"
+    ],
+    "Celebrating": [
+      "celebrate",
+      "jumping"
+    ],
+    "Petted": [
+      "pet",
+      "jumping"
+    ],
+    "Grabbed": [
+      "grab",
+      "failed"
+    ],
+    "Tossed": [
+      "toss",
+      "running"
+    ]
+  },
+  "nameMap": {
+    "waving": "greet",
+    "waiting": "think",
+    "running": "work",
+    "failed": "fail",
+    "jumping": "celebrate",
+    "pat": "pet",
+    "wave": "greet",
+    "alert": "fail",
+    "running-left": "walk_left",
+    "running-right": "walk_right",
+    "lookleft": "idle_look_left",
+    "lookright": "idle_look_right"
+  },
   "eventMap": {
-    "session.start":        "waving",
-    "session.end":          "idle",
-    "session.idle":         "idle",
-    "session.error":        "failed",
-    "prompt.submitted":     "running",
-    "tool.before":          "running",
-    "tool.after":           "idle",
-    "tool.failed":          "failed",
-    "permission.requested": "waiting",
-    "permission.denied":    "failed",
-    "permission.response":  "idle",
-    "subagent.started":     "running",
-    "subagent.stopped":     "review",
-    "notification.sent":    "waving",
-    "file.edited":          "review",
-    "file.watched":         "idle",
-    "todo.updated":         "review"
+    "session.start": "greet",
+    "session.end": "idle",
+    "session.idle": "idle",
+    "session.error": "fail",
+    "prompt.submitted": "think",
+    "tool.before": "work",
+    "tool.after": "idle",
+    "tool.failed": "fail",
+    "permission.requested": "review",
+    "permission.denied": "fail",
+    "permission.response": "idle",
+    "subagent.started": "work",
+    "subagent.stopped": "review",
+    "notification.sent": "greet",
+    "file.edited": "work",
+    "file.watched": "idle",
+    "todo.updated": "celebrate"
   }
 }

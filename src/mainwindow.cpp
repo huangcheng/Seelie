@@ -310,7 +310,7 @@ void MainWindow::dispatchAnimationChain(const QStringList &chain,
         return;
     }
     if (m_engine && m_engine->hasAnimations()) {
-        m_engine->playAnimation(chain.first(), priority);
+        m_engine->playAnimationChain(chain, priority);
     }
 }
 

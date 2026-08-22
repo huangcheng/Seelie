@@ -2,103 +2,911 @@
   {
     "Name": "idle",
     "Frames": [
-      { "Duration": 280, "ImagesOffsets": { "Column": 0, "Row": 0 } },
-      { "Duration": 110, "ImagesOffsets": { "Column": 1, "Row": 0 } },
-      { "Duration": 110, "ImagesOffsets": { "Column": 2, "Row": 0 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 0 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 4, "Row": 0 } },
-      { "Duration": 320, "ImagesOffsets": { "Column": 5, "Row": 0 } }
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 6,
+          "Row": 0
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 7,
+          "Row": 0
+        }
+      }
     ]
   },
   {
-    "Name": "running-right",
+    "Name": "idle_fidget",
     "Frames": [
-      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 5, "Row": 1 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 6, "Row": 1 } },
-      { "Duration": 220, "ImagesOffsets": { "Column": 7, "Row": 1 } }
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 1
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 1
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 1
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 1
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 1
+        }
+      }
     ]
   },
   {
-    "Name": "running-left",
+    "Name": "idle_look_left",
     "Frames": [
-      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 5, "Row": 2 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 6, "Row": 2 } },
-      { "Duration": 220, "ImagesOffsets": { "Column": 7, "Row": 2 } }
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 2
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 2
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 2
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 2
+        }
+      }
     ]
   },
   {
-    "Name": "waving",
+    "Name": "idle_look_right",
     "Frames": [
-      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 3 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 3 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 3 } },
-      { "Duration": 280, "ImagesOffsets": { "Column": 3, "Row": 3 } }
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 3
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 3
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 3
+        }
+      },
+      {
+        "Duration": 160,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 3
+        }
+      }
     ]
   },
   {
-    "Name": "jumping",
+    "Name": "idle_stretch",
     "Frames": [
-      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 4 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 4 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 4 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 4 } },
-      { "Duration": 280, "ImagesOffsets": { "Column": 4, "Row": 4 } }
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 4
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 4
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 4
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 4
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 4
+        }
+      }
     ]
   },
   {
-    "Name": "failed",
+    "Name": "idle_snooze",
     "Frames": [
-      { "Duration": 140, "ImagesOffsets": { "Column": 0, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 1, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 2, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 3, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 4, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 5, "Row": 5 } },
-      { "Duration": 140, "ImagesOffsets": { "Column": 6, "Row": 5 } },
-      { "Duration": 240, "ImagesOffsets": { "Column": 7, "Row": 5 } }
+      {
+        "Duration": 180,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 5
+        }
+      },
+      {
+        "Duration": 180,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 5
+        }
+      },
+      {
+        "Duration": 180,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 5
+        }
+      },
+      {
+        "Duration": 180,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 5
+        }
+      },
+      {
+        "Duration": 180,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 5
+        }
+      }
     ]
   },
   {
-    "Name": "waiting",
+    "Name": "greet",
     "Frames": [
-      { "Duration": 150, "ImagesOffsets": { "Column": 0, "Row": 6 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 1, "Row": 6 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 2, "Row": 6 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 3, "Row": 6 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 4, "Row": 6 } },
-      { "Duration": 260, "ImagesOffsets": { "Column": 5, "Row": 6 } }
+      {
+        "Duration": 130,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 6
+        }
+      },
+      {
+        "Duration": 130,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 6
+        }
+      },
+      {
+        "Duration": 130,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 6
+        }
+      },
+      {
+        "Duration": 130,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 6
+        }
+      },
+      {
+        "Duration": 130,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 6
+        }
+      }
     ]
   },
   {
-    "Name": "running",
+    "Name": "think",
     "Frames": [
-      { "Duration": 120, "ImagesOffsets": { "Column": 0, "Row": 7 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 1, "Row": 7 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 2, "Row": 7 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 3, "Row": 7 } },
-      { "Duration": 120, "ImagesOffsets": { "Column": 4, "Row": 7 } },
-      { "Duration": 220, "ImagesOffsets": { "Column": 5, "Row": 7 } }
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 7
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 7
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 7
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 7
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 7
+        }
+      }
+    ]
+  },
+  {
+    "Name": "work",
+    "Frames": [
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 8
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 8
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 8
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 8
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 8
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 8
+        }
+      }
     ]
   },
   {
     "Name": "review",
     "Frames": [
-      { "Duration": 150, "ImagesOffsets": { "Column": 0, "Row": 8 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 1, "Row": 8 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 2, "Row": 8 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 3, "Row": 8 } },
-      { "Duration": 150, "ImagesOffsets": { "Column": 4, "Row": 8 } },
-      { "Duration": 280, "ImagesOffsets": { "Column": 5, "Row": 8 } }
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 9
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 9
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 9
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 9
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 9
+        }
+      }
+    ]
+  },
+  {
+    "Name": "fail",
+    "Frames": [
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 10
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 10
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 10
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 10
+        }
+      },
+      {
+        "Duration": 150,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 10
+        }
+      }
+    ]
+  },
+  {
+    "Name": "celebrate",
+    "Frames": [
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 11
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 11
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 11
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 11
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 11
+        }
+      },
+      {
+        "Duration": 120,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 11
+        }
+      }
+    ]
+  },
+  {
+    "Name": "pet",
+    "Frames": [
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 12
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 12
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 12
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 12
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 12
+        }
+      }
+    ]
+  },
+  {
+    "Name": "grab",
+    "Frames": [
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 13
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 13
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 13
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 13
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 13
+        }
+      }
+    ]
+  },
+  {
+    "Name": "toss",
+    "Frames": [
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 14
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 14
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 14
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 14
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 14
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 14
+        }
+      }
+    ]
+  },
+  {
+    "Name": "walk_left",
+    "Frames": [
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 6,
+          "Row": 15
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 7,
+          "Row": 15
+        }
+      }
+    ]
+  },
+  {
+    "Name": "walk_right",
+    "Frames": [
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 6,
+          "Row": 16
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 7,
+          "Row": 16
+        }
+      }
+    ]
+  },
+  {
+    "Name": "sit",
+    "Frames": [
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 17
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 17
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 17
+        }
+      },
+      {
+        "Duration": 140,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 17
+        }
+      }
+    ]
+  },
+  {
+    "Name": "hop_off",
+    "Frames": [
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 18
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 18
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 18
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 18
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 18
+        }
+      }
+    ]
+  },
+  {
+    "Name": "fall",
+    "Frames": [
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 19
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 19
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 19
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 19
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 19
+        }
+      },
+      {
+        "Duration": 100,
+        "ImagesOffsets": {
+          "Column": 5,
+          "Row": 19
+        }
+      }
+    ]
+  },
+  {
+    "Name": "land",
+    "Frames": [
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 0,
+          "Row": 20
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 1,
+          "Row": 20
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 2,
+          "Row": 20
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 3,
+          "Row": 20
+        }
+      },
+      {
+        "Duration": 110,
+        "ImagesOffsets": {
+          "Column": 4,
+          "Row": 20
+        }
+      }
     ]
   }
 ]

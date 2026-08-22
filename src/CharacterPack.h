@@ -215,6 +215,9 @@ public:
      */
     const QMap<QString, QStringList> &stateMap() const { return m_stateMap; }
 
+    /// True when manifest sets character.desktopMotion (desktop wander/perch).
+    bool desktopMotion() const { return m_desktopMotion; }
+
     /**
      * @brief Get effect triggers (animation name -> effect name)
      */
@@ -284,6 +287,7 @@ private:
     bool parseEventMap(const QJsonObject &map);
     bool parseEffectTriggers(const QJsonObject &triggers);
     bool parseStateMap(const QJsonObject &map);
+    bool parseNameMap(const QJsonObject &map);
     bool loadAnimationsFromDefinitions(const QString &definitionsPath);
     bool parsePersona(const QJsonObject &persona);
 
@@ -302,6 +306,7 @@ private:
     QVector<IdleEntry> m_idlePool;
     QMap<QString, QString> m_nameMap;
     QMap<QString, QStringList> m_stateMap;
+    bool m_desktopMotion = false;
     Persona m_persona;
     mutable QString m_personaHashCache;
 };

@@ -58,6 +58,12 @@ public:
     /** @brief True once loadAssets / loadFromCharacterPack has loaded animations. */
     bool hasAnimations() const override { return !m_animations.isEmpty(); }
 
+    /** @brief True if a clip exists after pack/engine name resolution. */
+    bool hasClip(const QString &name) const;
+
+    /** @brief Play the first resolvable clip in the fallback chain. */
+    void playAnimationChain(const QStringList &chain, Priority priority = NormalPriority);
+
     /** @brief Always true for sprite engine — no GPU context to lose. */
     bool lastPaintSuccessful() const override { return true; }
 

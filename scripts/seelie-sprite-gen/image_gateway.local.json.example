@@ -1,0 +1,6 @@
+{
+  "base": "https://YOUR_IMAGE_GATEWAY_HOST",
+  "key": "YOUR_API_KEY",
+  "path": "/api/gateway/v1beta/models/images/generations/Seedream-5.0-Lite",
+  "model": "doubao-seedream-5-0-260128"
+}

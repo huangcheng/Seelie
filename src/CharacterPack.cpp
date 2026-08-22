@@ -557,6 +557,11 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
         return false;
     }
 
+    if (!parseNameMap(pickObject("nameMap"))) {
+        qWarning() << "CharacterPack: Failed to parse nameMap";
+        return false;
+    }
+
     // Parse optional persona block (AI persona layer §5)
     if (manifest.contains(QStringLiteral("persona")) &&
         manifest.value(QStringLiteral("persona")).isObject()) {
@@ -622,6 +627,7 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
     // next to 300×300 Live2D packs.
     const double scale = character.value("displayScale").toDouble(1.0);
     m_characterConfig.displayScale = (scale > 0.0) ? static_cast<float>(scale) : 1.0f;
+    m_desktopMotion = character.value(QStringLiteral("desktopMotion")).toBool(false);
 
     // Parse animations (from definitions file or inline)
     if (!m_characterConfig.definitions.isEmpty()) {
@@ -826,6 +832,20 @@ bool CharacterPack::parseStateMap(const QJsonObject &map)
             if (!s.isEmpty()) chain.append(s);
         }
         m_stateMap[stateName] = chain;
+    }
+    return true;
+}
+
+bool CharacterPack::parseNameMap(const QJsonObject &map)
+{
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        const QString alias = it.key();
+        const QString target = it.value().toString();
+        if (alias.isEmpty() || target.isEmpty()) {
+            qWarning() << "CharacterPack: nameMap entry has empty key or value";
+            return false;
+        }
+        m_nameMap[alias] = target;
     }
     return true;
 }

@@ -712,7 +712,7 @@ git commit -m "build: SEELIE_LOTTIE_ENABLED off by default (keep effect overlay)
 
 **Rules:**
 - Do not commit keys. Document: set `SEELIE_IMAGE_KEY_FILE` to the Obsidian/`~/.pi` file the user points at.
-- Support provider switch env `SEELIE_IMAGE_PROVIDER=minimax|stepfun|voyah`.
+- Image backend configured via `SEELIE_IMAGE_API_BASE` / `SEELIE_IMAGE_API_KEY` (or gitignored `image_gateway.local.json`).
 - Every gen call **requires** `--ref scripts/seelie-sprite-gen/refs/bible.png` (user/AI produces bible once from existing Seelie art).
 - Human approve directory: `scripts/seelie-sprite-gen/out/<clip>/approved/`
 

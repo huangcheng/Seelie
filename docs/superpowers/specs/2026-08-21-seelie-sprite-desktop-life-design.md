@@ -19,7 +19,7 @@ This change revitalizes **Seelie only** (our own sprite pet): new clip vocabular
 - Calm leave: perch **timer** expires → `hop_off` (no fall) to edge or open desk.
 - Fall does **not** fire on focus loss or coding events alone.
 - Approach: **motion-first** — placeholders ship with the engine; AI art swaps in under the same clip names.
-- Art source: **AI image generation** (Voyah / MiniMax / StepFun; keys from user Obsidian / `~/.pi` at runtime, never committed).
+- Art source: **AI image generation** via a local image gateway config (keys/host from env or gitignored local JSON at runtime, never committed).
 - Consistency: character bible + reference-conditioned strips + auto QA + human approve gate.
 - Live2D / Model3D: **keep, leave as-is**.
 - Lottie: `SEELIE_LOTTIE_ENABLED` CMake option, **default OFF**.

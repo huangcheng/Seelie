@@ -156,6 +156,8 @@ set(TEST_SOURCES
     test_platform_window.cpp
     test_character_pack_manager_errors.cpp
     test_character_pack_persona.cpp
+    test_pack_namemap.cpp
+    test_sprite_chain.cpp
     test_llm_profile.cpp
     test_llm_provider.cpp
     test_persona_pool.cpp

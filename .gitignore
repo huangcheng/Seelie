@@ -109,3 +109,8 @@ ide.yml
 
 .worktrees/
 
+# Seelie sprite gen: local credentials + large generated assets
+scripts/seelie-sprite-gen/image_gateway.local.json
+scripts/seelie-sprite-gen/out/
+scripts/seelie-sprite-gen/refs/bible_001.jpg
+

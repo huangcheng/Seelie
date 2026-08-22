@@ -379,6 +379,35 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
     return true;
 }
 
+bool SpriteAnimationEngine::hasClip(const QString &name) const
+{
+    if (name.isEmpty()) {
+        return false;
+    }
+
+    QString actualName;
+    if (m_packNameMap.contains(name)) {
+        actualName = m_packNameMap.value(name);
+    } else {
+        actualName = m_nameMap.value(name, name);
+        if (!m_animations.contains(actualName)) {
+            actualName = name;
+        }
+    }
+    return m_animations.contains(actualName);
+}
+
+void SpriteAnimationEngine::playAnimationChain(const QStringList &chain, Priority priority)
+{
+    for (const QString &name : chain) {
+        if (!hasClip(name)) {
+            continue;
+        }
+        playAnimation(name, priority);
+        return;
+    }
+}
+
 void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority)
 {
     QString actualName;

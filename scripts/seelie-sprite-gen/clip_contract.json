@@ -1,0 +1,35 @@
+{
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "columns": 8,
+  "defaultDurationMs": {
+    "walk": 110,
+    "idle": 140,
+    "reaction": 130,
+    "physics": 100
+  },
+  "seed": 20260822,
+  "clips": [
+    {"name": "idle", "frames": 8, "row": 0, "group": "idle", "durationMs": 140},
+    {"name": "idle_fidget", "frames": 5, "row": 1, "group": "idle", "durationMs": 140},
+    {"name": "idle_look_left", "frames": 4, "row": 2, "group": "idle", "durationMs": 160},
+    {"name": "idle_look_right", "frames": 4, "row": 3, "group": "idle", "durationMs": 160},
+    {"name": "idle_stretch", "frames": 5, "row": 4, "group": "idle", "durationMs": 140},
+    {"name": "idle_snooze", "frames": 5, "row": 5, "group": "idle", "durationMs": 180},
+    {"name": "greet", "frames": 5, "row": 6, "group": "work", "durationMs": 130},
+    {"name": "think", "frames": 5, "row": 7, "group": "work", "durationMs": 150},
+    {"name": "work", "frames": 6, "row": 8, "group": "work", "durationMs": 120},
+    {"name": "review", "frames": 5, "row": 9, "group": "work", "durationMs": 140},
+    {"name": "fail", "frames": 5, "row": 10, "group": "work", "durationMs": 150},
+    {"name": "celebrate", "frames": 6, "row": 11, "group": "work", "durationMs": 120},
+    {"name": "pet", "frames": 5, "row": 12, "group": "touch", "durationMs": 140},
+    {"name": "grab", "frames": 5, "row": 13, "group": "touch", "durationMs": 110},
+    {"name": "toss", "frames": 6, "row": 14, "group": "touch", "durationMs": 100},
+    {"name": "walk_left", "frames": 8, "row": 15, "group": "motion", "durationMs": 110},
+    {"name": "walk_right", "frames": 8, "row": 16, "group": "motion", "durationMs": 110},
+    {"name": "sit", "frames": 4, "row": 17, "group": "motion", "durationMs": 140},
+    {"name": "hop_off", "frames": 5, "row": 18, "group": "motion", "durationMs": 100},
+    {"name": "fall", "frames": 6, "row": 19, "group": "motion", "durationMs": 100},
+    {"name": "land", "frames": 5, "row": 20, "group": "motion", "durationMs": 110}
+  ]
+}
