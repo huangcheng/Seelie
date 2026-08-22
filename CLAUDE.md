@@ -15,7 +15,9 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Optional build flags:
-#   -DSEELIE_TTS_ENABLED=OFF     drop the TTS AI tab + providers
+#   -DSEELIE_TTS_ENABLED=OFF      drop the TTS AI tab + providers
+#   -DSEELIE_LOTTIE_ENABLED=ON    enable Lottie character engine + Lottie packs (default OFF; effect overlay always on)
+#   -DSEELIE_INCLUDE_NSFW=ON      bundle packs whose manifest tags include "nsfw"
 #   -DSEELIE_INCLUDE_NSFW=ON     bundle packs whose manifest tags include "nsfw"
 
 # Run

@@ -8,8 +8,8 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/EventRouter.h
     ${CMAKE_SOURCE_DIR}/src/SpriteAnimationEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/SpriteAnimationEngine.h
-    ${CMAKE_SOURCE_DIR}/src/LottieAnimationEngine.cpp
-    ${CMAKE_SOURCE_DIR}/src/LottieAnimationEngine.h
+    $<$<BOOL:${SEELIE_LOTTIE_ENABLED}>:${CMAKE_SOURCE_DIR}/src/LottieAnimationEngine.cpp>
+    $<$<BOOL:${SEELIE_LOTTIE_ENABLED}>:${CMAKE_SOURCE_DIR}/src/LottieAnimationEngine.h>
     ${CMAKE_SOURCE_DIR}/src/LottieEffectOverlay.cpp
     ${CMAKE_SOURCE_DIR}/src/LottieEffectOverlay.h
     ${CMAKE_SOURCE_DIR}/src/CharacterPack.cpp
@@ -227,6 +227,11 @@ foreach(test_src ${TEST_SOURCES})
         PROJECT_VERSION="${PROJECT_VERSION}"
         SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}"
     )
+    if(SEELIE_LOTTIE_ENABLED)
+        target_compile_definitions(${test_name} PRIVATE SEELIE_LOTTIE_ENABLED=1)
+    else()
+        target_compile_definitions(${test_name} PRIVATE SEELIE_LOTTIE_ENABLED=0)
+    endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
 
     # Model3DEngine + renderer are GL-dependent; the shared lib list stays GL-free,

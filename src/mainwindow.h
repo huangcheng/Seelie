@@ -14,7 +14,9 @@
 
 class MemoryManager;
 class SpriteAnimationEngine;
+#if SEELIE_LOTTIE_ENABLED
 class LottieAnimationEngine;
+#endif
 class Model3DEngine;
 class Live2DAnimationEngine;  // forward-declared even when SEELIE_LIVE2D_SUPPORT
                               // is off so the m_live2dEngine pointer-member
@@ -51,7 +53,9 @@ public:
     ~MainWindow() override;
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
+#if SEELIE_LOTTIE_ENABLED
     LottieAnimationEngine *lottieEngine() const { return m_lottieEngine; }
+#endif
     /// Returns nullptr when the build is configured without SEELIE_LIVE2D_SUPPORT.
     /// Callers should null-check (most already do via `if (e && e->...)`).
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
@@ -164,13 +168,19 @@ private:
     bool isInPetRect(const QPoint &pos) const;
 
     SpriteAnimationEngine *m_engine;
+#if SEELIE_LOTTIE_ENABLED
     LottieAnimationEngine *m_lottieEngine;
+#endif
     Model3DEngine *m_model3dEngine = nullptr;
     // Engine that owns the ACTIVE pack. Dispatch routes here first so a
     // stopped-but-still-loaded engine from a previously loaded pack can't
     // swallow events after a pack switch (it would still report
     // hasAnimations()==true).
+#if SEELIE_LOTTIE_ENABLED
     CharacterPack::EngineType m_activeEngineType = CharacterPack::EngineType::Lottie;
+#else
+    CharacterPack::EngineType m_activeEngineType = CharacterPack::EngineType::SpriteSheet;
+#endif
     Live2DAnimationEngine *m_live2dEngine = nullptr;  // always null when
                                                       // SEELIE_LIVE2D_SUPPORT off
 #ifdef SEELIE_TTS_ENABLED

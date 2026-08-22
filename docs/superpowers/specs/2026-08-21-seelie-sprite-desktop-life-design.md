@@ -1,6 +1,6 @@
 # Seelie Sprite Desktop Life — Vivid Actions + Free Walk + Lottie Off
 
-**Date:** 2026-08-21 · **Status:** draft (pending user review)  
+**Date:** 2026-08-21 · **Status:** implemented (2026-08-22)  
 **Approach:** motion-first with placeholders, AI art fills the Seelie atlas in parallel
 
 ## Why
@@ -230,4 +230,6 @@ Idle + wander cooldown elapsed
 
 ## Status
 
-Draft pending user review of this file before implementation planning.
+Implemented on `main` (2026-08-22): Seelie sakura desktop-life pack, sprite chain playback,
+`DesktopMotionController` + geometry probes, `desktopWandering` setting, `SEELIE_LOTTIE_ENABLED`
+default OFF (effect overlay retained). Manual QA: wander/perch/fall on Windows with Seelie pack.

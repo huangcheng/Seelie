@@ -1,6 +1,22 @@
 # Seelie — TODO / Next Steps
 
-**Updated:** 2026-07-20 · **Branch:** `pet-aliveness`
+**Updated:** 2026-08-22 · **Branch:** `main`
+
+---
+
+## 0.2 Seelie Sprite Desktop Life — status: ✅ COMPLETE
+
+Spec: `docs/superpowers/specs/2026-08-21-seelie-sprite-desktop-life-design.md` ·
+Plan: `docs/superpowers/plans/2026-08-21-seelie-sprite-desktop-life.md`
+
+Shipped: sakura 21-clip / 115-frame Seelie pack + `seelie-sprite-gen` pipeline,
+`nameMap` / `desktopMotion` manifest parsing, sprite `playAnimationChain`,
+`DesktopMotionController` (wander / perch / fall), `DesktopGeometry` probes,
+`desktopWandering` setting, `SEELIE_LOTTIE_ENABLED` default OFF (rlottie effects kept).
+
+**Follow-ups:**
+- [ ] (Low) Manual smoke on macOS: Dock shelf landing + window perch.
+- [ ] (Low) Visual QA pass on individual clip frames; regen flagged cells via `generate_clips.py`.
 
 ---
 

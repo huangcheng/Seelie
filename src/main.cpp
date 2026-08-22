@@ -7,7 +7,9 @@
 #include "TTSEngine.h"
 #endif
 #include "SpriteAnimationEngine.h"
+#if SEELIE_LOTTIE_ENABLED
 #include "LottieAnimationEngine.h"
+#endif
 #ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif

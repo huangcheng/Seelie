@@ -530,6 +530,15 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
         return;
     }
 
+#if !SEELIE_LOTTIE_ENABLED
+    const QJsonObject character = manifest.value(QStringLiteral("character")).toObject();
+    if (character.value(QStringLiteral("type")).toString() == QStringLiteral("lottie")) {
+        qDebug() << "CharacterPackManager: Skipping Lottie pack (SEELIE_LOTTIE_ENABLED=OFF):"
+                 << packId;
+        return;
+    }
+#endif
+
     // Create pack info
     PackInfo info;
     info.id = packId;

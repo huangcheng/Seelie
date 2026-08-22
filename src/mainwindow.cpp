@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 #include "GlobalShortcutManager.h"
 #include "SpriteAnimationEngine.h"
+#if SEELIE_LOTTIE_ENABLED
 #include "LottieAnimationEngine.h"
+#endif
 #ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
@@ -87,7 +89,9 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
     // Initialize subsystems
     m_engine = new SpriteAnimationEngine(this);
+#if SEELIE_LOTTIE_ENABLED
     m_lottieEngine = new LottieAnimationEngine(this);
+#endif
 #ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine = new Live2DAnimationEngine(this);
 #endif
@@ -180,8 +184,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // Repaint widget whenever animation engine advances a frame
     connect(m_engine, &SpriteAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
+#if SEELIE_LOTTIE_ENABLED
     connect(m_lottieEngine, &LottieAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
+#endif
     connect(m_model3dEngine, &Model3DEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
 #ifdef SEELIE_LIVE2D_SUPPORT
@@ -315,10 +321,12 @@ void MainWindow::dispatchAnimation(const QString &anim,
         }
 #endif
     }
+#if SEELIE_LOTTIE_ENABLED
     if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
         m_lottieEngine->playAnimation(anim, priority);
         return;
     }
+#endif
     if (m_engine && m_engine->hasAnimations()) {
         m_engine->playAnimation(anim, priority);
     }
@@ -342,10 +350,12 @@ void MainWindow::dispatchAnimationChain(const QStringList &chain,
         }
 #endif
     }
+#if SEELIE_LOTTIE_ENABLED
     if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
         m_lottieEngine->playAnimation(chain.first(), priority);
         return;
     }
+#endif
     if (m_engine && m_engine->hasAnimations()) {
         m_engine->playAnimationChain(chain, priority);
     }
@@ -431,8 +441,10 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
     if (m_live2dEngine && m_live2dEngine->isPlaying()) {
         if (m_live2dEngine->lastPaintSuccessful()) {
             m_live2dEngine->paint(&painter, pet);
+#if SEELIE_LOTTIE_ENABLED
         } else if (m_lottieEngine && m_lottieEngine->isPlaying()) {
             m_lottieEngine->paint(&painter, pet);
+#endif
         } else if (m_engine) {
             m_engine->paint(&painter, pet);
         }
@@ -441,15 +453,20 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
     if (m_model3dEngine && m_model3dEngine->isPlaying()) {
         if (m_model3dEngine->lastPaintSuccessful()) {
             m_model3dEngine->paint(&painter, pet);
+#if SEELIE_LOTTIE_ENABLED
         } else if (m_lottieEngine && m_lottieEngine->isPlaying()) {
             m_lottieEngine->paint(&painter, pet);
+#endif
         } else if (m_engine) {
             m_engine->paint(&painter, pet);
         }
     } else
+#if SEELIE_LOTTIE_ENABLED
     if (m_lottieEngine && m_lottieEngine->isPlaying()) {
         m_lottieEngine->paint(&painter, pet);
-    } else if (m_engine) {
+    } else
+#endif
+    if (m_engine) {
         m_engine->paint(&painter, pet);
     }
 
@@ -1427,7 +1444,9 @@ void MainWindow::onActivePackChanged()
     // switching from a Live2D pack to a sprite pack would leave the old
     // Live2D frame squished into the sprite pack's smaller petRect.
     m_engine->stop();
+#if SEELIE_LOTTIE_ENABLED
     m_lottieEngine->stop();
+#endif
     m_model3dEngine->stop();
 #ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine->stop();
@@ -1452,7 +1471,11 @@ void MainWindow::onActivePackChanged()
                 m_packManager->switchPack(info.id);
                 // onActivePackChanged recurses here; if the new pack loads,
                 // one of the engines will be playing and we're done.
-                if (m_lottieEngine->isPlaying() || m_engine->isPlaying()) {
+                if (m_engine->isPlaying()
+#if SEELIE_LOTTIE_ENABLED
+                    || m_lottieEngine->isPlaying()
+#endif
+                    ) {
                     m_skipLive2dFallback = false;
                     return;
                 }
@@ -1474,11 +1497,22 @@ void MainWindow::onActivePackChanged()
         m_live2dEngine->loadFromCharacterPack(pack);
     } else
 #endif
+#if SEELIE_LOTTIE_ENABLED
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Lottie) {
         m_lottieEngine->loadFromCharacterPack(pack);
     } else {
         m_engine->loadFromCharacterPack(pack);
     }
+#else
+    {
+        if (pack->characterConfig().engineType == CharacterPack::EngineType::Lottie) {
+            qWarning() << "Lottie pack" << pack->metadata().name
+                       << "selected but Lottie support is disabled."
+                       << "Rebuild with -DSEELIE_LOTTIE_ENABLED=ON to enable.";
+        }
+        m_engine->loadFromCharacterPack(pack);
+    }
+#endif
 
 #ifdef SEELIE_LIVE2D_SUPPORT
     // Crop the window to the character's actual silhouette once the Live2D

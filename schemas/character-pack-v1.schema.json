@@ -89,6 +89,12 @@
     "eventMap": {
       "$ref": "#/definitions/eventMap"
     },
+    "nameMap": {
+      "$ref": "#/definitions/nameMap"
+    },
+    "stateMap": {
+      "$ref": "#/definitions/stateMap"
+    },
     "effectTriggers": {
       "$ref": "#/definitions/effectTriggers"
     },
@@ -192,6 +198,15 @@
           "description": "Multiplier applied to frameWidth/frameHeight when sizing the pet window. Defaults to 1.0 (native). Sprite packs can set e.g. 2.0 to render their low-res art larger next to 300x300 Live2D packs, trading sharpness for visual parity.",
           "exclusiveMinimum": 0,
           "default": 1.0
+        },
+        "desktopMotion": {
+          "type": "boolean",
+          "description": "When true on a spriteSheet pack, enables desktop wander/perch/fall (Seelie desktop-life). Ignored for other engine types.",
+          "default": false
+        },
+        "definitions": {
+          "type": "string",
+          "description": "Path to animations.json (ClippyJS array format) for spriteSheet type"
         },
         "animations": {
           "$ref": "#/definitions/animationMap"
@@ -372,9 +387,37 @@
     },
     "eventMap": {
       "type": "object",
-      "description": "Map of canonical event name to animation name",
+      "description": "Map of canonical event name to animation name or fallback chain",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        ]
+      }
+    },
+    "nameMap": {
+      "type": "object",
+      "description": "Map of canonical animation alias to pack-local clip name",
       "additionalProperties": {
         "type": "string"
+      }
+    },
+    "stateMap": {
+      "type": "object",
+      "description": "Per-FSM-state animation fallback chains",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        ]
       }
     },
     "effectTriggers": {

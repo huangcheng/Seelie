@@ -26,6 +26,10 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Sql
 # optional feature so the build can still drop the AI tab on minimal builds.
 option(SEELIE_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 
+# Lottie character engine + Lottie character packs. Effect overlay (sparkles,
+# confetti) still uses rlottie when OFF — only LottieAnimationEngine is omitted.
+option(SEELIE_LOTTIE_ENABLED "Enable Lottie character engine + Lottie packs" OFF)
+
 # NSFW pack categories (currently: azur_lane) are excluded from the bundled
 # pack set by default so store-distributable builds ship a SFW lineup. Users
 # can still drop NSFW .spk archives into ~/.config/Seelie/packs/ at runtime —
@@ -338,8 +342,8 @@ qt_add_executable(Seelie
     src/mainwindow.h
     src/SpriteAnimationEngine.cpp
     src/SpriteAnimationEngine.h
-    src/LottieAnimationEngine.cpp
-    src/LottieAnimationEngine.h
+    $<$<BOOL:${SEELIE_LOTTIE_ENABLED}>:src/LottieAnimationEngine.cpp>
+    $<$<BOOL:${SEELIE_LOTTIE_ENABLED}>:src/LottieAnimationEngine.h>
     src/LottieEffectOverlay.cpp
     src/LottieEffectOverlay.h
     src/Live2DAnimationEngine.cpp
@@ -550,6 +554,12 @@ if(SEELIE_TTS_ENABLED)
     target_compile_definitions(Seelie PRIVATE SEELIE_TTS_ENABLED=1)
 endif()
 
+if(SEELIE_LOTTIE_ENABLED)
+    target_compile_definitions(Seelie PRIVATE SEELIE_LOTTIE_ENABLED=1)
+else()
+    target_compile_definitions(Seelie PRIVATE SEELIE_LOTTIE_ENABLED=0)
+endif()
+
 # rlottie header path (FetchContent puts it in build/_deps)
 target_include_directories(Seelie PRIVATE
     ${rlottie_SOURCE_DIR}/inc
@@ -738,6 +748,15 @@ foreach(_manifest ${_PACK_MANIFESTS})
         endif()
         if(_is_nsfw)
             math(EXPR _skipped_nsfw_count "${_skipped_nsfw_count} + 1")
+            continue()
+        endif()
+    endif()
+
+    if(NOT SEELIE_LOTTIE_ENABLED)
+        file(READ ${_manifest} _manifest_json_lottie)
+        string(JSON _char_type ERROR_VARIABLE _char_err
+               GET "${_manifest_json_lottie}" character type)
+        if(NOT _char_err AND _char_type STREQUAL "lottie")
             continue()
         endif()
     endif()
