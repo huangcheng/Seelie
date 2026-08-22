@@ -92,6 +92,7 @@ private slots:
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
     void onTouchReactionsToggled(bool checked);
+    void onDesktopWanderingToggled(bool checked);
 
     void refreshLlmProfilesUi();
     void onAddProfileClicked();
@@ -159,6 +160,8 @@ private:
     QCheckBox *m_tipBubblesCheck = nullptr;
     QLabel *m_touchReactionsLabel = nullptr;
     QCheckBox *m_touchReactionsCheck = nullptr;
+    QLabel *m_desktopWanderingLabel = nullptr;
+    QCheckBox *m_desktopWanderingCheck = nullptr;
     QLabel *m_sayingsLabel = nullptr;
     QComboBox *m_sayingsCombo = nullptr;
     QLabel *m_personaEnabledLabel = nullptr;

@@ -87,6 +87,10 @@ public:
     bool touchReactionsEnabled() const { return m_touchReactionsEnabled; }
     void setTouchReactionsEnabled(bool enabled);
 
+    /** Whether sprite desktop wandering/perch motion is active. Default true. */
+    bool desktopWanderingEnabled() const { return m_desktopWanderingEnabled; }
+    void setDesktopWanderingEnabled(bool enabled);
+
     /** Whether tip bubbles surface above the pet. Default true. */
     bool tipBubblesEnabled() const { return m_tipBubblesEnabled; }
     void setTipBubblesEnabled(bool enabled);
@@ -159,6 +163,7 @@ signals:
     void gamingModeEnabledChanged(bool enabled);
     void contextSensesEnabledChanged(bool enabled);
     void touchReactionsEnabledChanged(bool enabled);
+    void desktopWanderingEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
     void ttsEnabledChanged(bool enabled);
     void ttsActiveProviderChanged(const QString &stableId);
@@ -189,6 +194,7 @@ private:
     bool m_gamingModeEnabled = false;
     bool m_contextSensesEnabled = true;
     bool m_touchReactionsEnabled = true;
+    bool m_desktopWanderingEnabled = true;
     bool m_tipBubblesEnabled = true;
     bool m_ttsEnabled = false;
     QString m_ttsActiveProvider = QStringLiteral("stepfun");

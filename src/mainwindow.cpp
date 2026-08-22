@@ -22,6 +22,8 @@
 #include "FullscreenWatcher.h"
 #include "PetStateMachine.h"
 #include "IdleBehaviorEngine.h"
+#include "DesktopMotionController.h"
+#include "DesktopGeometry.h"
 #include "MemoryManager.h"
 #include "PersonaEngine.h"
 #include "EmbeddingService.h"
@@ -41,6 +43,8 @@
 #include "StyledAlertWidget.h"
 #include <QAction>
 #include <QApplication>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QRandomGenerator>
 #include <QTranslator>
 #include <QDragEnterEvent>
@@ -221,7 +225,40 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
                     onDisplayModeChanged(m_config->displayMode());
             }
         }
+        updateDesktopMotion();
     });
+
+    m_desktopMotion = new DesktopMotionController(this);
+    m_desktopMotion->setScreenFn([this] {
+        if (QScreen *screen = QGuiApplication::screenAt(frameGeometry().center())) {
+            return screen->geometry();
+        }
+        return QRect(0, 0, 1920, 1080);
+    });
+    m_desktopMotion->setActiveWindowFn([] {
+        return DesktopGeometry::activeWindow();
+    });
+    m_desktopMotion->setShelfFn([](const QRect &screen) {
+        return DesktopGeometry::shelfForScreen(screen);
+    });
+    connect(m_desktopMotion, &DesktopMotionController::moveTo, this, [this](const QRect &rect) {
+        m_autonomousMove = true;
+        setGeometry(rect);
+        m_desktopMotion->setPetRect(rect);
+        m_tipWidget->setAnchorRect(petRect());
+        m_tipWidget->anchorTo(this);
+        if (m_settingsPanel->isVisible()) {
+            m_settingsPanel->setAnchorRect(petRect());
+            m_settingsPanel->anchorTo(this);
+        }
+        m_autonomousMove = false;
+    });
+    connect(m_desktopMotion, &DesktopMotionController::playClip, this,
+            [this](const QString &clip) {
+        dispatchAnimation(clip, AnimationEngine::NormalPriority);
+    });
+    connect(m_config, &ConfigManager::desktopWanderingEnabledChanged,
+            this, [this](bool) { updateDesktopMotion(); });
 }
 
 MainWindow::~MainWindow()
@@ -346,6 +383,7 @@ void MainWindow::showEvent(QShowEvent *event)
     // get the chrome. Opt out per-window via the DWM API. winId() is valid
     // by showEvent() because the native window has just been realised.
     PlatformWindow::applyDwmFramelessAttributes(this);
+    updateDesktopMotion();
 }
 
 #ifdef Q_OS_WIN
@@ -1177,6 +1215,38 @@ void MainWindow::setIdleBehaviorEngine(IdleBehaviorEngine *engine)
     }
 }
 
+void MainWindow::setStateMachine(PetStateMachine *sm)
+{
+    m_stateMachine = sm;
+    if (!m_stateMachine || !m_desktopMotion) {
+        return;
+    }
+    connect(m_stateMachine, &PetStateMachine::stateChanged, this,
+            [this](PetStateMachine::State state) {
+        m_desktopMotion->onFsmState(PetStateMachine::stateName(state));
+    }, Qt::UniqueConnection);
+    m_desktopMotion->onFsmState(
+        PetStateMachine::stateName(m_stateMachine->activeState()));
+}
+
+void MainWindow::updateDesktopMotion()
+{
+    if (!m_desktopMotion || !m_config) {
+        return;
+    }
+
+    CharacterPack *pack = m_packManager ? m_packManager->activePack() : nullptr;
+    const bool enable = m_config->desktopWanderingEnabled()
+        && pack && pack->desktopMotion()
+        && m_activeEngineType == CharacterPack::EngineType::SpriteSheet
+        && isVisible() && !m_hiddenByGamingMode;
+
+    m_desktopMotion->setEnabled(enable);
+    if (enable) {
+        m_desktopMotion->setPetRect(frameGeometry());
+    }
+}
+
 void MainWindow::tryRecordPoke()
 {
     // Shared poke throttle (Task 10, Rider B): 2s cooldown across click +
@@ -1448,6 +1518,7 @@ void MainWindow::onActivePackChanged()
         });
     }
 #endif
+    updateDesktopMotion();
 }
 
 void MainWindow::retranslateUi()

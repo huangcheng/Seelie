@@ -30,6 +30,10 @@ set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/SayingPool.h
     ${CMAKE_SOURCE_DIR}/src/IdleBehaviorEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/IdleBehaviorEngine.h
+    ${CMAKE_SOURCE_DIR}/src/DesktopMotionController.cpp
+    ${CMAKE_SOURCE_DIR}/src/DesktopMotionController.h
+    ${CMAKE_SOURCE_DIR}/src/DesktopGeometry.cpp
+    ${CMAKE_SOURCE_DIR}/src/DesktopGeometry.h
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.h
     ${CMAKE_SOURCE_DIR}/src/StatisticsPersistence.cpp
@@ -158,6 +162,7 @@ set(TEST_SOURCES
     test_character_pack_persona.cpp
     test_pack_namemap.cpp
     test_sprite_chain.cpp
+    test_desktop_motion.cpp
     test_llm_profile.cpp
     test_llm_provider.cpp
     test_persona_pool.cpp

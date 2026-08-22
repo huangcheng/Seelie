@@ -847,7 +847,6 @@ Path: %2</source>
         <source>Nothing like that yet.</source>
         <translation>还没有相关的回忆。</translation>
     </message>
->>>>>>> 080be4e (feat(idle): zh_CN sayings bundle + UI translations)
 </context>
 <context>
     <name>SettingsPanelWidget</name>
@@ -1187,6 +1186,12 @@ Path: %2</source>
         <location filename="src/SettingsPanelWidget.cpp" line="1526"/>
         <source>Touch Reactions</source>
         <translation>触摸互动</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="657"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1527"/>
+        <source>Desktop Wandering</source>
+        <translation>桌面漫游</translation>
     </message>
     <message>
         <location filename="src/SettingsPanelWidget.cpp" line="747"/>

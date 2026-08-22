@@ -76,6 +76,8 @@ public slots:
     void rebuildChainsFromMaps(const QMap<QString, QStringList> &stateMap,
                                const QMap<QString, QString> &nameMap);
 
+    static QString stateName(State s);
+
 signals:
     void animationRequested(const QStringList &chain, int priority);
     void stateChanged(PetStateMachine::State newState);
@@ -100,8 +102,6 @@ private:
     void emitChainFor(State s, Priority priority);
     void rebuildChainsFromPack(const CharacterPack *pack);
     QStringList resolveChain(State s) const;
-
-    static QString stateName(State s);
 
     State m_baseState = State::Idle;
     State m_overlayState = State::Idle;     // Idle == "no overlay"

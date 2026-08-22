@@ -366,6 +366,10 @@ qt_add_executable(Seelie
     src/SayingPool.h
     src/IdleBehaviorEngine.cpp
     src/IdleBehaviorEngine.h
+    src/DesktopMotionController.cpp
+    src/DesktopMotionController.h
+    src/DesktopGeometry.cpp
+    src/DesktopGeometry.h
     src/ConfigManager.cpp
     src/ConfigManager.h
     src/SystemTray.cpp

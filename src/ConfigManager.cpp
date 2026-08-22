@@ -165,6 +165,7 @@ void ConfigManager::load()
     m_gamingModeEnabled = m_settings.value("gamingMode", false).toBool();
     m_contextSensesEnabled = m_settings.value("contextSensesEnabled", true).toBool();
     m_touchReactionsEnabled = m_settings.value("touchReactions", true).toBool();
+    m_desktopWanderingEnabled = m_settings.value("desktopWandering", true).toBool();
     m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
     {
@@ -253,6 +254,7 @@ void ConfigManager::flush()
     m_settings.setValue("gamingMode", m_gamingModeEnabled);
     m_settings.setValue("contextSensesEnabled", m_contextSensesEnabled);
     m_settings.setValue("touchReactions", m_touchReactionsEnabled);
+    m_settings.setValue("desktopWandering", m_desktopWanderingEnabled);
     m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
     m_settings.setValue("sayingFrequency", static_cast<int>(m_sayingFrequency));
     m_settings.setValue("llmIdleQuips", m_llmIdleQuipsEnabled);
@@ -402,6 +404,14 @@ void ConfigManager::setTouchReactionsEnabled(bool enabled)
     m_touchReactionsEnabled = enabled;
     save();
     emit touchReactionsEnabledChanged(enabled);
+}
+
+void ConfigManager::setDesktopWanderingEnabled(bool enabled)
+{
+    if (m_desktopWanderingEnabled == enabled) return;
+    m_desktopWanderingEnabled = enabled;
+    save();
+    emit desktopWanderingEnabledChanged(enabled);
 }
 
 void ConfigManager::setTipBubblesEnabled(bool enabled)

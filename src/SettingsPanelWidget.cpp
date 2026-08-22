@@ -654,6 +654,26 @@ void SettingsPanelWidget::setupUi()
     interactGrid->addWidget(m_touchReactionsLabel, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
     interactGrid->addWidget(m_touchReactionsCheck, 2, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+    m_desktopWanderingLabel = new QLabel(tr("Desktop Wandering"), m_contentWidget);
+    m_desktopWanderingLabel->setFont(harmonyFont(10));
+    m_desktopWanderingLabel->setStyleSheet("color: black; background: transparent;");
+    m_desktopWanderingLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_desktopWanderingCheck = new CheckMarkBox(m_contentWidget);
+    m_desktopWanderingCheck->setFixedSize(16, 16);
+    m_desktopWanderingCheck->setChecked(m_config->desktopWanderingEnabled());
+    m_desktopWanderingCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+    connect(m_desktopWanderingCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onDesktopWanderingToggled);
+    connect(m_config, &ConfigManager::desktopWanderingEnabledChanged,
+            this, [this](bool enabled) {
+        QSignalBlocker blocker(m_desktopWanderingCheck);
+        m_desktopWanderingCheck->setChecked(enabled);
+    });
+
+    interactGrid->addWidget(m_desktopWanderingLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_desktopWanderingCheck, 3, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     m_sayingsLabel = new QLabel(tr("Idle Sayings"), m_contentWidget);
     m_sayingsLabel->setFont(harmonyFont(10));
     m_sayingsLabel->setStyleSheet("color: black; background: transparent;");
@@ -676,8 +696,8 @@ void SettingsPanelWidget::setupUi()
         m_sayingsCombo->setCurrentIndex(static_cast<int>(f));
     });
 
-    interactGrid->addWidget(m_sayingsLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    interactGrid->addWidget(m_sayingsCombo, 3, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_sayingsLabel, 4, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    interactGrid->addWidget(m_sayingsCombo, 4, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
     // --- AI Features group: TTS + persona toggles ---
     m_aiFeaturesGroup = makeSectionGroup(tr("AI Features"));
@@ -1184,6 +1204,11 @@ void SettingsPanelWidget::onTouchReactionsToggled(bool checked)
     m_config->setTouchReactionsEnabled(checked);
 }
 
+void SettingsPanelWidget::onDesktopWanderingToggled(bool checked)
+{
+    m_config->setDesktopWanderingEnabled(checked);
+}
+
 void SettingsPanelWidget::onTabChanged(int tabIndex)
 {
     m_generalTab->setVisible(tabIndex == 0);
@@ -1524,6 +1549,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     if (m_touchReactionsLabel) m_touchReactionsLabel->setText(tr("Touch Reactions"));
+    if (m_desktopWanderingLabel) m_desktopWanderingLabel->setText(tr("Desktop Wandering"));
     if (m_packLabel) m_packLabel->setText(tr("Model"));
     if (m_appGroup) m_appGroup->setTitle(tr("Application"));
     if (m_characterGroup) m_characterGroup->setTitle(tr("Character", "settings section title"));

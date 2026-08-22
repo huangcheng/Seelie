@@ -32,6 +32,7 @@ class FullscreenWatcher;
 class IPCServer;
 class PetStateMachine;
 class IdleBehaviorEngine;
+class DesktopMotionController;
 class GlobalShortcutManager;
 class PersonaEngine;
 class EmbeddingService;
@@ -71,7 +72,7 @@ public:
 
     void setEventRouter(EventRouter *router);
     void setIPCServer(IPCServer *ipc) { m_ipcServer = ipc; }
-    void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
+    void setStateMachine(PetStateMachine *sm);
     void setIdleBehaviorEngine(IdleBehaviorEngine *engine);
     void setMemoryManager(MemoryManager *memory);
     void setPersonaEngine(PersonaEngine *engine);
@@ -157,6 +158,7 @@ private:
     // and setMemoryManager() so memory bookkeeping works regardless of
     // whether a PersonaEngine is set.
     void wireMemoryEventConnect();
+    void updateDesktopMotion();
 
     QRect petRect() const;
     bool isInPetRect(const QPoint &pos) const;
@@ -185,6 +187,8 @@ private:
     IPCServer *m_ipcServer = nullptr;
     PetStateMachine *m_stateMachine = nullptr;
     IdleBehaviorEngine *m_idleEngine = nullptr;
+    DesktopMotionController *m_desktopMotion = nullptr;
+    bool m_autonomousMove = false;
     GlobalShortcutManager *m_shortcutManager = nullptr;
     MemoryManager *m_memory = nullptr;
     PersonaEngine *m_personaEngine = nullptr;
