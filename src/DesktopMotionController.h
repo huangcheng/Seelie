@@ -140,7 +140,7 @@ private:
     static constexpr int kWalkFrameMs = 110;
     static constexpr int kWalkFrameCount = 8;
     static constexpr int kWalkCycleMs = kWalkFrameCount * kWalkFrameMs;
-    static constexpr int kWalkStridePx = 40; // horizontal travel per 8-frame cycle
+    static constexpr int kWalkStridePx = 32; // horizontal travel per 8-frame cycle
     static constexpr int kFallSpeedPxPerSec = 800;
     static constexpr int kHopSpeedPxPerSec = 200;
     static constexpr int kIdlePollMs = 1000;

@@ -130,23 +130,42 @@ void DesktopMotionController::startWander()
 {
     const QRect screen = m_screen();
     const int rawDist = rollWanderDistance();
+    const int dir = (m_rng() < 0.5) ? -1 : 1;
     // Snap to whole stride cycles so leg animation and window travel stay in sync.
     const int cycles = qMax(1, qRound(rawDist / double(kWalkStridePx)));
     const int distance = cycles * kWalkStridePx;
-    const int dx = (m_rng() < 0.5) ? -distance : distance;
-    m_walkSpeedPxPerSec = qMax(1, distance * 1000 / (cycles * kWalkCycleMs));
 
-    QPoint target = m_petRect.topLeft() + QPoint(dx, 0);
+    QPoint target = m_petRect.topLeft() + QPoint(dir * distance, 0);
     target.setX(qBound(screen.left(), target.x(), screen.right() - m_petRect.width()));
+
+    // Re-snap after screen clamp so travel distance stays a multiple of stride.
+    int dx = target.x() - m_petRect.topLeft().x();
+    if (dx != 0) {
+        const int snapped = (dx / kWalkStridePx) * kWalkStridePx;
+        if (snapped == 0) {
+            target.setX(m_petRect.topLeft().x() + dir * kWalkStridePx);
+            target.setX(qBound(screen.left(), target.x(),
+                                screen.right() - m_petRect.width()));
+            dx = target.x() - m_petRect.topLeft().x();
+        } else {
+            target.setX(m_petRect.topLeft().x() + snapped);
+        }
+    }
+    if (dx == 0) {
+        scheduleNextWander();
+        return;
+    }
 
     m_moveTarget = target;
     m_targetPetRect = clampToScreen(QRect(target, m_petRect.size()));
+    m_moveTarget = m_targetPetRect.topLeft();
+    m_walkSpeedPxPerSec = qMax(1, qAbs(dx) * 1000 / (cycles * kWalkCycleMs));
     m_walkFrameSync = true;
     m_requestedClip = (dx < 0) ? QStringLiteral("walk_left") : QStringLiteral("walk_right");
     m_mode = Mode::Wandering;
 
     emit playClip(m_requestedClip);
-    emit moveTo(m_targetPetRect);
+    // Do NOT jump to the destination — advanceWalkStep() moves per animation frame.
     armTimer(kMovePollMs);
 }
 

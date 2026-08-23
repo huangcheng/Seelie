@@ -74,8 +74,16 @@ def clip_fit_params(
     margin = MARGIN + (4 if clip_name in MOTION_CLIPS else 0)
     inner_w = fw - margin * 2
     inner_h = fh - margin * 2
-    slot_w = max((c.width for c in cropped_list), default=1)
-    slot_h = max((c.height for c in cropped_list), default=1)
+    widths = sorted(c.width for c in cropped_list)
+    heights = sorted(c.height for c in cropped_list)
+    mid = len(cropped_list) // 2
+    if clip_name in MOTION_CLIPS:
+        # Median slot reduces vertical bob from outlier poses in walk cycles.
+        slot_w = widths[mid]
+        slot_h = heights[mid]
+    else:
+        slot_w = widths[-1]
+        slot_h = heights[-1]
     scale = min(inner_w / slot_w, inner_h / slot_h)
     cap = 0.88 if clip_name in MOTION_CLIPS else 0.92
     scale = min(scale, (inner_h * cap) / ref_body_h)
@@ -184,7 +192,7 @@ def main() -> None:
         "name": "Seelie",
         "nameLocalized": {"zh_CN": "仙灵"},
         "author": "HUANG Cheng",
-        "version": "2.0.2",
+        "version": "2.0.3",
         "description": "Seelie sakura mascot — desktop-life sprite pack with idle, work, touch, and motion clips.",
         "preview": "preview.png",
         "tags": ["seelie", "original", "anime", "fae", "default"],
