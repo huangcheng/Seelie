@@ -3,7 +3,7 @@
   "frameHeight": 208,
   "columns": 8,
   "defaultDurationMs": {
-    "walk": 110,
+    "walk": 80,
     "idle": 140,
     "reaction": 130,
     "physics": 100
@@ -25,8 +25,8 @@
     {"name": "pet", "frames": 5, "row": 12, "group": "touch", "durationMs": 140},
     {"name": "grab", "frames": 5, "row": 13, "group": "touch", "durationMs": 110},
     {"name": "toss", "frames": 6, "row": 14, "group": "touch", "durationMs": 100},
-    {"name": "walk_left", "frames": 8, "row": 15, "group": "motion", "durationMs": 110},
-    {"name": "walk_right", "frames": 8, "row": 16, "group": "motion", "durationMs": 110},
+    {"name": "walk_left", "frames": 8, "row": 15, "group": "motion", "durationMs": 80},
+    {"name": "walk_right", "frames": 8, "row": 16, "group": "motion", "durationMs": 80},
     {"name": "sit", "frames": 4, "row": 17, "group": "motion", "durationMs": 140},
     {"name": "hop_off", "frames": 5, "row": 18, "group": "motion", "durationMs": 100},
     {"name": "fall", "frames": 6, "row": 19, "group": "motion", "durationMs": 100},

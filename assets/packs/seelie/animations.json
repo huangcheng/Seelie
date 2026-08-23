@@ -631,56 +631,56 @@
     "Name": "walk_left",
     "Frames": [
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 0,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 1,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 2,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 3,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 4,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 5,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 6,
           "Row": 15
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 7,
           "Row": 15
@@ -693,56 +693,56 @@
     "Name": "walk_right",
     "Frames": [
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 0,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 1,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 2,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 3,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 4,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 5,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 6,
           "Row": 16
         }
       },
       {
-        "Duration": 110,
+        "Duration": 80,
         "ImagesOffsets": {
           "Column": 7,
           "Row": 16

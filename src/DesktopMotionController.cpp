@@ -159,13 +159,12 @@ void DesktopMotionController::startWander()
     m_moveTarget = target;
     m_targetPetRect = clampToScreen(QRect(target, m_petRect.size()));
     m_moveTarget = m_targetPetRect.topLeft();
-    m_walkSpeedPxPerSec = qMax(1, qAbs(dx) * 1000 / (cycles * kWalkCycleMs));
-    m_walkFrameSync = true;
+    m_walkFracPx = 0.0;
+    beginWalkFrameStep();
     m_requestedClip = (dx < 0) ? QStringLiteral("walk_left") : QStringLiteral("walk_right");
     m_mode = Mode::Wandering;
 
     emit playClip(m_requestedClip);
-    // Do NOT jump to the destination — advanceWalkStep() moves per animation frame.
     armTimer(kMovePollMs);
 }
 
@@ -220,7 +219,9 @@ void DesktopMotionController::startFall()
 void DesktopMotionController::cancelMotion()
 {
     m_mode = Mode::Idle;
-    m_walkFrameSync = false;
+    m_walkFracPx = 0.0;
+    m_frameStepBudgetPx = 0;
+    m_frameStepMovedPx = 0;
     m_requestedClip.clear();
     m_perchedWindowId = 0;
     m_perchedWindowFrame = QRect();
@@ -239,27 +240,42 @@ void DesktopMotionController::tickIdle()
     tryStartWanderOrPerch();
 }
 
-void DesktopMotionController::tickWandering(qint64 dtMs)
+void DesktopMotionController::beginWalkFrameStep()
 {
-    if (!m_walkFrameSync) {
-        const QPoint next = stepToward(m_petRect.topLeft(), m_moveTarget,
-                                       m_walkSpeedPxPerSec * int(dtMs) / 1000);
-        m_petRect.moveTopLeft(next);
-        m_targetPetRect = m_petRect;
-        emit moveTo(m_petRect);
-    }
-
-    if (m_petRect.topLeft() == m_moveTarget) {
-        finishToIdle();
-    }
+    m_frameStepBudgetPx = qMax(1, kWalkStridePx / kWalkFrameCount);
+    m_frameStepMovedPx = 0;
 }
 
-void DesktopMotionController::advanceWalkStep()
+void DesktopMotionController::onWalkFrameAdvanced()
 {
-    if (m_mode != Mode::Wandering || !m_walkFrameSync) {
+    if (m_mode != Mode::Wandering) {
         return;
     }
-    const int stepPx = qMax(1, kWalkStridePx / kWalkFrameCount);
+    beginWalkFrameStep();
+}
+
+void DesktopMotionController::tickWandering(qint64 dtMs)
+{
+    if (m_frameStepBudgetPx <= 0) {
+        beginWalkFrameStep();
+    }
+
+    const int remaining = m_frameStepBudgetPx - m_frameStepMovedPx;
+    if (remaining <= 0) {
+        return;
+    }
+
+    // Spread each animation frame's stride evenly across its hold time.
+    const double pxPerMs = double(m_frameStepBudgetPx) / double(kWalkFrameMs);
+    m_walkFracPx += pxPerMs * double(dtMs);
+    int stepPx = int(m_walkFracPx);
+    if (stepPx <= 0) {
+        return;
+    }
+    stepPx = qMin(stepPx, remaining);
+    m_walkFracPx -= double(stepPx);
+    m_frameStepMovedPx += stepPx;
+
     const QPoint next = stepToward(m_petRect.topLeft(), m_moveTarget, stepPx);
     m_petRect.moveTopLeft(next);
     m_targetPetRect = m_petRect;
@@ -315,7 +331,9 @@ void DesktopMotionController::tickHoppingOff(qint64 dtMs)
 void DesktopMotionController::finishToIdle()
 {
     const bool wasWandering = (m_mode == Mode::Wandering);
-    m_walkFrameSync = false;
+    m_walkFracPx = 0.0;
+    m_frameStepBudgetPx = 0;
+    m_frameStepMovedPx = 0;
     m_mode = Mode::Idle;
     m_perchedWindowId = 0;
     m_perchedWindowFrame = QRect();

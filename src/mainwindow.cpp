@@ -276,13 +276,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             || m_activeEngineType != CharacterPack::EngineType::SpriteSheet) {
             return;
         }
-        if (m_desktopMotion->mode() != DesktopMotionController::Mode::Wandering) {
-            return;
-        }
         if (!name.startsWith(QLatin1String("walk_"))) {
             return;
         }
-        m_desktopMotion->advanceWalkStep();
+        m_desktopMotion->onWalkFrameAdvanced();
     });
     connect(m_config, &ConfigManager::desktopWanderingEnabledChanged,
             this, [this](bool) { updateDesktopMotion(); });

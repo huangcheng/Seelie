@@ -57,8 +57,7 @@ public:
 
     void tick();
 
-    /// Advance one walk stride segment when a walk animation frame advances.
-    void advanceWalkStep();
+    void onWalkFrameAdvanced();
 
     // --- Test seams ------------------------------------------------------
     void setNowFn(NowFn fn) { m_now = std::move(fn); }
@@ -86,6 +85,7 @@ private:
     void cancelMotion();
     void tickIdle();
     void tickWandering(qint64 dtMs);
+    void beginWalkFrameStep();
     void tickPerched();
     void tickFalling(qint64 dtMs);
     void tickHoppingOff(qint64 dtMs);
@@ -109,8 +109,9 @@ private:
 
     QPoint m_moveTarget;
     int m_fallLandY = 0;
-    int m_walkSpeedPxPerSec = kWalkSpeedPxPerSec;
-    bool m_walkFrameSync = false;
+    double m_walkFracPx = 0.0;
+    int m_frameStepBudgetPx = 0;
+    int m_frameStepMovedPx = 0;
 
     qint64 m_nextWanderAt = 0;
     qint64 m_perchEndAt = 0;
@@ -136,15 +137,14 @@ private:
     static constexpr double kPerchProbability = 0.08;
     static constexpr int kPerchDwellMinMs = 8000;
     static constexpr int kPerchDwellMaxMs = 20000;
-    static constexpr int kWalkSpeedPxPerSec = 120; // fallback; wander uses stride-synced speed
-    static constexpr int kWalkFrameMs = 110;
+    static constexpr int kWalkFrameMs = 80;
     static constexpr int kWalkFrameCount = 8;
     static constexpr int kWalkCycleMs = kWalkFrameCount * kWalkFrameMs;
-    static constexpr int kWalkStridePx = 32; // horizontal travel per 8-frame cycle
+    static constexpr int kWalkStridePx = 48;
     static constexpr int kFallSpeedPxPerSec = 800;
     static constexpr int kHopSpeedPxPerSec = 200;
     static constexpr int kIdlePollMs = 1000;
-    static constexpr int kMovePollMs = 50;
+    static constexpr int kMovePollMs = 16;
 };
 
 #endif // DESKTOPMOTIONCONTROLLER_H
