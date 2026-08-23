@@ -6,7 +6,7 @@ import json
 import shutil
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from matte import auto_matte
 
@@ -18,6 +18,22 @@ PACK = REPO / "assets" / "packs" / "seelie"
 FRAME_EXT = ".png"
 MARGIN = 10
 MOTION_CLIPS = {"walk_left", "walk_right", "run_left", "run_right"}
+WALK_MIRROR_TARGET = "walk_right"
+WALK_MIRROR_SOURCE = "walk_left"
+
+
+def load_clip_frame(group: str, name: str, frame_num: int) -> Image.Image:
+    """Load a frame; walk_right is mirrored from walk_left for a symmetric cycle."""
+    if name == WALK_MIRROR_TARGET:
+        src = frame_file(group, WALK_MIRROR_SOURCE, frame_num)
+        mirror = True
+    else:
+        src = frame_file(group, name, frame_num)
+        mirror = False
+    if not src.exists():
+        raise FileNotFoundError(src)
+    cropped = prepare_frame(Image.open(src))
+    return ImageOps.mirror(cropped) if mirror else cropped
 
 
 def frame_file(group: str, name: str, n: int) -> Path:
@@ -118,12 +134,11 @@ def main() -> None:
         cropped_frames: list[Image.Image] = []
         frame_nums: list[int] = []
         for f in range(1, clip["frames"] + 1):
-            src = frame_file(group, name, f)
-            if not src.exists():
+            try:
+                cropped_frames.append(load_clip_frame(group, name, f))
+                frame_nums.append(f)
+            except FileNotFoundError:
                 missing.append(f"{name}#{f:03d}")
-                continue
-            cropped_frames.append(prepare_frame(Image.open(src)))
-            frame_nums.append(f)
 
         if not cropped_frames:
             continue
@@ -169,7 +184,7 @@ def main() -> None:
         "name": "Seelie",
         "nameLocalized": {"zh_CN": "仙灵"},
         "author": "HUANG Cheng",
-        "version": "2.0.1",
+        "version": "2.0.2",
         "description": "Seelie sakura mascot — desktop-life sprite pack with idle, work, touch, and motion clips.",
         "preview": "preview.png",
         "tags": ["seelie", "original", "anime", "fae", "default"],

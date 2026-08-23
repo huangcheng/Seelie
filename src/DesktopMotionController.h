@@ -57,6 +57,9 @@ public:
 
     void tick();
 
+    /// Advance one walk stride segment when a walk animation frame advances.
+    void advanceWalkStep();
+
     // --- Test seams ------------------------------------------------------
     void setNowFn(NowFn fn) { m_now = std::move(fn); }
     void setRngFn(RngFn fn) { m_rng = std::move(fn); }
@@ -106,6 +109,8 @@ private:
 
     QPoint m_moveTarget;
     int m_fallLandY = 0;
+    int m_walkSpeedPxPerSec = kWalkSpeedPxPerSec;
+    bool m_walkFrameSync = false;
 
     qint64 m_nextWanderAt = 0;
     qint64 m_perchEndAt = 0;
@@ -131,7 +136,11 @@ private:
     static constexpr double kPerchProbability = 0.08;
     static constexpr int kPerchDwellMinMs = 8000;
     static constexpr int kPerchDwellMaxMs = 20000;
-    static constexpr int kWalkSpeedPxPerSec = 120;
+    static constexpr int kWalkSpeedPxPerSec = 120; // fallback; wander uses stride-synced speed
+    static constexpr int kWalkFrameMs = 110;
+    static constexpr int kWalkFrameCount = 8;
+    static constexpr int kWalkCycleMs = kWalkFrameCount * kWalkFrameMs;
+    static constexpr int kWalkStridePx = 40; // horizontal travel per 8-frame cycle
     static constexpr int kFallSpeedPxPerSec = 800;
     static constexpr int kHopSpeedPxPerSec = 200;
     static constexpr int kIdlePollMs = 1000;

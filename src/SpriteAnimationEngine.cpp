@@ -515,8 +515,10 @@ void SpriteAnimationEngine::advanceFrame()
                 m_currentFrameIndex = 0;
             } else {
                 startNextAnimation();
+                return;
             }
         }
+        emit frameAdvanced(m_current.name, m_currentFrameIndex);
     }
 }
 

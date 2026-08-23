@@ -270,6 +270,20 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
                                          : AnimationEngine::NormalPriority;
         dispatchAnimation(clip, priority);
     });
+    connect(m_engine, &SpriteAnimationEngine::frameAdvanced, this,
+            [this](const QString &name, int) {
+        if (!m_desktopMotion
+            || m_activeEngineType != CharacterPack::EngineType::SpriteSheet) {
+            return;
+        }
+        if (m_desktopMotion->mode() != DesktopMotionController::Mode::Wandering) {
+            return;
+        }
+        if (!name.startsWith(QLatin1String("walk_"))) {
+            return;
+        }
+        m_desktopMotion->advanceWalkStep();
+    });
     connect(m_config, &ConfigManager::desktopWanderingEnabledChanged,
             this, [this](bool) { updateDesktopMotion(); });
 }

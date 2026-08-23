@@ -70,6 +70,7 @@ public:
 signals:
     void effectRequested(const QString &effectName);
     void frameChanged();
+    void frameAdvanced(const QString &animationName, int frameIndex);
 
 private slots:
     void tick();

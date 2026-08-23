@@ -43,8 +43,8 @@ PROMPTS = {
     "pet": "front view, blissful happy head tilt enjoying affection",
     "grab": "front view, surprised lifted pose, no visible hands",
     "toss": "front view, tumbling mid-air surprised cute pose",
-    "walk_left": "side view walking LEFT, smooth walk cycle",
-    "walk_right": "side view walking RIGHT, smooth walk cycle",
+    "walk_left": "strict side profile facing LEFT, tiny chibi desktop-pet shuffle, compact steps, feet on one ground line",
+    "walk_right": "strict side profile facing RIGHT, tiny chibi desktop-pet shuffle, compact steps, feet on one ground line",
     "sit": "front view, sitting down then perched with legs dangling",
     "hop_off": "front view, hop downward in mid-air",
     "fall": "front view, falling downward cute flailing",
@@ -64,14 +64,14 @@ FRAME_SEQUENCES: dict[str, list[str]] = {
         "return to full neutral idle pose",
     ],
     "walk_left": [
-        "side view LEFT, right foot forward contact pose",
-        "side view LEFT, right foot down weight on right leg",
-        "side view LEFT, legs passing mid-stride",
-        "side view LEFT, left foot forward contact pose",
-        "side view LEFT, left foot down weight on left leg",
-        "side view LEFT, legs passing mid-stride opposite",
-        "side view LEFT, body rising up step",
-        "side view LEFT, peak up step before next contact",
+        "strict side profile facing LEFT, tiny chibi shuffle, left foot planted, right foot lifts slightly",
+        "strict side profile facing LEFT, right foot passes close to left ankle, knees softly bent",
+        "strict side profile facing LEFT, right foot touches down under body, short step only",
+        "strict side profile facing LEFT, weight on right foot, left foot begins forward",
+        "strict side profile facing LEFT, left foot passes close to right ankle, compact stride",
+        "strict side profile facing LEFT, left foot touches down under body, short step only",
+        "strict side profile facing LEFT, both feet under hips, subtle body bob up",
+        "strict side profile facing LEFT, reset to contact pose, feet on same invisible ground line",
     ],
     "walk_right": [
         "side view RIGHT, left foot forward contact pose",
@@ -256,6 +256,12 @@ def build_prompt(name: str, frame_idx: int, frame_total: int) -> str:
         extra += (
             " Show ONLY the doll on chroma green screen — absolutely no hands, "
             "walls, ledges, furniture, or props."
+        )
+    if name in SIDE_VIEW_CLIPS:
+        extra += (
+            " Camera locked side view. Small cute desktop-pet shuffle — NO wide stride, "
+            "NO sprint, NO leaning. Both shoes stay on the same horizontal ground line; "
+            "character stays same scale and centered in frame."
         )
     return (
         f"{LOCK} Single full-body character, centered. "

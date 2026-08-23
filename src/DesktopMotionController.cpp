@@ -129,14 +129,19 @@ void DesktopMotionController::tryStartWanderOrPerch()
 void DesktopMotionController::startWander()
 {
     const QRect screen = m_screen();
-    const int distance = rollWanderDistance();
+    const int rawDist = rollWanderDistance();
+    // Snap to whole stride cycles so leg animation and window travel stay in sync.
+    const int cycles = qMax(1, qRound(rawDist / double(kWalkStridePx)));
+    const int distance = cycles * kWalkStridePx;
     const int dx = (m_rng() < 0.5) ? -distance : distance;
+    m_walkSpeedPxPerSec = qMax(1, distance * 1000 / (cycles * kWalkCycleMs));
 
     QPoint target = m_petRect.topLeft() + QPoint(dx, 0);
     target.setX(qBound(screen.left(), target.x(), screen.right() - m_petRect.width()));
 
     m_moveTarget = target;
     m_targetPetRect = clampToScreen(QRect(target, m_petRect.size()));
+    m_walkFrameSync = true;
     m_requestedClip = (dx < 0) ? QStringLiteral("walk_left") : QStringLiteral("walk_right");
     m_mode = Mode::Wandering;
 
@@ -196,6 +201,7 @@ void DesktopMotionController::startFall()
 void DesktopMotionController::cancelMotion()
 {
     m_mode = Mode::Idle;
+    m_walkFrameSync = false;
     m_requestedClip.clear();
     m_perchedWindowId = 0;
     m_perchedWindowFrame = QRect();
@@ -216,8 +222,26 @@ void DesktopMotionController::tickIdle()
 
 void DesktopMotionController::tickWandering(qint64 dtMs)
 {
-    const QPoint next = stepToward(m_petRect.topLeft(), m_moveTarget,
-                                   kWalkSpeedPxPerSec * int(dtMs) / 1000);
+    if (!m_walkFrameSync) {
+        const QPoint next = stepToward(m_petRect.topLeft(), m_moveTarget,
+                                       m_walkSpeedPxPerSec * int(dtMs) / 1000);
+        m_petRect.moveTopLeft(next);
+        m_targetPetRect = m_petRect;
+        emit moveTo(m_petRect);
+    }
+
+    if (m_petRect.topLeft() == m_moveTarget) {
+        finishToIdle();
+    }
+}
+
+void DesktopMotionController::advanceWalkStep()
+{
+    if (m_mode != Mode::Wandering || !m_walkFrameSync) {
+        return;
+    }
+    const int stepPx = qMax(1, kWalkStridePx / kWalkFrameCount);
+    const QPoint next = stepToward(m_petRect.topLeft(), m_moveTarget, stepPx);
     m_petRect.moveTopLeft(next);
     m_targetPetRect = m_petRect;
     emit moveTo(m_petRect);
@@ -272,6 +296,7 @@ void DesktopMotionController::tickHoppingOff(qint64 dtMs)
 void DesktopMotionController::finishToIdle()
 {
     const bool wasWandering = (m_mode == Mode::Wandering);
+    m_walkFrameSync = false;
     m_mode = Mode::Idle;
     m_perchedWindowId = 0;
     m_perchedWindowFrame = QRect();
