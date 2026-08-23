@@ -271,9 +271,13 @@ void DesktopMotionController::tickHoppingOff(qint64 dtMs)
 
 void DesktopMotionController::finishToIdle()
 {
+    const bool wasWandering = (m_mode == Mode::Wandering);
     m_mode = Mode::Idle;
     m_perchedWindowId = 0;
     m_perchedWindowFrame = QRect();
+    if (wasWandering) {
+        emit playClip(QStringLiteral("idle"));
+    }
     scheduleNextWander();
     armTimer(kIdlePollMs);
 }

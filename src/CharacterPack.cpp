@@ -912,7 +912,13 @@ bool CharacterPack::loadAnimationsFromDefinitions(const QString &definitionsPath
         AnimationDef def;
         def.name = name;
         def.type = EngineType::SpriteSheet;
-        def.loop = false;  // Original format doesn't specify loop
+        if (animObj.contains(QStringLiteral("Loop"))) {
+            def.loop = animObj.value(QStringLiteral("Loop")).toBool();
+        } else if (animObj.contains(QStringLiteral("loop"))) {
+            def.loop = animObj.value(QStringLiteral("loop")).toBool();
+        } else {
+            def.loop = false;
+        }
 
         QJsonArray frames = animObj["Frames"].toArray();
         for (const QJsonValue &fval : frames) {

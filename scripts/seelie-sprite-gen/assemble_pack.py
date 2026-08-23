@@ -8,6 +8,8 @@ from pathlib import Path
 
 from PIL import Image
 
+from matte import auto_matte
+
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
 CONTRACT = json.loads((ROOT / "clip_contract.json").read_text(encoding="utf-8"))
@@ -15,6 +17,7 @@ OUT_FRAMES = ROOT / "out"
 PACK = REPO / "assets" / "packs" / "seelie"
 FRAME_EXT = ".png"
 MARGIN = 10
+MOTION_CLIPS = {"walk_left", "walk_right", "run_left", "run_right"}
 
 
 def frame_file(group: str, name: str, n: int) -> Path:
@@ -35,23 +38,61 @@ def crop_visible(im: Image.Image) -> Image.Image:
 
 def reference_body_height() -> int:
     """Use idle frame 1 as global scale reference."""
-    ref = crop_visible(Image.open(frame_file("idle", "idle", 1)))
+    ref = crop_visible(auto_matte(Image.open(frame_file("idle", "idle", 1))))
     return ref.height
 
 
-def fit_cell(im: Image.Image, fw: int, fh: int, ref_body_h: int) -> Image.Image:
-    cropped = crop_visible(im)
-    inner_w = fw - MARGIN * 2
-    inner_h = fh - MARGIN * 2
-    scale = min(inner_w / cropped.width, inner_h / cropped.height)
-    # Keep all clips roughly the same apparent size as idle.
-    scale = min(scale, (inner_h * 0.92) / ref_body_h)
+def prepare_frame(im: Image.Image) -> Image.Image:
+    return crop_visible(auto_matte(im))
+
+
+def clip_fit_params(
+    cropped_list: list[Image.Image],
+    fw: int,
+    fh: int,
+    ref_body_h: int,
+    *,
+    clip_name: str,
+) -> tuple[float, int, int, int]:
+    """Return (scale, margin, slot_w, slot_h) shared by every frame in a clip."""
+    margin = MARGIN + (4 if clip_name in MOTION_CLIPS else 0)
+    inner_w = fw - margin * 2
+    inner_h = fh - margin * 2
+    slot_w = max((c.width for c in cropped_list), default=1)
+    slot_h = max((c.height for c in cropped_list), default=1)
+    scale = min(inner_w / slot_w, inner_h / slot_h)
+    cap = 0.88 if clip_name in MOTION_CLIPS else 0.92
+    scale = min(scale, (inner_h * cap) / ref_body_h)
+    return scale, margin, slot_w, slot_h
+
+
+def place_frame(
+    cropped: Image.Image,
+    fw: int,
+    fh: int,
+    scale: float,
+    margin: int,
+    slot_w: int,
+    slot_h: int,
+) -> Image.Image:
+    """Feet-anchored placement inside a shared clip slot (stable size)."""
     new_w = max(1, int(cropped.width * scale))
     new_h = max(1, int(cropped.height * scale))
     resized = cropped.resize((new_w, new_h), Image.Resampling.LANCZOS)
     cell = Image.new("RGBA", (fw, fh), (0, 0, 0, 0))
-    x = (fw - new_w) // 2
-    y = fh - new_h - MARGIN  # feet-anchored
+
+    slot_scaled_w = max(1, int(slot_w * scale))
+    slot_scaled_h = max(1, int(slot_h * scale))
+    slot_x = (fw - slot_scaled_w) // 2
+    slot_y = fh - margin - slot_scaled_h
+
+    char_foot_x = cropped.width / 2.0
+    char_foot_y = float(cropped.height)
+    slot_foot_x = slot_w / 2.0
+    slot_foot_y = float(slot_h)
+
+    x = int(slot_x + (slot_foot_x - char_foot_x) * scale)
+    y = int(slot_y + (slot_foot_y - char_foot_y) * scale)
     cell.paste(resized, (x, y), resized)
     return cell
 
@@ -74,13 +115,26 @@ def main() -> None:
 
     for clip in clips:
         name, group, row = clip["name"], clip["group"], clip["row"]
-        frames_json: list[dict] = []
+        cropped_frames: list[Image.Image] = []
+        frame_nums: list[int] = []
         for f in range(1, clip["frames"] + 1):
             src = frame_file(group, name, f)
             if not src.exists():
                 missing.append(f"{name}#{f:03d}")
                 continue
-            cell = fit_cell(Image.open(src), fw, fh, ref_body_h)
+            cropped_frames.append(prepare_frame(Image.open(src)))
+            frame_nums.append(f)
+
+        if not cropped_frames:
+            continue
+
+        scale, margin, slot_w, slot_h = clip_fit_params(
+            cropped_frames, fw, fh, ref_body_h, clip_name=name
+        )
+
+        frames_json: list[dict] = []
+        for f, cropped in zip(frame_nums, cropped_frames):
+            cell = place_frame(cropped, fw, fh, scale, margin, slot_w, slot_h)
             col = (f - 1) % cols
             x, y = col * fw, row * fh
             sheet.paste(cell, (x, y), cell)
@@ -90,7 +144,10 @@ def main() -> None:
                     "ImagesOffsets": {"Column": col, "Row": row},
                 }
             )
-        anims.append({"Name": name, "Frames": frames_json})
+        anim: dict = {"Name": name, "Frames": frames_json}
+        if name in MOTION_CLIPS:
+            anim["Loop"] = True
+        anims.append(anim)
 
     if missing:
         raise SystemExit(f"missing {len(missing)} frames: {', '.join(missing[:12])}")
@@ -112,7 +169,7 @@ def main() -> None:
         "name": "Seelie",
         "nameLocalized": {"zh_CN": "仙灵"},
         "author": "HUANG Cheng",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "description": "Seelie sakura mascot — desktop-life sprite pack with idle, work, touch, and motion clips.",
         "preview": "preview.png",
         "tags": ["seelie", "original", "anime", "fae", "default"],

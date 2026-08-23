@@ -19,6 +19,7 @@
 #include <QGridLayout>
 #include <QFormLayout>
 #include <QStackedWidget>
+#include <QScrollArea>
 #include <QWindow>
 #include <QLabel>
 #include <QPushButton>
@@ -806,8 +807,8 @@ void SettingsPanelWidget::setupUi()
     connect(m_profileTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(2); });
     connect(m_llmTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(3); });
 
-    // General tab content
-    m_generalTab = new QWidget(m_contentWidget);
+    // General tab content (scrollable — rows added over time overflow fixed height)
+    m_generalTab = new QWidget();
     QVBoxLayout *generalLayout = new QVBoxLayout(m_generalTab);
     generalLayout->setContentsMargins(0, 0, 0, 0);
     // Generous gap between groups so each section reads as its own block.
@@ -819,7 +820,25 @@ void SettingsPanelWidget::setupUi()
     generalLayout->addWidget(m_interactionGroup);
     generalLayout->addWidget(m_aiFeaturesGroup);
 
-    generalLayout->addStretch(1);
+    m_generalScroll = new QScrollArea(m_contentWidget);
+    m_generalScroll->setWidget(m_generalTab);
+    m_generalScroll->setWidgetResizable(true);
+    m_generalScroll->setFrameShape(QFrame::NoFrame);
+    m_generalScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_generalScroll->setStyleSheet(R"(
+        QScrollArea { background: transparent; border: none; }
+        QScrollBar:vertical {
+            background: transparent;
+            width: 8px;
+            margin: 0;
+        }
+        QScrollBar::handle:vertical {
+            background: #ccc;
+            border-radius: 4px;
+            min-height: 24px;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+    )");
 
     // AI tab content
     m_ttsTab = new QWidget(m_contentWidget);
@@ -986,7 +1005,7 @@ void SettingsPanelWidget::setupUi()
     QHBoxLayout *tabContentLayout = new QHBoxLayout();
     tabContentLayout->setSpacing(8);
     tabContentLayout->addLayout(tabBtnLayout);
-    tabContentLayout->addWidget(m_generalTab, 1);
+    tabContentLayout->addWidget(m_generalScroll, 1);
     tabContentLayout->addWidget(m_ttsTab, 1);
     tabContentLayout->addWidget(m_profileTab, 1);
     tabContentLayout->addWidget(m_llmTab, 1);
@@ -1211,7 +1230,7 @@ void SettingsPanelWidget::onDesktopWanderingToggled(bool checked)
 
 void SettingsPanelWidget::onTabChanged(int tabIndex)
 {
-    m_generalTab->setVisible(tabIndex == 0);
+    m_generalScroll->setVisible(tabIndex == 0);
     m_ttsTab->setVisible(tabIndex == 1);
     m_profileTab->setVisible(tabIndex == 2);
     if (m_llmTab) m_llmTab->setVisible(tabIndex == 3);

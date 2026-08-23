@@ -428,6 +428,9 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
 
     // If the same animation is already playing, let it finish — don't restart.
     if (m_playing && m_current.name == actualName) {
+        if (!m_timer.isActive()) {
+            m_timer.start();
+        }
         return;
     }
 
@@ -442,18 +445,22 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
         m_currentFrameIndex = 0;
         m_currentFrameElapsed = 0;
         m_playing = true;
-        m_looping = false;  // No animation loops — idle timer handles cycling
+        m_looping = m_current.loop;
         if (priority == HighPriority) {
             m_queue.clear();
         }
         checkEffectTrigger(actualName);
+        m_timer.start();
+        emit frameChanged();
     } else {
         if (!m_playing) {
             m_current = m_animations.value(actualName);
             m_currentFrameIndex = 0;
             m_currentFrameElapsed = 0;
             m_playing = true;
-            m_looping = false;
+            m_looping = m_current.loop;
+            m_timer.start();
+            emit frameChanged();
         } else {
             m_queue.append(actualName);
         }
@@ -521,8 +528,9 @@ void SpriteAnimationEngine::startNextAnimation()
         m_currentFrameIndex = 0;
         m_currentFrameElapsed = 0;
         m_playing = true;
-        m_looping = false;
+        m_looping = m_current.loop;
         checkEffectTrigger(nextName);
+        m_timer.start();
     } else {
         m_playing = false;
         // Variable 1–4s gap so idle motion doesn't feel metronomic.

@@ -686,7 +686,8 @@
           "Row": 15
         }
       }
-    ]
+    ],
+    "Loop": true
   },
   {
     "Name": "walk_right",
@@ -747,7 +748,8 @@
           "Row": 16
         }
       }
-    ]
+    ],
+    "Loop": true
   },
   {
     "Name": "sit",

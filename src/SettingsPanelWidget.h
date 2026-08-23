@@ -27,6 +27,7 @@ class QKeySequenceEdit;
 class QStackedWidget;
 class QVBoxLayout;
 class QGroupBox;
+class QScrollArea;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -173,6 +174,7 @@ private:
     QPushButton *m_llmTabBtn = nullptr;
 
     // Tab content containers
+    QScrollArea *m_generalScroll = nullptr;
     QWidget *m_generalTab = nullptr;
     QWidget *m_ttsTab = nullptr;
     QWidget *m_profileTab = nullptr;
@@ -251,7 +253,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 420;
-    static constexpr int PANEL_HEIGHT = 580;
+    static constexpr int PANEL_HEIGHT = 640;
 };
 
 #endif // SETTINGSPANELWIDGET_H

@@ -27,7 +27,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from matte import chroma_key_green, transparency_ratio
+from matte import auto_matte, transparency_ratio
 
 ROOT = Path(__file__).resolve().parent
 LOCAL_CFG = ROOT / "image_gateway.local.json"
@@ -118,7 +118,7 @@ def finalize_png(dest: Path, *, matte: str) -> None:
 
     im = Image.open(dest)
     if matte == "green":
-        im = chroma_key_green(im)
+        im = auto_matte(im)
     elif im.mode != "RGBA":
         im = im.convert("RGBA")
     im.save(dest, format="PNG", optimize=True)

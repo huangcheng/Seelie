@@ -261,7 +261,14 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     });
     connect(m_desktopMotion, &DesktopMotionController::playClip, this,
             [this](const QString &clip) {
-        dispatchAnimation(clip, AnimationEngine::NormalPriority);
+        const bool motionClip = clip.startsWith(QLatin1String("walk_"))
+            || clip == QLatin1String("hop_off")
+            || clip == QLatin1String("fall")
+            || clip == QLatin1String("land")
+            || clip == QLatin1String("idle");
+        const auto priority = motionClip ? AnimationEngine::HighPriority
+                                         : AnimationEngine::NormalPriority;
+        dispatchAnimation(clip, priority);
     });
     connect(m_config, &ConfigManager::desktopWanderingEnabledChanged,
             this, [this](bool) { updateDesktopMotion(); });
